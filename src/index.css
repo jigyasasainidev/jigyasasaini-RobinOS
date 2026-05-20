@@ -182,11 +182,11 @@
 
   /* ── Glow Effects ── */
   .glow-blue {
-    box-shadow: 0 0 24px hsl(217 91% 60% / 0.25), 0 0 60px hsl(217 91% 60% / 0.08), 0 0 100px hsl(217 91% 60% / 0.03);
+    box-shadow: 0 0 21px hsl(217 91% 60% / 0.22), 0 0 52px hsl(217 91% 60% / 0.07), 0 0 88px hsl(217 91% 60% / 0.026);
   }
 
   .glow-blue-strong {
-    box-shadow: 0 0 30px hsl(217 91% 60% / 0.35), 0 0 80px hsl(217 91% 60% / 0.12), 0 0 120px hsl(217 91% 60% / 0.05);
+    box-shadow: 0 0 26px hsl(217 91% 60% / 0.31), 0 0 70px hsl(217 91% 60% / 0.105), 0 0 105px hsl(217 91% 60% / 0.044);
   }
 
   .border-glass {
@@ -200,16 +200,16 @@
     background-size: 200% 200%;
     color: hsl(0 0% 100%);
     box-shadow: 
-      0 0 24px hsl(217 91% 60% / 0.35),
-      0 0 60px hsl(217 91% 60% / 0.1),
+      0 0 21px hsl(217 91% 60% / 0.31),
+      0 0 52px hsl(217 91% 60% / 0.088),
       0 4px 16px hsl(0 0% 0% / 0.4),
       inset 0 1px 0 hsl(0 0% 100% / 0.1);
   }
 
   .btn-primary:hover {
     box-shadow: 
-      0 0 40px hsl(217 91% 60% / 0.5),
-      0 0 80px hsl(217 91% 60% / 0.15),
+      0 0 35px hsl(217 91% 60% / 0.44),
+      0 0 70px hsl(217 91% 60% / 0.132),
       0 8px 24px hsl(0 0% 0% / 0.5),
       inset 0 1px 0 hsl(0 0% 100% / 0.15);
     transform: scale(1.03) translateY(-1px);
@@ -219,7 +219,7 @@
   .btn-primary:active {
     transform: scale(0.97);
     box-shadow: 
-      0 0 16px hsl(217 91% 60% / 0.3),
+      0 0 14px hsl(217 91% 60% / 0.265),
       0 2px 8px hsl(0 0% 0% / 0.4);
   }
 
