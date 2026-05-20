@@ -12,11 +12,9 @@ import { Progress } from "@/components/ui/progress";
 import { useCurrency } from "@/hooks/useCurrency";
 import { getPlans, getCurrencySymbol, getTierDisplayName, normalizeTier } from "@/lib/pricing";
 import { BrandMark } from "@/components/BrandMark";
-import { useNavigate } from "react-router-dom";
 
 const SettingsPage = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: profile } = useProfile();
   const { data: byokEnabled } = useByokAccess();
@@ -36,8 +34,7 @@ const SettingsPage = () => {
 
   const handleSubscribe = (planTier: string) => {
     const planLabel = planTier === "pro_creator" ? "Pro Creator" : planTier === "agency" ? "Agency" : "Creator";
-    toast.info(`Creator subscriptions for ${planLabel} are rolling out in phases. Join early access from Contact.`);
-    navigate("/contact");
+    toast.info(`${planLabel} subscriptions are coming soon. Billing will be enabled here directly.`);
   };
 
   const currentTier = profile?.subscription_tier || "free";
