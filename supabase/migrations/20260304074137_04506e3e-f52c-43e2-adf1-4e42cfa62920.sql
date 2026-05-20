@@ -1,0 +1,1 @@
+DELETE FROM payments WHERE 1=1;
