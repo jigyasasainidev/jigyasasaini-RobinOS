@@ -765,12 +765,12 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
               key={plan.name}
               whileHover={{ y: -4 }}
               transition={{ type: "spring", stiffness: 300 }}
-              className={`relative rounded-xl p-6 sm:p-7 transition-all ${
+                className={`relative rounded-xl p-6 sm:p-7 transition-all ${
                 plan.isAgency
-                  ? "border border-amber-500/40 bg-card/60 shadow-[0_0_30px_-10px_hsl(38_92%_50%/0.3)]"
+                    ? "border border-amber-500/30 bg-card/60 shadow-[0_0_24px_-10px_hsl(38_92%_50%/0.24)]"
                   : plan.featured
-                    ? "border border-primary/40 bg-card/60 glow-blue"
-                    : "border border-border/50 bg-card/30"
+                      ? "border border-primary/30 bg-card/60 glow-blue"
+                      : "border border-border/35 bg-card/30"
               }`}
             >
               {plan.badge && (
@@ -795,9 +795,9 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
                 <p className="text-[10px] text-muted-foreground/60 font-mono mt-1">{plan.yearlyTotal}</p>
               )}
 
-              <ul className="mt-6 space-y-2.5">
+              <ul className="mt-5 space-y-2">
                 {plan.features.map((f: string) => (
-                  <li key={f} className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <li key={f} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Check className={`w-3.5 h-3.5 flex-shrink-0 ${plan.isAgency ? "text-amber-400" : "text-primary"}`} />
                     {f}
                   </li>
