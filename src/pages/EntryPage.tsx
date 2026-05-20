@@ -804,13 +804,6 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
                 ))}
               </ul>
 
-              {!plan.isFree && (
-                <div className="mt-4 rounded-lg border border-primary/20 bg-primary/10 px-3 py-2">
-                  <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-primary">Included in your plan</p>
-                  <p className="text-xs text-foreground/85 mt-1">Caption Engine with platform-aware generation workflow.</p>
-                </div>
-              )}
-
               <button
                 onClick={() => navigate(authHref)}
                 className={`mt-6 w-full py-3 rounded-lg text-sm font-medium tracking-wide transition-all ${
