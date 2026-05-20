@@ -6,9 +6,11 @@ import { useFreeTrialStatus, useSubscriptionExpiry } from "@/hooks/useProfile";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { OnboardingPopup } from "@/components/OnboardingPopup";
 import { db } from "@/lib/cloudDb";
-import { useQueryClient } from "@tanstack/react-query";
-import { motion } from "framer-motion";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
 import robinosLogo from "@/assets/robinos-logo.png";
+import { AlertTriangle, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const DashboardLayout = () => {
   const { user, loading } = useAuth();
@@ -18,6 +20,22 @@ const DashboardLayout = () => {
   const { expired: subExpired, tier } = useSubscriptionExpiry();
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [maintenanceDismissed, setMaintenanceDismissed] = useState(false);
+
+  const maintenanceQuery = useQuery({
+    queryKey: ["platform-maintenance-v1"],
+    queryFn: async () => {
+      const { data, error } = await db
+        .from("platform_settings")
+        .select("maintenance_mode,announcement_banner,updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+      return (data ?? [])[0] ?? null;
+    },
+    enabled: !!user,
+  });
 
   useEffect(() => {
     if (!loading && !user) {
@@ -62,6 +80,42 @@ const DashboardLayout = () => {
     }
   }, [user, loading]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel("platform-maintenance-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "platform_settings" },
+        () => queryClient.invalidateQueries({ queryKey: ["platform-maintenance-v1"] }),
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, queryClient]);
+
+  useEffect(() => {
+    const updatedAt = maintenanceQuery.data?.updated_at;
+    if (!updatedAt) return;
+
+    const dismissed = sessionStorage.getItem(`maintenance-dismissed:${updatedAt}`) === "1";
+    setMaintenanceDismissed(dismissed);
+  }, [maintenanceQuery.data?.updated_at]);
+
+  const dismissMaintenance = () => {
+    const updatedAt = maintenanceQuery.data?.updated_at;
+    if (updatedAt) {
+      sessionStorage.setItem(`maintenance-dismissed:${updatedAt}`, "1");
+    }
+    setMaintenanceDismissed(true);
+  };
+
+  const maintenanceActive = !!maintenanceQuery.data?.maintenance_mode;
+  const maintenanceMessage = maintenanceQuery.data?.announcement_banner?.trim() || "Platform maintenance is in progress. Some features may be temporarily limited.";
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
@@ -88,6 +142,31 @@ const DashboardLayout = () => {
 
       <main className="flex-1 min-h-screen overflow-y-auto relative z-10 pb-24 md:pb-0">
         <div className="px-4 py-6 md:p-10 max-w-5xl mx-auto md:mx-0">
+          <AnimatePresence>
+            {maintenanceActive && !maintenanceDismissed ? (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mb-4 rounded-lg border border-primary/40 bg-card/95 p-3"
+              >
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 text-primary" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">Maintenance Notice</p>
+                    <p className="text-xs text-muted-foreground">{maintenanceMessage}</p>
+                  </div>
+                  <button
+                    onClick={dismissMaintenance}
+                    className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                    aria-label="Dismiss maintenance message"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
           <Outlet />
         </div>
       </main>
