@@ -169,6 +169,14 @@ const SettingsPage = () => {
             <div>
               <label className="text-xs font-mono text-muted-foreground mb-1.5 block">ElevenLabs API Key</label>
               <Input type="password" value={elevenLabsKey} onChange={(e) => setElevenLabsKey(e.target.value)} placeholder="xi-..." className="bg-secondary border-border text-foreground placeholder:text-muted-foreground/40 h-11 font-mono text-xs" disabled={!isProOrAbove} />
+              <a
+                href="https://try.elevenlabs.io/8ym6azaucekp"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block mt-2 text-[11px] font-mono text-primary hover:text-primary/80 underline underline-offset-2"
+              >
+                Get your ElevenLabs API key
+              </a>
             </div>
             <div>
               <label className="text-xs font-mono text-muted-foreground mb-1.5 block">Replicate API Key (Video)</label>
