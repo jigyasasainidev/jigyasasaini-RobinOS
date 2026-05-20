@@ -142,14 +142,9 @@ const SettingsPage = () => {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-lg border-glass bg-card p-5 max-w-2xl">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-primary" />
-              <h2 className="text-sm font-medium text-foreground">Caption Engine Usage</h2>
-            </div>
-            <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary">
-              Included in your plan
-            </Badge>
+          <div className="flex items-center gap-2 mb-4">
+            <Zap className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-medium text-foreground">Caption Engine Usage</h2>
           </div>
           <div className="space-y-2">
             <div className="flex justify-between text-xs text-muted-foreground">
