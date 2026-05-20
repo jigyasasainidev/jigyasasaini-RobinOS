@@ -14,13 +14,108 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          affiliate_balance: number
+          country: string
+          created_at: string
+          currency: string
+          current_plan: string
+          display_name: string | null
+          elevenlabs_api_key: string | null
+          email: string | null
+          free_scans_used: number
+          free_scripts_used: number
+          free_trial_expired: boolean
+          free_trial_started_at: string
+          full_name: string | null
+          id: string
+          is_suspended: boolean
+          openai_api_key: string | null
+          paid_balance: number
+          pending_balance: number
+          referral_code: string | null
+          scripts_reset_at: string
+          scripts_used_this_month: number
+          subscription_expires_at: string | null
+          subscription_tier: string
+          total_earnings: number
+          updated_at: string
+          upi_id: string | null
+          user_id: string
+          video_api_key: string | null
+        }
+        Insert: {
+          affiliate_balance?: number
+          country?: string
+          created_at?: string
+          currency?: string
+          current_plan?: string
+          display_name?: string | null
+          elevenlabs_api_key?: string | null
+          email?: string | null
+          free_scans_used?: number
+          free_scripts_used?: number
+          free_trial_expired?: boolean
+          free_trial_started_at?: string
+          full_name?: string | null
+          id?: string
+          is_suspended?: boolean
+          openai_api_key?: string | null
+          paid_balance?: number
+          pending_balance?: number
+          referral_code?: string | null
+          scripts_reset_at?: string
+          scripts_used_this_month?: number
+          subscription_expires_at?: string | null
+          subscription_tier?: string
+          total_earnings?: number
+          updated_at?: string
+          upi_id?: string | null
+          user_id: string
+          video_api_key?: string | null
+        }
+        Update: {
+          affiliate_balance?: number
+          country?: string
+          created_at?: string
+          currency?: string
+          current_plan?: string
+          display_name?: string | null
+          elevenlabs_api_key?: string | null
+          email?: string | null
+          free_scans_used?: number
+          free_scripts_used?: number
+          free_trial_expired?: boolean
+          free_trial_started_at?: string
+          full_name?: string | null
+          id?: string
+          is_suspended?: boolean
+          openai_api_key?: string | null
+          paid_balance?: number
+          pending_balance?: number
+          referral_code?: string | null
+          scripts_reset_at?: string
+          scripts_used_this_month?: number
+          subscription_expires_at?: string | null
+          subscription_tier?: string
+          total_earnings?: number
+          updated_at?: string
+          upi_id?: string | null
+          user_id?: string
+          video_api_key?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      initialize_user_account: {
+        Args: { p_referred_by?: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
