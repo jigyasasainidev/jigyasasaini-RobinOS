@@ -58,7 +58,7 @@ const AdminAuthCallbackPage = () => {
         await logAdminAction("admin_login", session.user.id, {
           email: session.user.email ?? null,
           role: access.role ?? "admin",
-          route: "/adminsh/callback",
+          route: "/adminsh/auth/callback",
           provider: "google",
         });
       } catch {
