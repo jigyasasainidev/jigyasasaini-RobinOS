@@ -4,6 +4,7 @@ export type AdminAccessResponse = {
   role: AdminRole | null;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  allowlisted?: boolean;
 };
 
 export type AdminAuditAction =
