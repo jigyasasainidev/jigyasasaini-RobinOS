@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_allowlist: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          note: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          is_active?: boolean
+          note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          is_active?: boolean
+          note?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           affiliate_balance: number
@@ -133,6 +160,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_admin_access: { Args: never; Returns: Json }
       get_admin_role: { Args: { user_uuid: string }; Returns: string }
       get_usage_status: { Args: { p_feature_name?: string }; Returns: Json }
       initialize_user_account:
