@@ -47,7 +47,7 @@ const AdminAuthPage = () => {
     setLoading(true);
 
     try {
-      const callbackUrl = `${window.location.origin}/adminsh/callback`;
+      const callbackUrl = `${window.location.origin}/adminsh/auth/callback`;
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: callbackUrl,
         extraParams: {

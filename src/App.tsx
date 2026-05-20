@@ -140,7 +140,8 @@ const App = () => (
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
               <Route path="/adminsh/auth" element={<AdminAuthPage />} />
-              <Route path="/adminsh/callback" element={<AdminAuthCallbackPage />} />
+              <Route path="/adminsh/auth/callback" element={<AdminAuthCallbackPage />} />
+              <Route path="/adminsh/callback" element={<Navigate to="/adminsh/auth/callback" replace />} />
               <Route path="/adminsh" element={<Navigate to="/adminsh/dashboard" replace />} />
               <Route path="/adminsh/dashboard" element={<AdminRouteGuard><AdminDashboard /></AdminRouteGuard>} />
               <Route path="/adminsh/analytics" element={<AdminRouteGuard><AdminDashboard /></AdminRouteGuard>} />
