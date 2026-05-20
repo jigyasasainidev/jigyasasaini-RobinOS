@@ -13,19 +13,21 @@ export function useAdminAccess() {
         return { role: null, isAdmin: false, isSuperAdmin: false };
       }
 
-      const { data, error } = await db.rpc("get_admin_role", {
-        user_uuid: user.id,
-      });
+      const { data, error } = await db.rpc("get_admin_access");
 
       if (error) {
         return { role: null, isAdmin: false, isSuperAdmin: false };
       }
 
-      const role = (data as AdminRole | null) ?? null;
+      const payload = (data ?? {}) as { role?: AdminRole | null; is_admin?: boolean; allowlisted?: boolean };
+      const role = payload.role ?? null;
+      const isAdmin = Boolean(payload.is_admin) || role === "super_admin" || role === "admin" || role === "support";
+
       return {
         role,
-        isAdmin: role === "super_admin" || role === "admin" || role === "support",
+        isAdmin,
         isSuperAdmin: role === "super_admin",
+        allowlisted: Boolean(payload.allowlisted),
       };
     },
     enabled: !!user,

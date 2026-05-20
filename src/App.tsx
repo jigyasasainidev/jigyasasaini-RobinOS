@@ -49,6 +49,7 @@ const ResourcesPage = lazy(() => import("./pages/public/PublicInfoPages").then((
 const RoadmapPage = lazy(() => import("./pages/public/PublicInfoPages").then((m) => ({ default: m.RoadmapPage })));
 const SupportPage = lazy(() => import("./pages/public/PublicInfoPages").then((m) => ({ default: m.SupportPage })));
 const AdminAuthPage = lazy(() => import("./pages/AdminAuthPage"));
+const AdminAuthCallbackPage = lazy(() => import("./pages/AdminAuthCallbackPage"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AuthCallbackPage = lazy(() => import("./pages/AuthCallbackPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -139,6 +140,7 @@ const App = () => (
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
               <Route path="/adminsh/auth" element={<AdminAuthPage />} />
+              <Route path="/adminsh/callback" element={<AdminAuthCallbackPage />} />
               <Route path="/adminsh" element={<Navigate to="/adminsh/dashboard" replace />} />
               <Route path="/adminsh/dashboard" element={<AdminRouteGuard><AdminDashboard /></AdminRouteGuard>} />
               <Route path="/adminsh/analytics" element={<AdminRouteGuard><AdminDashboard /></AdminRouteGuard>} />
