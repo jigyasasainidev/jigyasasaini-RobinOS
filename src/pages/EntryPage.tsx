@@ -830,7 +830,7 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
       </RevealSection>
 
       {/* ─── 7. FAQ ─── */}
-      <RevealSection id="resources" className="py-24 md:py-40 px-4 sm:px-6 max-w-2xl mx-auto">
+      <RevealSection id="resources" className="py-20 md:py-40 px-5 sm:px-6 max-w-2xl mx-auto">
         <div className="text-center mb-12">
           <p className="text-xs font-mono tracking-[0.3em] uppercase text-muted-foreground mb-4">FAQ</p>
           <h2 className="text-chrome text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight">
@@ -838,13 +838,13 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
           </h2>
         </div>
 
-        <Accordion type="single" collapsible className="space-y-2">
+        <Accordion type="single" collapsible className="space-y-1.5">
           {faqItems.map((item, i) => (
-            <AccordionItem key={i} value={`faq-${i}`} className="border-border/50 border rounded-lg px-4 sm:px-5 data-[state=open]:border-primary/30 transition-colors">
-              <AccordionTrigger className="text-sm text-foreground hover:no-underline py-4">
+            <AccordionItem key={i} value={`faq-${i}`} className="border-border/35 border rounded-lg px-3.5 sm:px-5 data-[state=open]:border-primary/25 transition-colors">
+              <AccordionTrigger className="text-sm text-foreground hover:no-underline py-3 text-left leading-snug pr-3 break-words">
                 {item.q}
               </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground text-sm leading-relaxed">
+              <AccordionContent className="text-muted-foreground text-sm leading-relaxed pb-3">
                 {item.a}
               </AccordionContent>
             </AccordionItem>
