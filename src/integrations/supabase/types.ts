@@ -14,16 +14,133 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          affiliate_balance: number
+          country: string
+          created_at: string
+          currency: string
+          current_plan: string
+          display_name: string | null
+          elevenlabs_api_key: string | null
+          email: string | null
+          free_scans_used: number
+          free_scripts_used: number
+          free_trial_expired: boolean
+          free_trial_started_at: string
+          full_name: string | null
+          id: string
+          is_suspended: boolean
+          openai_api_key: string | null
+          paid_balance: number
+          pending_balance: number
+          referral_code: string | null
+          scripts_reset_at: string
+          scripts_used_this_month: number
+          subscription_expires_at: string | null
+          subscription_tier: string
+          total_earnings: number
+          updated_at: string
+          upi_id: string | null
+          user_id: string
+          video_api_key: string | null
+        }
+        Insert: {
+          affiliate_balance?: number
+          country?: string
+          created_at?: string
+          currency?: string
+          current_plan?: string
+          display_name?: string | null
+          elevenlabs_api_key?: string | null
+          email?: string | null
+          free_scans_used?: number
+          free_scripts_used?: number
+          free_trial_expired?: boolean
+          free_trial_started_at?: string
+          full_name?: string | null
+          id?: string
+          is_suspended?: boolean
+          openai_api_key?: string | null
+          paid_balance?: number
+          pending_balance?: number
+          referral_code?: string | null
+          scripts_reset_at?: string
+          scripts_used_this_month?: number
+          subscription_expires_at?: string | null
+          subscription_tier?: string
+          total_earnings?: number
+          updated_at?: string
+          upi_id?: string | null
+          user_id: string
+          video_api_key?: string | null
+        }
+        Update: {
+          affiliate_balance?: number
+          country?: string
+          created_at?: string
+          currency?: string
+          current_plan?: string
+          display_name?: string | null
+          elevenlabs_api_key?: string | null
+          email?: string | null
+          free_scans_used?: number
+          free_scripts_used?: number
+          free_trial_expired?: boolean
+          free_trial_started_at?: string
+          full_name?: string | null
+          id?: string
+          is_suspended?: boolean
+          openai_api_key?: string | null
+          paid_balance?: number
+          pending_balance?: number
+          referral_code?: string | null
+          scripts_reset_at?: string
+          scripts_used_this_month?: number
+          subscription_expires_at?: string | null
+          subscription_tier?: string
+          total_earnings?: number
+          updated_at?: string
+          upi_id?: string | null
+          user_id?: string
+          video_api_key?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["admin_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["admin_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["admin_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_admin_role: { Args: { user_uuid: string }; Returns: string }
+      get_usage_status: { Args: { p_feature_name?: string }; Returns: Json }
+      initialize_user_account:
+        | { Args: never; Returns: Json }
+        | { Args: { p_referred_by?: string }; Returns: Json }
     }
     Enums: {
-      [_ in never]: never
+      admin_role: "super_admin" | "admin" | "support"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +267,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      admin_role: ["super_admin", "admin", "support"],
+    },
   },
 } as const
