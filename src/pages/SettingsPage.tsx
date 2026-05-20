@@ -142,11 +142,11 @@ const SettingsPage = () => {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-lg border-glass bg-card p-5 max-w-2xl">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-3">
             <Zap className="w-4 h-4 text-primary" />
             <h2 className="text-sm font-medium text-foreground">Caption Engine Usage</h2>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>{captionUsage?.used ?? 0} used today</span>
               <span>{captionUsage?.fair_usage ? "∞" : captionUsage?.quota ?? 0} total</span>
@@ -227,10 +227,10 @@ const SettingsPage = () => {
                   key={plan.name}
                   className={`relative rounded-xl border p-5 transition-all ${
                     isAgencyCard
-                      ? "border-amber-500/40 bg-amber-500/5 shadow-[0_0_30px_-10px_hsl(38_92%_50%/0.3)]"
+                      ? "border-amber-500/30 bg-amber-500/5 shadow-[0_0_24px_-10px_hsl(38_92%_50%/0.24)]"
                       : plan.popular
-                        ? "border-primary/40 bg-primary/5 shadow-[0_0_30px_-10px_hsl(var(--primary)/0.3)]"
-                        : "border-border bg-card hover:border-border/80"
+                        ? "border-primary/30 bg-primary/5 shadow-[0_0_24px_-10px_hsl(var(--primary)/0.24)]"
+                        : "border-border/85 bg-card hover:border-border/75"
                   }`}
                 >
                   {plan.badge && (
@@ -253,9 +253,9 @@ const SettingsPage = () => {
                     </p>
                   )}
 
-                  <ul className="space-y-2.5 mb-5">
+                  <ul className="space-y-2 mb-5">
                     {plan.features.map((f) => (
-                      <li key={f} className="text-xs text-muted-foreground flex items-center gap-2">
+                      <li key={f} className="text-xs text-muted-foreground flex items-center gap-1.5">
                         <svg className={`w-3.5 h-3.5 shrink-0 ${isAgencyCard ? "text-amber-400" : "text-primary"}`} viewBox="0 0 16 16" fill="none">
                           <path d="M3 8.5L6.5 12L13 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
