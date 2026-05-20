@@ -27,6 +27,7 @@ export function useAdminAccess() {
         role,
         isAdmin,
         isSuperAdmin: role === "super_admin",
+        allowlisted: Boolean(payload.allowlisted),
       };
     },
     enabled: !!user,
