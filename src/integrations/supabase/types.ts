@@ -41,6 +41,180 @@ export type Database = {
         }
         Relationships: []
       }
+      affiliate_commissions: {
+        Row: {
+          affiliate_user_id: string
+          amount: number
+          created_at: string
+          id: string
+          referred_user_id: string | null
+          status: string
+          subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          affiliate_user_id: string
+          amount?: number
+          created_at?: string
+          id?: string
+          referred_user_id?: string | null
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          affiliate_user_id?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          referred_user_id?: string | null
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      affiliate_profiles: {
+        Row: {
+          created_at: string
+          paid_balance: number
+          pending_balance: number
+          referral_code: string
+          total_clicks: number
+          total_conversions: number
+          total_earned: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          paid_balance?: number
+          pending_balance?: number
+          referral_code: string
+          total_clicks?: number
+          total_conversions?: number
+          total_earned?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          paid_balance?: number
+          pending_balance?: number
+          referral_code?: string
+          total_clicks?: number
+          total_conversions?: number
+          total_earned?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_generations: {
+        Row: {
+          created_at: string
+          credits_used: number
+          generation_type: string
+          id: string
+          provider: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_used?: number
+          generation_type?: string
+          id?: string
+          provider?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_used?: number
+          generation_type?: string
+          id?: string
+          provider?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      feature_usage: {
+        Row: {
+          created_at: string
+          feature_name: string
+          id: string
+          usage_count: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feature_name: string
+          id?: string
+          usage_count?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feature_name?: string
+          id?: string
+          usage_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          affiliate_commission_percent: number
+          agency_price: number
+          announcement_banner: string | null
+          created_at: string
+          creator_price: number
+          free_scans_limit: number
+          free_scripts_limit: number
+          id: string
+          maintenance_mode: boolean
+          minimum_withdrawal: number
+          payout_delay_days: number
+          platform_domain: string | null
+          pro_price: number
+          support_email: string | null
+          updated_at: string
+        }
+        Insert: {
+          affiliate_commission_percent?: number
+          agency_price?: number
+          announcement_banner?: string | null
+          created_at?: string
+          creator_price?: number
+          free_scans_limit?: number
+          free_scripts_limit?: number
+          id?: string
+          maintenance_mode?: boolean
+          minimum_withdrawal?: number
+          payout_delay_days?: number
+          platform_domain?: string | null
+          pro_price?: number
+          support_email?: string | null
+          updated_at?: string
+        }
+        Update: {
+          affiliate_commission_percent?: number
+          agency_price?: number
+          announcement_banner?: string | null
+          created_at?: string
+          creator_price?: number
+          free_scans_limit?: number
+          free_scripts_limit?: number
+          id?: string
+          maintenance_mode?: boolean
+          minimum_withdrawal?: number
+          payout_delay_days?: number
+          platform_domain?: string | null
+          pro_price?: number
+          support_email?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           affiliate_balance: number
@@ -155,11 +329,140 @@ export type Database = {
         }
         Relationships: []
       }
+      user_subscriptions: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          plan: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          plan?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          plan?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      withdrawal_requests: {
+        Row: {
+          admin_note: string | null
+          amount: number
+          approved_at: string | null
+          completed_at: string | null
+          created_at: string
+          fee_amount: number
+          id: string
+          payout_details: string
+          payout_method: string
+          rejected_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string | null
+          amount?: number
+          approved_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          fee_amount?: number
+          id?: string
+          payout_details?: string
+          payout_method?: string
+          rejected_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_note?: string | null
+          amount?: number
+          approved_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          fee_amount?: number
+          id?: string
+          payout_details?: string
+          payout_method?: string
+          rejected_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      admin_profiles_view: {
+        Row: {
+          affiliate_enabled: boolean | null
+          avatar_url: string | null
+          created_at: string | null
+          current_plan: string | null
+          email: string | null
+          full_name: string | null
+          is_admin: boolean | null
+          is_suspended: boolean | null
+          total_scripts_generated: number | null
+          total_trend_scans: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          affiliate_enabled?: never
+          avatar_url?: never
+          created_at?: string | null
+          current_plan?: string | null
+          email?: string | null
+          full_name?: string | null
+          is_admin?: never
+          is_suspended?: boolean | null
+          total_scripts_generated?: number | null
+          total_trend_scans?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          affiliate_enabled?: never
+          avatar_url?: never
+          created_at?: string | null
+          current_plan?: string | null
+          email?: string | null
+          full_name?: string | null
+          is_admin?: never
+          is_suspended?: boolean | null
+          total_scripts_generated?: number | null
+          total_trend_scans?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      admin_process_withdrawal_request: {
+        Args: { p_admin_note?: string; p_request_id: string; p_status: string }
+        Returns: Json
+      }
       get_admin_access: { Args: never; Returns: Json }
       get_admin_role: { Args: { user_uuid: string }; Returns: string }
       get_usage_status: { Args: { p_feature_name?: string }; Returns: Json }
