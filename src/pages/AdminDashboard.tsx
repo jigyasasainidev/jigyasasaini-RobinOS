@@ -31,8 +31,6 @@ import {
   BarChart,
   CartesianGrid,
   Legend,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -697,6 +695,42 @@ const AdminDashboard = () => {
     ];
   }, [subscriptions]);
 
+  const planDistributionTrend = useMemo(() => {
+    const included = subscriptions.filter((s) => asSubscriptionStatus(s.status) !== "cancelled");
+    if (!included.length) return [] as Array<{ date: string; creator: number; pro: number; agency: number; total: number }>;
+
+    const daily = new Map<string, { creator: number; pro: number; agency: number }>();
+
+    included.forEach((s) => {
+      const key = dateKey(s.created_at);
+      const row = daily.get(key) ?? { creator: 0, pro: 0, agency: 0 };
+      const plan = asPlan(s.plan);
+      if (plan === "creator") row.creator += 1;
+      if (plan === "pro") row.pro += 1;
+      if (plan === "agency") row.agency += 1;
+      daily.set(key, row);
+    });
+
+    const keys = Array.from(daily.keys()).sort();
+    let creator = 0;
+    let pro = 0;
+    let agency = 0;
+
+    return keys.map((k) => {
+      const point = daily.get(k) ?? { creator: 0, pro: 0, agency: 0 };
+      creator += point.creator;
+      pro += point.pro;
+      agency += point.agency;
+      return {
+        date: k,
+        creator,
+        pro,
+        agency,
+        total: creator + pro + agency,
+      };
+    });
+  }, [subscriptions]);
+
   const topFeatureUsage = useMemo(() => {
     const byFeature = new Map<string, number>();
     featureUsage.forEach((f) => byFeature.set(f.feature_name, (byFeature.get(f.feature_name) ?? 0) + Number(f.usage_count || 0)));
@@ -904,13 +938,18 @@ const AdminDashboard = () => {
         <SectionCard title="Plan Distribution" subtitle="Live subscriptions split by plans">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-[1.2fr_1fr]">
             <div className="h-72">
-              {planDistribution.some((p) => p.value > 0) ? (
+              {planDistributionTrend.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={planDistribution} dataKey="value" nameKey="name" innerRadius={72} outerRadius={108} stroke="none" />
+                  <AreaChart data={planDistributionTrend}>
+                    <CartesianGrid stroke="hsl(var(--border) / 0.35)" strokeDasharray="3 3" />
+                    <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
                     <Tooltip contentStyle={{ background: "hsl(var(--background) / 0.95)", border: "1px solid hsl(var(--border) / 0.6)", borderRadius: "8px" }} />
                     <Legend />
-                  </PieChart>
+                    <Area type="monotone" dataKey="creator" name="Creator" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.2)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="pro" name="Pro" stroke="hsl(var(--primary) / 0.72)" fill="hsl(var(--primary) / 0.12)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="agency" name="Agency" stroke="hsl(var(--primary) / 0.48)" fill="hsl(var(--primary) / 0.08)" strokeWidth={2} />
+                  </AreaChart>
                 </ResponsiveContainer>
               ) : <EmptyState title="No subscriptions yet" description="Plan distribution will appear after first subscription records." />}
             </div>
@@ -1068,7 +1107,7 @@ const AdminDashboard = () => {
       </section>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <SectionCard title="Plan Distribution" subtitle="Live plan distribution from subscriptions"><div className="h-72">{planDistribution.some((d) => d.value > 0) ? <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={planDistribution} dataKey="value" nameKey="name" innerRadius={72} outerRadius={108} stroke="none" /><Tooltip contentStyle={{ background: "hsl(var(--background) / 0.95)", border: "1px solid hsl(var(--border) / 0.6)", borderRadius: "8px" }} /><Legend /></PieChart></ResponsiveContainer> : <EmptyState title="No subscriptions" description="Subscription distribution renders after plans are created." />}</div></SectionCard>
+        <SectionCard title="Plan Distribution" subtitle="Live plan movement from subscriptions"><div className="h-72">{planDistributionTrend.length > 0 ? <ResponsiveContainer width="100%" height="100%"><AreaChart data={planDistributionTrend}><CartesianGrid stroke="hsl(var(--border) / 0.35)" strokeDasharray="3 3" /><XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} /><YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} /><Tooltip contentStyle={{ background: "hsl(var(--background) / 0.95)", border: "1px solid hsl(var(--border) / 0.6)", borderRadius: "8px" }} /><Legend /><Area type="monotone" dataKey="creator" name="Creator" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.2)" strokeWidth={2} /><Area type="monotone" dataKey="pro" name="Pro" stroke="hsl(var(--primary) / 0.72)" fill="hsl(var(--primary) / 0.12)" strokeWidth={2} /><Area type="monotone" dataKey="agency" name="Agency" stroke="hsl(var(--primary) / 0.48)" fill="hsl(var(--primary) / 0.08)" strokeWidth={2} /></AreaChart></ResponsiveContainer> : <EmptyState title="No subscriptions" description="Subscription distribution renders after plans are created." />}</div></SectionCard>
         <SectionCard title="Active Subscription Table" subtitle="email, plan, billing cycle, renewal date, amount, status"><DataTable headers={["email", "plan", "billing cycle", "renewal date", "amount", "status"]} colSpan={6} empty={!usersEnriched.filter((u) => u.status === "active").length}>{usersEnriched.filter((u) => u.status === "active").slice(0, 10).map((u) => <tr key={u.user_id} className="border-t border-border/40"><td className="p-3 text-foreground">{u.email}</td><td className="p-3 uppercase text-muted-foreground">{u.plan}</td><td className="p-3 text-muted-foreground">{u.billing_cycle}</td><td className="p-3 text-muted-foreground">{u.renewal_date ? new Date(u.renewal_date).toLocaleDateString() : "—"}</td><td className="p-3 font-mono text-foreground">{formatCurrency(u.amount)}</td><td className="p-3 text-muted-foreground">{u.status}</td></tr>)}</DataTable></SectionCard>
       </section>
 
