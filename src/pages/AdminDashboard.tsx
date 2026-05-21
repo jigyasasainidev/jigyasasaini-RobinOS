@@ -914,11 +914,11 @@ const AdminDashboard = () => {
     { label: "Total Users", value: formatNumber(profiles.length), growth: userGrowthPercent, icon: Users, spark: sparkFrom(dailySeries.map((d) => d.users)) },
     { label: "Active Subscribers", value: formatNumber(activeSubscribers), growth: growthPercent, icon: UserCheck, spark: sparkFrom(dailySeries.map((d) => d.subscriptions)) },
     { label: "Active Plan Value", value: formatCurrency(monthlyRevenue), growth: growthPercent, icon: Wallet, spark: sparkFrom(dailySeries.map((d) => d.revenue)) },
-    { label: "Pending Withdrawals", value: formatNumber(pendingWithdrawals.length), growth: -3.4, icon: Clock3, spark: sparkFrom(pendingWithdrawals.map((w) => Number(w.amount || 0))) },
-    { label: "Affiliate Earnings", value: formatCurrency(totalAffiliateEarnings), growth: 8.4, icon: TrendingUp, spark: sparkFrom(affiliateCommissions.map((a) => Number(a.amount || 0))) },
-    { label: "Scripts Generated", value: formatNumber(scriptsGenerated), growth: 12.6, icon: Sparkles, spark: sparkFrom(dailySeries.map((d) => d.scripts)) },
-    { label: "Trend Searches", value: formatNumber(trendSearches), growth: 9.2, icon: BarChart3, spark: sparkFrom(dailySeries.map((d) => d.scans)) },
-    { label: "Estimated AI Cost", value: formatCurrency(estimatedAiCost), growth: -1.7, icon: Activity, spark: sparkFrom(aiGenerations.map((g) => estimateGenerationCost(g.provider, Number(g.credits_used || 0)))) },
+    { label: "Pending Withdrawals", value: formatNumber(pendingWithdrawals.length), icon: Clock3, spark: sparkFrom(pendingWithdrawals.map((w) => Number(w.amount || 0))) },
+    { label: "Affiliate Earnings", value: formatCurrency(totalAffiliateEarnings), icon: TrendingUp, spark: sparkFrom(affiliateCommissions.map((a) => Number(a.amount || 0))) },
+    { label: "Scripts Generated", value: formatNumber(scriptsGenerated), icon: Sparkles, spark: sparkFrom(dailySeries.map((d) => d.scripts)) },
+    { label: "Trend Searches", value: formatNumber(trendSearches), icon: BarChart3, spark: sparkFrom(dailySeries.map((d) => d.scans)) },
+    { label: "Estimated AI Cost", value: formatCurrency(estimatedAiCost), icon: Activity, spark: sparkFrom(aiGenerations.map((g) => estimateGenerationCost(g.provider, Number(g.credits_used || 0)))) },
   ];
 
   const renderDashboardPage = () => (
