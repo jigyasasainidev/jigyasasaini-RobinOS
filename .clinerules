@@ -1,0 +1,96 @@
+# ================================
+# ROBINOS ENGINEERING GOVERNANCE
+# ================================
+
+You are working on RobinOS production infrastructure.
+
+# CORE RULES
+
+- NEVER rewrite unrelated files.
+- NEVER redesign existing UI unless explicitly requested.
+- NEVER remove animations, layouts, spacing, or premium styling without permission.
+- NEVER refactor entire systems for small fixes.
+- ONLY modify the minimum required code for the requested task.
+- Preserve existing architecture patterns.
+- Preserve all production functionality.
+- Preserve existing routes and auth flows unless explicitly instructed.
+- Do not introduce placeholder code.
+- Do not introduce mock data unless requested.
+- Do not create duplicate components.
+- Do not silently rename files, routes, variables, or APIs.
+- Never break existing Supabase integrations.
+- Never change environment variable names unless requested.
+- Never change database schema unless explicitly requested.
+
+# UI SAFETY RULES
+
+- Maintain premium cinematic RobinOS aesthetic.
+- Preserve dark blue glassmorphism design system.
+- Preserve responsive behavior.
+- Preserve mobile layouts.
+- Preserve Framer Motion animations.
+- Do not replace premium UI with generic Tailwind blocks.
+- Do not modify typography scale globally.
+- Do not alter navbar/footer structure unless requested.
+
+# AUTH RULES
+
+- Preserve Google OAuth flow.
+- Never modify auth callback routes unless requested.
+- Never remove session handling logic.
+- Preserve protected route guards.
+- Preserve RBAC logic.
+- Preserve admin authorization checks.
+
+# BACKEND RULES
+
+- Preserve Supabase architecture.
+- Never delete SQL migrations.
+- Never modify production migrations unless explicitly instructed.
+- Never expose service role keys.
+- Preserve RLS policies.
+- Preserve affiliate tracking logic.
+- Preserve subscription entitlement logic.
+
+# ENGINEERING BEHAVIOR
+
+- Think before editing.
+- Analyze dependencies before modifying files.
+- Prefer surgical fixes over rewrites.
+- Explain what files are being modified before editing.
+- Keep code production-grade and deterministic.
+- Avoid unnecessary abstractions.
+- Avoid overengineering.
+- Avoid speculative changes.
+
+# FILE MODIFICATION RULES
+
+- Only touch files directly related to the task.
+- Do not auto-format unrelated files.
+- Do not reorder imports unnecessarily.
+- Do not regenerate entire files for small edits.
+- Preserve comments and developer notes.
+
+# ROUTING RULES
+
+- Preserve all existing routes.
+- Never remove callback handlers.
+- Never alter dashboard routing unintentionally.
+- Ensure auth redirects remain stable.
+
+# DEPLOYMENT SAFETY
+
+- Ensure Vercel compatibility.
+- Ensure production build stability.
+- Ensure TypeScript compatibility.
+- Ensure no hydration-breaking logic.
+
+# BEFORE COMPLETING TASKS
+
+Always verify:
+1. Existing functionality still works
+2. Auth flow still works
+3. Routing still works
+4. UI consistency remains intact
+5. No unrelated files changed
+6. No production regressions introduced

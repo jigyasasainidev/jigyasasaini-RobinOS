@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { initializeUserAccount } from "@/lib/authInitialization";
 
 const AuthCallbackPage = () => {
@@ -34,12 +35,25 @@ const AuthCallbackPage = () => {
       }
 
       if (code) {
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-        if (exchangeError) {
-          console.error("[AuthCallback] Session exchange failed", exchangeError);
-          toast.error(exchangeError.message || "Unable to complete sign-in.");
+        // Use Lovable's library to complete the PKCE exchange since it
+        // holds the code_verifier stored during OAuth initiation.
+        const result = await lovable.auth.signInWithOAuth("google");
+
+        if (result.error) {
+          console.error("[AuthCallback] PKCE exchange failed", result.error);
+          toast.error(result.error.message || "Unable to complete sign-in.");
           navigate("/login", { replace: true });
           return;
+        }
+
+        if (result.tokens) {
+          const { error: sessionError } = await supabase.auth.setSession(result.tokens);
+          if (sessionError) {
+            console.error("[AuthCallback] Session set failed", sessionError);
+            toast.error("Unable to establish session.");
+            navigate("/login", { replace: true });
+            return;
+          }
         }
       }
 
