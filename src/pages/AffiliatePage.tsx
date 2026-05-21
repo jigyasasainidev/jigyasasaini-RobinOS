@@ -255,7 +255,7 @@ const AffiliatePage = () => {
         <div className="max-w-3xl mx-auto text-center">
           <p className="text-muted-foreground/40 text-xs">© {new Date().getFullYear()} RobinOS. All rights reserved.</p>
           <p className="text-muted-foreground/30 text-[10px] font-mono mt-2">
-            Global • Remote-first · <a href="mailto:hello@tryrobin.xyz" className="hover:text-primary transition-colors">hello@tryrobin.xyz</a>
+            Global • Remote-first · <a href="mailto:support@tryrobin.xyz" className="hover:text-primary transition-colors">support@tryrobin.xyz</a>
           </p>
         </div>
       </footer>
