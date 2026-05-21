@@ -482,7 +482,7 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
             </div>
             <div className="px-4 py-4 rounded-xl bg-primary/5 border border-primary/20 shadow-[inset_0_0_30px_hsl(217_91%_60%/0.04)]">
               <p className="text-[10px] font-mono text-primary mb-2">🎬 READY TO RECORD:</p>
-              <p className="text-foreground text-sm leading-relaxed font-medium">"Nobody is telling you this about Instagram growth..."</p>
+              <p className="text-foreground text-sm leading-relaxed font-medium">"Nobody is telling you this about Instagram workflow quality..."</p>
               <p className="text-foreground/80 text-sm leading-relaxed mt-1">"Delete your hashtag strategy. Here's what actually works in 2026."</p>
               <p className="text-foreground/70 text-sm leading-relaxed mt-1">"Use this structure to build a consistent, platform-ready content workflow."</p>
             </div>
@@ -534,10 +534,10 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
               <div className="flex-1 p-4 sm:p-6 md:p-8">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-6">
                   {[
-                    { label: "Radar Signals", value: "147" },
-                    { label: "Scripts Created", value: "89" },
-                    { label: "Active Pipelines", value: "12" },
-                    { label: "Success Rate", value: "94%" },
+                    { label: "Signal State", value: "Live" },
+                    { label: "Script Engine", value: "Active" },
+                    { label: "Workflow Sync", value: "Online" },
+                    { label: "System Health", value: "Stable" },
                   ].map((stat) => (
                     <div key={stat.label} className="rounded-lg bg-secondary/50 border border-border/50 p-3">
                       <p className="text-[10px] text-muted-foreground/60 font-mono">{stat.label}</p>
@@ -610,7 +610,7 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
           </div>
           <h3 className="text-chrome text-2xl font-semibold tracking-tight">Caption Engine</h3>
           <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
-            Generate platform-optimized captions and descriptions designed for discoverability, engagement, and growth.
+            Generate platform-optimized captions and descriptions designed for discoverability and content clarity.
           </p>
           <div className="mt-5 grid sm:grid-cols-2 gap-2.5">
             {captionEngineBullets.map((bullet) => (
@@ -631,8 +631,8 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
         >
           {[
             { icon: Shield, text: "AES-256 Encryption" },
-            { icon: Zap, text: "Sub-30s Generation" },
-            { icon: Clock, text: "24/7 Monitoring" },
+            { icon: Zap, text: "Fast Generation" },
+            { icon: Clock, text: "Always-On Monitoring" },
           ].map((badge) => (
             <div key={badge.text} className="flex items-center gap-2 text-muted-foreground/50">
               <badge.icon className="w-3.5 h-3.5" />
