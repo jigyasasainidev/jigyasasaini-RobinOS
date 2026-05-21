@@ -230,7 +230,7 @@ const pageMeta: Record<AdminPath, { title: string; subtitle: string }> = {
   },
   "/adminsh/analytics": {
     title: "Platform Analytics",
-    subtitle: "Live revenue, growth, AI usage, and feature metrics.",
+    subtitle: "Live revenue, AI usage, and feature metrics.",
   },
   "/adminsh/settings": {
     title: "Platform Settings",
@@ -246,7 +246,7 @@ const pageMeta: Record<AdminPath, { title: string; subtitle: string }> = {
   },
   "/adminsh/affiliates": {
     title: "Affiliate Operations",
-    subtitle: "Monitor referral performance, commissions, and growth quality.",
+    subtitle: "Monitor referral performance, commissions, and quality signals.",
   },
   "/adminsh/withdrawals": {
     title: "Withdrawal Operations",
@@ -308,7 +308,7 @@ const TinySparkline = ({ data }: { data: SparkPoint[] }) => {
   );
 };
 
-const MetricCard = ({ label, value, growth, icon: Icon, spark }: { label: string; value: string; growth: number; icon: ComponentType<{ className?: string }>; spark: SparkPoint[] }) => (
+const MetricCard = ({ label, value, icon: Icon, spark }: { label: string; value: string; icon: ComponentType<{ className?: string }>; spark: SparkPoint[] }) => (
   <div className="rounded-lg border border-border/60 bg-card/45 p-4 backdrop-blur-md">
     <div className="flex items-start justify-between gap-2">
       <div>
@@ -317,10 +317,9 @@ const MetricCard = ({ label, value, growth, icon: Icon, spark }: { label: string
       </div>
       <Icon className="h-4 w-4 text-primary" />
     </div>
-    <div className="mt-1 flex items-center gap-1 text-[11px]">
-      {growth >= 0 ? <ArrowUpRight className="h-3.5 w-3.5 text-primary" /> : <ArrowDownRight className="h-3.5 w-3.5 text-destructive" />}
-      <span className={growth >= 0 ? "text-primary" : "text-destructive"}>{Math.abs(growth).toFixed(1)}%</span>
-      <span className="text-muted-foreground">vs previous window</span>
+    <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+      <Activity className="h-3.5 w-3.5 text-primary" />
+      <span>Live backend snapshot</span>
     </div>
     <TinySparkline data={spark} />
   </div>
