@@ -513,6 +513,10 @@ const AdminDashboard = () => {
       .on("postgres_changes", { event: "*", schema: "public", table: "withdrawal_requests" }, () => queryClient.invalidateQueries({ queryKey: ["admin-withdrawals-v2"] }))
       .on("postgres_changes", { event: "*", schema: "public", table: "affiliate_commissions" }, () => queryClient.invalidateQueries({ queryKey: ["admin-affiliate-commissions-v2"] }))
       .on("postgres_changes", { event: "*", schema: "public", table: "ai_generations" }, () => queryClient.invalidateQueries({ queryKey: ["admin-ai-generations-v2"] }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "platform_settings" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["admin-platform-settings-v2"] });
+        queryClient.invalidateQueries({ queryKey: ["platform-settings-live-v1"] });
+      })
       .subscribe();
 
     return () => {
@@ -877,6 +881,9 @@ const AdminDashboard = () => {
     onSuccess: () => {
       toast.success("Settings saved");
       queryClient.invalidateQueries({ queryKey: ["admin-platform-settings-v2"] });
+      queryClient.invalidateQueries({ queryKey: ["platform-settings-live-v1"] });
+      queryClient.invalidateQueries({ queryKey: ["platform-maintenance-v1"] });
+      queryClient.invalidateQueries({ queryKey: ["affiliate-settings", user?.id] });
     },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Could not save settings"),
   });
