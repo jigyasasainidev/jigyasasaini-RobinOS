@@ -137,6 +137,54 @@ export type Database = {
         }
         Relationships: []
       }
+      caption_generations: {
+        Row: {
+          created_at: string
+          generated_caption: string
+          generated_hashtags: string[]
+          generated_keywords: string[]
+          generation_status: string
+          generation_style: string
+          id: string
+          is_saved: boolean
+          platform: string
+          prompt: string
+          request_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          generated_caption: string
+          generated_hashtags?: string[]
+          generated_keywords?: string[]
+          generation_status?: string
+          generation_style: string
+          id?: string
+          is_saved?: boolean
+          platform: string
+          prompt: string
+          request_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          generated_caption?: string
+          generated_hashtags?: string[]
+          generated_keywords?: string[]
+          generation_status?: string
+          generation_style?: string
+          id?: string
+          is_saved?: boolean
+          platform?: string
+          prompt?: string
+          request_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       feature_usage: {
         Row: {
           created_at: string
@@ -157,6 +205,33 @@ export type Database = {
           feature_name?: string
           id?: string
           usage_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      feature_usage_events: {
+        Row: {
+          created_at: string
+          feature_name: string
+          id: string
+          idempotency_key: string | null
+          increment_by: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feature_name: string
+          id?: string
+          idempotency_key?: string | null
+          increment_by?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feature_name?: string
+          id?: string
+          idempotency_key?: string | null
+          increment_by?: number
           user_id?: string
         }
         Relationships: []
@@ -332,6 +407,72 @@ export type Database = {
         }
         Relationships: []
       }
+      script_generations: {
+        Row: {
+          content_length: string
+          created_at: string
+          generated_output: string
+          generation_status: string
+          id: string
+          prompt: string
+          request_id: string
+          tone: string
+          user_id: string
+        }
+        Insert: {
+          content_length?: string
+          created_at?: string
+          generated_output?: string
+          generation_status?: string
+          id?: string
+          prompt: string
+          request_id: string
+          tone?: string
+          user_id: string
+        }
+        Update: {
+          content_length?: string
+          created_at?: string
+          generated_output?: string
+          generation_status?: string
+          id?: string
+          prompt?: string
+          request_id?: string
+          tone?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      script_history: {
+        Row: {
+          created_at: string
+          id: string
+          length: string
+          output: string
+          tone: string
+          topic: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          length?: string
+          output: string
+          tone?: string
+          topic: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          length?: string
+          output?: string
+          tone?: string
+          topic?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -485,6 +626,26 @@ export type Database = {
     Functions: {
       admin_process_withdrawal_request: {
         Args: { p_admin_note?: string; p_request_id: string; p_status: string }
+        Returns: Json
+      }
+      consume_feature_quota: {
+        Args: {
+          p_feature_name: string
+          p_idempotency_key?: string
+          p_increment?: number
+        }
+        Returns: Json
+      }
+      create_caption_generation_if_allowed: {
+        Args: {
+          p_generated_caption: string
+          p_generated_hashtags?: string[]
+          p_generated_keywords?: string[]
+          p_generation_style: string
+          p_platform: string
+          p_prompt: string
+          p_request_id: string
+        }
         Returns: Json
       }
       get_admin_access: { Args: never; Returns: Json }
