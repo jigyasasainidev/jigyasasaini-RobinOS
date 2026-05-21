@@ -104,37 +104,27 @@ export function useReferralData() {
       .channel(`affiliate-dashboard-${user.id}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "affiliate_wallets", filter: `user_id=eq.${user.id}` },
-        refreshAffiliateData,
-      )
-      .on(
-        "postgres_changes",
         { event: "*", schema: "public", table: "affiliate_profiles", filter: `user_id=eq.${user.id}` },
         refreshAffiliateData,
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "affiliate_clicks", filter: `affiliate_user_id=eq.${user.id}` },
-        refreshAffiliateData,
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "affiliate_conversions", filter: `affiliate_user_id=eq.${user.id}` },
-        refreshAffiliateData,
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "affiliate_earnings", filter: `affiliate_user_id=eq.${user.id}` },
-        refreshAffiliateData,
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "affiliate_referrals", filter: `affiliate_user_id=eq.${user.id}` },
+        { event: "*", schema: "public", table: "affiliate_commissions", filter: `affiliate_user_id=eq.${user.id}` },
         refreshAffiliateData,
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "withdrawal_requests", filter: `user_id=eq.${user.id}` },
+        refreshAffiliateData,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "user_subscriptions", filter: `user_id=eq.${user.id}` },
+        refreshAffiliateData,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles", filter: `user_id=eq.${user.id}` },
         refreshAffiliateData,
       )
       .subscribe();
