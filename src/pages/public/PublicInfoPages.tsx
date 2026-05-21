@@ -362,6 +362,15 @@ export function TermsOfServicePage() {
           ],
         },
         {
+          id: "prohibited-ai-content",
+          title: "Prohibited AI Content & Safety Restrictions",
+          body: [
+            "RobinOS strictly prohibits the generation, upload, sharing, promotion, or distribution of any content that falls under the following categories: NSFW (not safe for work) material, pornographic or sexually explicit content, exploitative or abusive content, illegal content, harmful or deceptive AI-generated media, non-consensual explicit imagery, content involving minors, and violent extremist or illegal activity promotion.",
+            "Users found violating these content restrictions may be subject to immediate account suspension or permanent ban from the platform at RobinOS's sole discretion.",
+            "RobinOS reserves the right to remove any content deemed unsafe, inappropriate, or in violation of these restrictions without prior notice, and to restrict platform access for users who engage in prohibited activities.",
+          ],
+        },
+        {
           id: "ai-output",
           title: "AI-generated output limitations",
           body: [
@@ -529,6 +538,17 @@ export function AITransparencyPage() {
           body: [
             "RobinOS enforces policy boundaries against abusive, illegal, or harmful use cases. We reserve the right to block requests and suspend accounts for policy violations.",
             "Prohibited usage includes fraud operations, malicious impersonation, harassment campaigns, and content intended to evade legal obligations.",
+          ],
+        },
+        {
+          id: "content-safety",
+          title: "Content Safety & Moderation",
+          body: [
+            "RobinOS implements safeguards to reduce harmful AI outputs and promote responsible content creation across the platform.",
+            "NSFW (not safe for work) content and sexually explicit generation is strictly prohibited. Users may not generate, upload, or distribute any material that falls under prohibited content categories.",
+            "The platform may use automated moderation systems, content filtering, and abuse detection mechanisms to identify and restrict policy-violating activities.",
+            "Unsafe prompts, abusive behavior, or repeated policy violations may result in restricted platform access, account suspension, or permanent removal from the service.",
+            "RobinOS is committed to responsible AI usage and creator safety. We continuously evaluate our moderation practices to maintain a safe and compliant environment for all users.",
           ],
         },
       ]}
