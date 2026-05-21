@@ -187,6 +187,14 @@ serve(async (req) => {
 
     const normalizedTier = normalizeTier(resolvedProfile?.subscription_tier || resolvedProfile?.current_plan || "free");
 
+    const { data: platformSettings } = await supabase
+      .from("platform_settings")
+      .select("free_scans_limit")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const dynamicFreeScanLimit = Math.max(0, Number(platformSettings?.free_scans_limit ?? 3));
+
     // Monthly reset check
     const now = new Date();
     const isHashtagRequest = type === "hashtags";
@@ -203,7 +211,9 @@ serve(async (req) => {
     }
 
     const limits = TIER_LIMITS[normalizedTier] || TIER_LIMITS.free;
-    const currentLimit = isHashtagRequest ? limits.hashtagLimit : limits.audioLimit;
+    const currentLimit = normalizedTier === "free"
+      ? dynamicFreeScanLimit
+      : (isHashtagRequest ? limits.hashtagLimit : limits.audioLimit);
 
     // Check platform access
     if (!limits.platforms.includes(platformName)) {
