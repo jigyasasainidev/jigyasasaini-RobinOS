@@ -64,7 +64,7 @@ const CaptionEnginePage = () => {
     message?: string;
   } | null>(null);
 
-  const canGenerate = prompt.trim().length >= 3 && !generating;
+  const canGenerate = prompt.trim().length >= 3 && !generating && (usage ? usage.allowed : true);
   const limitHint = useMemo(() => getCaptionLimitText(tier), [tier]);
 
   const loadHistory = async () => {
@@ -99,6 +99,12 @@ const CaptionEnginePage = () => {
   }, [user?.id]);
 
   const handleGenerate = async () => {
+    if (usage && !usage.allowed) {
+      setShowUpgrade(true);
+      toast.error("Daily limit reached — upgrade to continue creating.");
+      return;
+    }
+
     if (!canGenerate) {
       toast.error("Enter at least 3 characters to generate.");
       return;
