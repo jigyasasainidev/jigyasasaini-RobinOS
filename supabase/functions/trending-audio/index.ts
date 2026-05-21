@@ -7,13 +7,141 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+type Platform = "TikTok" | "Instagram" | "Facebook" | "YouTube";
+
+const PLATFORM_GEO: Record<Platform, string> = {
+  TikTok: "us",
+  Instagram: "us",
+  Facebook: "us",
+  YouTube: "us",
+};
+
+const TIER_LIMITS: Record<string, { audioLimit: number; hashtagLimit: number; platforms: Platform[] }> = {
+  free: { audioLimit: 2, hashtagLimit: 3, platforms: ["Instagram"] },
+  creator: { audioLimit: 50, hashtagLimit: 70, platforms: ["Instagram"] },
+  pro_creator: { audioLimit: 200, hashtagLimit: 200, platforms: ["TikTok", "Instagram", "Facebook", "YouTube"] },
+  agency: { audioLimit: 99999, hashtagLimit: 500, platforms: ["TikTok", "Instagram", "Facebook", "YouTube"] },
+  scale_agency: { audioLimit: 99999, hashtagLimit: 500, platforms: ["TikTok", "Instagram", "Facebook", "YouTube"] },
+};
+
+const normalizeTier = (raw: string | null | undefined): string => {
+  const t = String(raw || "free").toLowerCase();
+  if (t === "starter") return "creator";
+  if (t === "pro") return "pro_creator";
+  return t;
+};
+
+const slugifyHashtag = (value: string): string => {
+  const cleaned = value
+    .replace(/&/g, " and ")
+    .replace(/[^a-zA-Z0-9\s]/g, " ")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 3)
+    .join("");
+  return cleaned ? `#${cleaned}` : "";
+};
+
+const safeFetchJson = async (url: string): Promise<any | null> => {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(url, { signal: controller.signal, headers: { "user-agent": "Mozilla/5.0" } });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+};
+
+const safeFetchText = async (url: string): Promise<string | null> => {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(url, { signal: controller.signal, headers: { "user-agent": "Mozilla/5.0" } });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    return await res.text();
+  } catch {
+    return null;
+  }
+};
+
+const fetchRealAudios = async (platform: Platform) => {
+  const geo = PLATFORM_GEO[platform] || "us";
+  const [appleData, deezerData] = await Promise.all([
+    safeFetchJson(`https://rss.applemarketingtools.com/api/v2/${geo}/music/most-played/100/songs.json`),
+    safeFetchJson("https://api.deezer.com/chart/0/tracks?limit=100"),
+  ]);
+
+  const seen = new Set<string>();
+  const rows: Array<{ title: string; artist: string }> = [];
+
+  const appleRows = Array.isArray(appleData?.feed?.results)
+    ? appleData.feed.results.map((x: any) => ({ title: String(x?.name || "").trim(), artist: String(x?.artistName || "").trim() }))
+    : [];
+  const deezerRows = Array.isArray(deezerData?.data)
+    ? deezerData.data.map((x: any) => ({ title: String(x?.title || "").trim(), artist: String(x?.artist?.name || "").trim() }))
+    : [];
+
+  for (const item of [...appleRows, ...deezerRows]) {
+    if (!item.title || !item.artist) continue;
+    const key = `${item.title.toLowerCase()}::${item.artist.toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    rows.push(item);
+    if (rows.length >= 12) break;
+  }
+
+  return rows.map((item, idx) => ({
+    title: item.title,
+    artist: item.artist,
+    category: idx < 4 ? "Trending" : idx < 8 ? "Rising" : "Viral",
+    uses: `Chart #${idx + 1}`,
+    trend: idx < 5 ? "up" : idx < 9 ? "stable" : "new",
+    tip: `Use this audio on ${platform} with a strong first 2 seconds and clear on-screen context for better retention.`,
+  }));
+};
+
+const fetchRealHashtags = async (platform: Platform) => {
+  const rss = await safeFetchText("https://trends.google.com/trending/rss?geo=US");
+  if (!rss) return [];
+
+  const titles: string[] = [];
+  const itemRegex = /<item>[\s\S]*?<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>[\s\S]*?<\/item>/gi;
+  let m;
+  while ((m = itemRegex.exec(rss)) !== null) {
+    const title = String(m[1] || "").trim();
+    if (title) titles.push(title);
+    if (titles.length >= 30) break;
+  }
+
+  const seen = new Set<string>();
+  const tags: string[] = [];
+  for (const t of titles) {
+    const tag = slugifyHashtag(t);
+    if (!tag || seen.has(tag.toLowerCase())) continue;
+    seen.add(tag.toLowerCase());
+    tags.push(tag);
+    if (tags.length >= 15) break;
+  }
+
+  return tags.map((tag, idx) => ({
+    tag,
+    category: idx < 5 ? "Trending" : idx < 10 ? "Rising" : "Niche",
+    posts: `Rank #${idx + 1}`,
+    trend: idx < 6 ? "up" : idx < 11 ? "stable" : "new",
+    tip: `Pair ${tag} with a platform-specific hook and recent context on ${platform} for stronger discoverability.`,
+  }));
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const { platform, type } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("AI gateway not configured");
+    const platformName = (platform || "Instagram") as Platform;
 
     const authHeader = req.headers.get("authorization");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -33,15 +161,31 @@ serve(async (req) => {
       });
     }
 
-    // Get profile for tier & usage
+    // Get profile for tier & usage (auto-create if missing)
     const { data: profile } = await supabase
       .from("profiles")
-      .select("subscription_tier, trending_scans_used, trending_scans_reset_at, hashtag_scans_used, hashtag_scans_reset_at")
+      .select("subscription_tier, current_plan, trending_scans_used, trending_scans_reset_at, hashtag_scans_used, hashtag_scans_reset_at")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
-    const tier = (profile?.subscription_tier || "free").toLowerCase();
-    const normalizedTier = tier === "starter" ? "creator" : tier === "pro" ? "pro_creator" : tier;
+    let resolvedProfile = profile;
+    if (!resolvedProfile) {
+      const { data: userData } = await supabase.auth.getUser(authHeader!.replace("Bearer ", ""));
+      const fallbackProfile = {
+        user_id: userId,
+        email: userData.user?.email ?? null,
+        display_name: (userData.user?.user_metadata?.display_name as string | undefined) ?? userData.user?.email ?? null,
+        full_name: (userData.user?.user_metadata?.display_name as string | undefined) ?? userData.user?.email ?? null,
+      };
+      const { data: createdProfile } = await supabase
+        .from("profiles")
+        .upsert(fallbackProfile, { onConflict: "user_id" })
+        .select("subscription_tier, current_plan, trending_scans_used, trending_scans_reset_at, hashtag_scans_used, hashtag_scans_reset_at")
+        .single();
+      resolvedProfile = createdProfile;
+    }
+
+    const normalizedTier = normalizeTier(resolvedProfile?.subscription_tier || resolvedProfile?.current_plan || "free");
 
     // Monthly reset check
     const now = new Date();
@@ -49,25 +193,16 @@ serve(async (req) => {
 
     const resetField = isHashtagRequest ? "hashtag_scans_reset_at" : "trending_scans_reset_at";
     const usedField = isHashtagRequest ? "hashtag_scans_used" : "trending_scans_used";
-    const resetAt = profile?.[resetField] ? new Date(profile[resetField]) : new Date(0);
+    const resetAt = resolvedProfile?.[resetField] ? new Date(resolvedProfile[resetField]) : new Date(0);
     const monthChanged = now.getMonth() !== resetAt.getMonth() || now.getFullYear() !== resetAt.getFullYear();
-    let scansUsed = monthChanged ? 0 : (profile?.[usedField] || 0);
+    let scansUsed = monthChanged ? 0 : (resolvedProfile?.[usedField] || 0);
 
     if (monthChanged) {
       await supabase.from("profiles").update({ [usedField]: 0, [resetField]: now.toISOString() }).eq("user_id", userId);
+      scansUsed = 0;
     }
 
-    // Tier limits
-    const tierLimits: Record<string, { audioLimit: number; hashtagLimit: number; platforms: string[] }> = {
-      free: { audioLimit: 2, hashtagLimit: 3, platforms: ["Instagram"] },
-      creator: { audioLimit: 50, hashtagLimit: 70, platforms: ["Instagram"] },
-      pro_creator: { audioLimit: 200, hashtagLimit: 200, platforms: ["TikTok", "Instagram", "Facebook", "YouTube"] },
-      agency: { audioLimit: 99999, hashtagLimit: 500, platforms: ["TikTok", "Instagram", "Facebook", "YouTube"] },
-      scale_agency: { audioLimit: 99999, hashtagLimit: 500, platforms: ["TikTok", "Instagram", "Facebook", "YouTube"] },
-    };
-
-    const limits = tierLimits[normalizedTier] || tierLimits.free;
-    const platformName = platform || "Instagram";
+    const limits = TIER_LIMITS[normalizedTier] || TIER_LIMITS.free;
     const currentLimit = isHashtagRequest ? limits.hashtagLimit : limits.audioLimit;
 
     // Check platform access
@@ -100,93 +235,16 @@ serve(async (req) => {
       [usedField]: scansUsed + 1 
     }).eq("user_id", userId);
 
-    // Build prompt based on type
-    let systemPrompt: string;
-    let userPrompt: string;
+    const results = isHashtagRequest
+      ? await fetchRealHashtags(platformName)
+      : await fetchRealAudios(platformName);
 
-    if (isHashtagRequest) {
-      systemPrompt = `You are a social media hashtag trends expert specializing in global social audio trends. Return ONLY a valid JSON array of 15 currently trending hashtags on ${platformName} as of today.
-
-IMPORTANT RULES:
-- Prioritize globally relevant creator hashtags across regions and niches
-- Include platform-specific trending hashtags that are genuinely viral RIGHT NOW
-- Include hashtags from entertainment, lifestyle, tech, motivation, comedy, and creator and business niches
-- These must be REAL trending hashtags, not generic ones
-
-Each item must have these fields:
-- "tag": the hashtag including # symbol (e.g. "#CreatorGrowth")
-- "category": one of "Trending", "Viral", "Rising", "Evergreen", "Niche"
-- "posts": approximate number of posts using this hashtag (string like "2.3M" or "450K")
-- "trend": "up" or "stable" or "new"
-- "tip": a 1-sentence tip in English on how to use this hashtag effectively on ${platformName}
-
-Return ONLY the JSON array, no markdown, no explanation.`;
-      userPrompt = `List the top 15 trending hashtags on ${platformName} right now in March 2026. Focus on what global creators are using right now across entertainment, business, lifestyle, education, and viral trends.`;
-    } else {
-      systemPrompt = `You are a social media music trends expert specializing in global social audio trends. Return ONLY a valid JSON array of 12 currently trending audio/songs on ${platformName} as of today. 
-
-IMPORTANT RULES:
-- Prioritize globally trending tracks and creator-ready audio formats used across regions
-- Include a mix of fast-rising and established viral tracks
-- Include songs from the last 1-4 weeks that are genuinely trending RIGHT NOW
-- Include platform-native trends, remixes, and creator-friendly sounds
-- Include songs used in trending reels/edits
-
-Each item must have these fields:
-- "title": exact song/audio name as it appears on ${platformName}
-- "artist": original artist name
-- "category": one of "Trending", "Viral", "Rising", "Classic Remix", "Global Pop", "Creator Mix"
-- "uses": approximate number of videos using this audio (string like "2.3M" or "450K")  
-- "trend": "up" or "stable" or "new"
-- "tip": a 1-sentence tip in English on how to use this audio for maximum engagement on ${platformName}
-
-Make the data as realistic and current as possible. Keep output globally relevant and current. Return ONLY the JSON array, no markdown, no explanation.`;
-      userPrompt = `List the top 12 trending audios on ${platformName} right now in March 2026. Focus on what global creators are using right now, including fast-rising and high-retention audio trends.`;
-    }
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      // Rollback usage
+    if (!Array.isArray(results) || results.length === 0) {
       await supabase.from("profiles").update({ [usedField]: scansUsed }).eq("user_id", userId);
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limited, try again shortly." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const t = await response.text();
-      console.error("AI error:", response.status, t);
-      throw new Error("AI gateway error");
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "[]";
-    
-    let results;
-    try {
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
-      results = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
-    } catch {
-      console.error("Failed to parse AI response:", content);
-      results = [];
+      return new Response(JSON.stringify({ error: "Live trend data is temporarily unavailable. Please retry in a minute." }), {
+        status: 503,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const responseKey = isHashtagRequest ? "hashtags" : "audios";
