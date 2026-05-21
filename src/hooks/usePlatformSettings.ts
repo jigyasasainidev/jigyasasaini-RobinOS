@@ -1,0 +1,48 @@
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { db } from "@/lib/cloudDb";
+import { supabase } from "@/integrations/supabase/client";
+
+export type PlatformSettingsLive = {
+  creator_price: number;
+  pro_price: number;
+  agency_price: number;
+  free_scripts_limit: number;
+  free_scans_limit: number;
+  affiliate_commission_percent: number;
+  minimum_withdrawal: number;
+  payout_delay_days: number;
+  maintenance_mode: boolean;
+  announcement_banner: string | null;
+  updated_at: string;
+};
+
+export function usePlatformSettings() {
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
+    queryKey: ["platform-settings-live-v1"],
+    queryFn: async (): Promise<PlatformSettingsLive | null> => {
+      const { data, error } = await db.rpc("get_public_platform_settings");
+      if (error) throw error;
+      if (Array.isArray(data)) return (data[0] ?? null) as PlatformSettingsLive | null;
+      return (data ?? null) as PlatformSettingsLive | null;
+    },
+    staleTime: 15 * 1000,
+  });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("platform-settings-live-global")
+      .on("postgres_changes", { event: "*", schema: "public", table: "platform_settings" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["platform-settings-live-v1"] });
+      })
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  return query;
+}
