@@ -65,14 +65,14 @@ const engines = [
     title: "Scan",
     desc: "Real-time trend scanning across platforms. Know what's viral before it peaks.",
     color: "from-primary/20 to-primary/5",
-    stats: "24/7 monitoring",
+    stats: "Always-on monitoring",
   },
   {
     icon: Video,
     title: "Create",
     desc: "Script to video in seconds. AI-powered content generation at scale.",
     color: "from-primary/15 to-primary/5",
-    stats: "< 30s generation",
+    stats: "Fast generation",
   },
   {
     icon: BarChart3,
@@ -168,7 +168,7 @@ const credibilityStrip = [
 const captionEngineBullets = [
   "SEO-optimized YouTube descriptions",
   "High-retention TikTok captions",
-  "Instagram engagement formatting",
+  "Instagram creator formatting",
   "Facebook storytelling captions",
   "Smart hashtags & keyword support",
   "Platform-aware writing styles",
