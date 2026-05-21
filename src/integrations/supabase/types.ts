@@ -78,6 +78,10 @@ export type Database = {
         Row: {
           created_at: string
           paid_balance: number
+          payout_details: string | null
+          payout_method: string | null
+          payout_updated_at: string | null
+          payout_verified: boolean
           pending_balance: number
           referral_code: string
           total_clicks: number
@@ -89,6 +93,10 @@ export type Database = {
         Insert: {
           created_at?: string
           paid_balance?: number
+          payout_details?: string | null
+          payout_method?: string | null
+          payout_updated_at?: string | null
+          payout_verified?: boolean
           pending_balance?: number
           referral_code: string
           total_clicks?: number
@@ -100,6 +108,10 @@ export type Database = {
         Update: {
           created_at?: string
           paid_balance?: number
+          payout_details?: string | null
+          payout_method?: string | null
+          payout_updated_at?: string | null
+          payout_verified?: boolean
           pending_balance?: number
           referral_code?: string
           total_clicks?: number
@@ -311,6 +323,7 @@ export type Database = {
           paid_balance: number
           pending_balance: number
           referral_code: string | null
+          referred_by_code: string | null
           scripts_reset_at: string
           scripts_used_this_month: number
           subscription_expires_at: string | null
@@ -341,6 +354,7 @@ export type Database = {
           paid_balance?: number
           pending_balance?: number
           referral_code?: string | null
+          referred_by_code?: string | null
           scripts_reset_at?: string
           scripts_used_this_month?: number
           subscription_expires_at?: string | null
@@ -371,6 +385,7 @@ export type Database = {
           paid_balance?: number
           pending_balance?: number
           referral_code?: string | null
+          referred_by_code?: string | null
           scripts_reset_at?: string
           scripts_used_this_month?: number
           subscription_expires_at?: string | null
@@ -648,12 +663,41 @@ export type Database = {
         }
         Returns: Json
       }
+      ensure_affiliate_profile: { Args: never; Returns: Json }
+      generate_referral_code: { Args: never; Returns: string }
       get_admin_access: { Args: never; Returns: Json }
       get_admin_role: { Args: { user_uuid: string }; Returns: string }
+      get_affiliate_dashboard: {
+        Args: never
+        Returns: {
+          available_balance: number
+          conversion_count: number
+          converted_referrals: number
+          locked_balance: number
+          paid_out: number
+          payout_details: string
+          payout_method: string
+          payout_updated_at: string
+          payout_verified: boolean
+          pending_earnings: number
+          profile_id: string
+          referral_clicks: number
+          referral_code: string
+          referral_link: string
+          total_earned: number
+          total_referrals: number
+          user_id: string
+        }[]
+      }
       get_usage_status: { Args: { p_feature_name?: string }; Returns: Json }
       initialize_user_account:
         | { Args: never; Returns: Json }
         | { Args: { p_referred_by?: string }; Returns: Json }
+      save_payout_method: {
+        Args: { p_details: string; p_method: string }
+        Returns: Json
+      }
+      submit_withdrawal_request: { Args: { p_amount: number }; Returns: Json }
     }
     Enums: {
       admin_role: "super_admin" | "admin" | "support"
