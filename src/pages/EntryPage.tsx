@@ -375,7 +375,7 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.9, duration: 0.6 }}
-              whileHover={{ scale: 1.02, y: -1, boxShadow: "0 8px 32px hsl(217 91% 60% / 0.35), 0 0 0 1px hsl(217 91% 60% / 0.2)" }}
+              whileHover={{ scale: 1.02, y: -1, boxShadow: "0 8px 32px hsl(217 91% 60% / 0.35), 0 0 0 1px hsl(217 91% 60% / 0.2), inset 0 1px 0 hsl(0 0% 100% / 0.1)" }}
               whileTap={{ scale: 0.98, y: 0 }}
               onClick={() => navigate(authHref)}
               className="btn-primary shimmer-btn w-full sm:w-auto !px-8 !py-3"
@@ -386,7 +386,7 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.1, duration: 0.6 }}
-              whileHover={{ scale: 1.02, y: -1 }}
+              whileHover={{ scale: 1.02, y: -1, boxShadow: "0 6px 24px hsl(0 0% 0% / 0.28), 0 0 0 1px hsl(217 91% 60% / 0.07)" }}
               whileTap={{ scale: 0.98, y: 0 }}
               onClick={() => document.getElementById("mini-demo")?.scrollIntoView({ behavior: "smooth" })}
               className="btn-secondary w-full sm:w-auto !px-8 !py-3"
@@ -525,11 +525,21 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
 
             {/* Connector */}
             <div className="flex justify-center my-3">
-              <div className="w-px h-8 bg-gradient-to-b from-primary/60 to-transparent" />
+              <div
+                className="w-px h-8 bg-gradient-to-b from-primary/60 to-transparent animate-pulse"
+                style={{ animationDuration: "2.5s" }}
+              />
             </div>
 
             {/* Output panel */}
-            <div className="px-4 py-4 rounded-xl bg-primary/5 border border-primary/20 shadow-[inset_0_0_30px_hsl(217_91%_60%/0.04)]">
+            <div
+              className="px-4 py-4 rounded-xl bg-primary/5 border border-primary/20 transition-all duration-700"
+              style={{
+                boxShadow: visibleLines < 3
+                  ? "inset 0 0 30px hsl(217 91% 60% / 0.04), 0 0 20px hsl(217 91% 60% / 0.06)"
+                  : "inset 0 0 30px hsl(217 91% 60% / 0.04)",
+              }}
+            >
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[10px] font-mono text-primary">🎬 SCRIPT OUTPUT:</p>
                 <span className="text-[9px] font-mono text-muted-foreground/40 tracking-widest">
@@ -731,7 +741,10 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
               transition={{ delay: i * 0.07, duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] }}
               whileHover={{ y: -5, boxShadow: "0 20px 52px hsl(0 0% 0% / 0.4), 0 0 0 1px hsl(217 91% 60% / 0.16)" }}
               className="group relative rounded-xl border border-border/60 bg-card/40 p-6 sm:p-7 overflow-hidden"
-              style={{ transition: "border-color 0.3s, background-color 0.3s" }}
+              style={{
+                boxShadow: "0 4px 20px hsl(0 0% 0% / 0.25)",
+                transition: "border-color 0.3s, background-color 0.3s",
+              }}
             >
               {/* Top edge glow on hover */}
               <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -1160,7 +1173,11 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
 
         <Accordion type="single" collapsible className="space-y-1.5">
           {faqItems.map((item, i) => (
-            <AccordionItem key={i} value={`faq-${i}`} className="border-border/35 border rounded-lg px-3.5 sm:px-5 data-[state=open]:border-primary/25 data-[state=open]:bg-primary/[0.02] transition-all duration-300">
+            <AccordionItem
+              key={i}
+              value={`faq-${i}`}
+              className="border-border/35 border rounded-lg px-3.5 sm:px-5 transition-all duration-300 hover:border-primary/20 hover:bg-primary/[0.015] data-[state=open]:border-primary/25 data-[state=open]:bg-primary/[0.02]"
+            >
               <AccordionTrigger className="text-sm text-foreground hover:no-underline py-3 text-left leading-snug pr-3 break-words hover:text-foreground/90">
                 {item.q}
               </AccordionTrigger>

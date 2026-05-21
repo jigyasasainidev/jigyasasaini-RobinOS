@@ -81,8 +81,8 @@ export function PublicFooter() {
             <li>AI infrastructure powered by OpenAI</li>
           </ul>
           <div className="mt-4 space-y-1.5 text-sm">
-            <a href="mailto:support@tryrobin.xyz" className="block text-muted-foreground transition-colors hover:text-foreground">support@tryrobin.xyz</a>
-            <a href="https://tryrobin.xyz" target="_blank" rel="noreferrer" className="block text-muted-foreground transition-colors hover:text-foreground">tryrobin.xyz</a>
+            <a href="mailto:support@tryrobin.xyz" className="block text-muted-foreground transition-all duration-200 hover:text-foreground hover:translate-x-0.5">support@tryrobin.xyz</a>
+            <a href="https://tryrobin.xyz" target="_blank" rel="noreferrer" className="block text-muted-foreground transition-all duration-200 hover:text-foreground hover:translate-x-0.5">tryrobin.xyz</a>
           </div>
         </div>
 
