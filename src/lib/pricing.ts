@@ -2,6 +2,7 @@
 
 type PricingControls = {
   creator_price?: number;
+  pro_price?: number;
   pro_creator_price?: number;
   agency_price?: number;
 };
@@ -78,9 +79,10 @@ const DEFAULT_PRICE_MAP = {
 };
 
 function getPriceMap(controls?: PricingControls | null) {
+  const resolvedProPrice = controls?.pro_creator_price ?? controls?.pro_price;
   return {
     creator: Number(controls?.creator_price ?? DEFAULT_PRICE_MAP.creator),
-    pro_creator: Number(controls?.pro_creator_price ?? DEFAULT_PRICE_MAP.pro_creator),
+    pro_creator: Number(resolvedProPrice ?? DEFAULT_PRICE_MAP.pro_creator),
     agency: Number(controls?.agency_price ?? DEFAULT_PRICE_MAP.agency),
   };
 }
