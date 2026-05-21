@@ -317,6 +317,8 @@ export type Database = {
           free_trial_expired: boolean
           free_trial_started_at: string
           full_name: string | null
+          hashtag_scans_reset_at: string
+          hashtag_scans_used: number
           id: string
           is_suspended: boolean
           openai_api_key: string | null
@@ -329,6 +331,8 @@ export type Database = {
           subscription_expires_at: string | null
           subscription_tier: string
           total_earnings: number
+          trending_scans_reset_at: string
+          trending_scans_used: number
           updated_at: string
           upi_id: string | null
           user_id: string
@@ -348,6 +352,8 @@ export type Database = {
           free_trial_expired?: boolean
           free_trial_started_at?: string
           full_name?: string | null
+          hashtag_scans_reset_at?: string
+          hashtag_scans_used?: number
           id?: string
           is_suspended?: boolean
           openai_api_key?: string | null
@@ -360,6 +366,8 @@ export type Database = {
           subscription_expires_at?: string | null
           subscription_tier?: string
           total_earnings?: number
+          trending_scans_reset_at?: string
+          trending_scans_used?: number
           updated_at?: string
           upi_id?: string | null
           user_id: string
@@ -379,6 +387,8 @@ export type Database = {
           free_trial_expired?: boolean
           free_trial_started_at?: string
           full_name?: string | null
+          hashtag_scans_reset_at?: string
+          hashtag_scans_used?: number
           id?: string
           is_suspended?: boolean
           openai_api_key?: string | null
@@ -391,6 +401,8 @@ export type Database = {
           subscription_expires_at?: string | null
           subscription_tier?: string
           total_earnings?: number
+          trending_scans_reset_at?: string
+          trending_scans_used?: number
           updated_at?: string
           upi_id?: string | null
           user_id?: string
