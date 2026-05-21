@@ -821,10 +821,11 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
         <motion.div
           whileHover={{ y: -4, boxShadow: "0 20px 52px hsl(0 0% 0% / 0.35), 0 0 0 1px hsl(217 91% 60% / 0.15)" }}
           transition={{ type: "spring", stiffness: 300, damping: 22 }}
-          className="group rounded-2xl border border-primary/25 bg-card/45 p-6 sm:p-8 md:p-10 backdrop-blur-md shadow-[0_0_40px_hsl(217_91%_60%/0.12)] relative overflow-hidden"
+          className="group rounded-2xl border border-primary/25 bg-card/45 p-6 sm:p-8 md:p-10 backdrop-blur-md shadow-[0_8px_32px_hsl(0_0%_0%/0.28),0_0_0_1px_hsl(217_91%_60%/0.06)] relative overflow-hidden"
         >
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/35 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <div className="absolute -bottom-12 -right-12 w-32 h-32 rounded-full bg-primary/5 blur-[40px] pointer-events-none" />
+          {/* Glow orb — contained within card bounds */}
+          <div className="absolute bottom-0 right-0 w-48 h-24 rounded-full bg-primary/[0.07] blur-[32px] pointer-events-none" />
 
           <p className="text-xs font-mono tracking-[0.24em] uppercase text-primary/85">Affiliates</p>
           <h2 className="mt-3 text-chrome text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight">Earn recurring commissions with RobinOS</h2>
