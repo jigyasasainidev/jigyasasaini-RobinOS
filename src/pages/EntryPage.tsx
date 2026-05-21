@@ -715,17 +715,17 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
 
         {/* Toggles */}
         <div className="flex flex-col items-center justify-center mb-14 gap-3">
-          <div className="relative inline-flex items-center rounded-2xl border border-border/60 p-1.5 glass overflow-hidden">
+          <div className="relative inline-flex items-center rounded-xl border border-border/70 p-1.5 bg-card/60 backdrop-blur-sm overflow-hidden">
             <motion.div
               initial={false}
               animate={{ x: billingCycle === "monthly" ? "0%" : "100%" }}
               transition={{ type: "spring", stiffness: 360, damping: 32 }}
-              className="absolute inset-y-1.5 left-1.5 w-[calc(50%-0.375rem)] rounded-xl bg-primary/90 glow-blue"
+              className="absolute inset-y-1.5 left-1.5 w-[calc(50%-0.375rem)] rounded-lg bg-primary shadow-[0_2px_12px_hsl(217_91%_60%/0.45),inset_0_1px_0_hsl(0_0%_100%/0.12)]"
             />
 
             <button
               onClick={() => setBillingCycle("monthly")}
-              className={`relative z-10 min-w-[132px] px-4 sm:px-6 py-2.5 rounded-xl text-xs font-mono tracking-[0.14em] uppercase transition-colors ${
+              className={`relative z-10 min-w-[132px] px-4 sm:px-6 py-2.5 rounded-lg text-xs font-mono tracking-[0.14em] uppercase transition-colors ${
                 billingCycle === "monthly" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -734,17 +734,20 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
 
             <button
               onClick={() => setBillingCycle("yearly")}
-              className={`relative z-10 min-w-[132px] px-4 sm:px-6 py-2.5 rounded-xl text-xs font-mono tracking-[0.14em] uppercase transition-colors flex items-center justify-center gap-2 ${
+              className={`relative z-10 min-w-[132px] px-4 sm:px-6 py-2.5 rounded-lg text-xs font-mono tracking-[0.14em] uppercase transition-colors flex items-center justify-center gap-2 ${
                 billingCycle === "yearly" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Yearly
-              <motion.span
-                whileHover={{ y: -1 }}
-                className="rounded-full px-2 py-0.5 text-[9px] font-semibold tracking-[0.08em] bg-primary/20 text-primary border border-primary/35 shadow-[0_0_20px_hsl(217_91%_60%/0.2)]"
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.08em] border transition-colors ${
+                  billingCycle === "yearly"
+                    ? "bg-white/15 text-white/90 border-white/20"
+                    : "bg-primary/15 text-primary border-primary/30"
+                }`}
               >
                 SAVE 20%
-              </motion.span>
+              </span>
             </button>
           </div>
 
@@ -753,10 +756,10 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
-            className="text-[11px] text-muted-foreground/85 font-medium inline-flex items-center gap-2"
+            className="text-[11px] text-muted-foreground/70 font-medium inline-flex items-center gap-2"
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-primary/70 shadow-[0_0_10px_hsl(217_91%_60%/0.5)]" />
-            Save 20% with annual billing
+            <span className="h-1.5 w-1.5 rounded-full bg-primary/60" />
+            {billingCycle === "yearly" ? "Annual billing active — saving 20%" : "Save 20% with annual billing"}
           </motion.p>
         </div>
 
