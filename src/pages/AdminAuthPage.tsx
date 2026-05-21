@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Loader2, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 import { BrandMark } from "@/components/BrandMark";
 import { PageSeo } from "@/components/seo/PageSeo";
@@ -48,14 +47,17 @@ const AdminAuthPage = () => {
 
     try {
       const callbackUrl = `${window.location.origin}/adminsh/auth/callback`;
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: callbackUrl,
-        extraParams: {
-          prompt: "select_account",
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: callbackUrl,
+          queryParams: {
+            prompt: "select_account",
+          },
         },
       });
 
-      if (result.error) throw result.error;
+      if (oauthError) throw oauthError;
     } catch (err: any) {
       toast.error(err?.message || "Unable to continue with Google");
     } finally {

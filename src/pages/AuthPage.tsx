@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 import { BrandMark } from "@/components/BrandMark";
 import { Button } from "@/components/ui/button";
@@ -62,20 +61,17 @@ const AuthPage = () => {
       }
 
       const callbackUrl = `${window.location.origin}/auth/callback`;
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: callbackUrl,
-        extraParams: {
-          prompt: "select_account",
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: callbackUrl,
+          queryParams: {
+            prompt: "select_account",
+          },
         },
       });
 
-      console.info("[Auth] OAuth initiated", {
-        origin: window.location.origin,
-        redirectUri: callbackUrl,
-        redirected: !!result.redirected,
-      });
-
-      if (result.error) throw result.error;
+      if (oauthError) throw oauthError;
     } catch (err: any) {
       console.error("[Auth] OAuth start failed", err);
       toast.error(err.message || "Authentication failed");

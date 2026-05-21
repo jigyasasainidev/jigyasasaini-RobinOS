@@ -359,10 +359,6 @@
     animation: gen-pulse 1.5s ease-in-out infinite;
   }
 
-  @view-transition {
-    navigation: auto;
-  }
-
   ::view-transition-old(root),
   ::view-transition-new(root) {
     animation-duration: 260ms;
