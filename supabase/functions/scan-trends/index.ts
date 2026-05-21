@@ -1,3 +1,20 @@
+// ============================================================
+// ROBINOS SCAN TRENDS — CACHE-FIRST
+// Centralized Trend Intelligence Consumer
+// ============================================================
+// FLOW:
+// 1. Entitlement check (unchanged)
+// 2. Cache lookup by niche_key + fresh expires_at
+// 3. If cache hit → return cached trends instantly
+// 4. If cache miss → generate via AI → store to cache → return
+//
+// This ensures:
+// - Same niche = same cached trends for ALL users
+// - Per-request AI generation is eliminated
+// - AI only runs during background collection OR cache misses
+// - Instant response for cached niches
+// ============================================================
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import {
@@ -21,10 +38,11 @@ serve(async (req) => {
       });
     }
 
+    // Normalize niche key
+    const nicheKey = niche.trim().toLowerCase().replace(/\s+/g, "_");
+
     // ============================================================
     // SERVER-SIDE ENTITLEMENT CHECK + ATOMIC INCREMENT
-    // This is the authoritative enforcement point.
-    // Scan-trends uses trend_scan feature key.
     // ============================================================
     if (authHeader) {
       const { result: entitlement, error: entitlementError } = await checkAndIncrementUsage(
@@ -57,8 +75,43 @@ serve(async (req) => {
       });
     }
 
+    const supabase = createServiceClient();
+    const now = new Date().toISOString();
+
     // ============================================================
-    // AI GENERATION
+    // CACHE LOOKUP — Check if we have fresh cached trends for this niche
+    // ============================================================
+    const { data: cachedTopics, error: cacheError } = await supabase
+      .from("trend_topics")
+      .select("title, description, platforms, heat, hook_types, volume")
+      .eq("niche_key", nicheKey)
+      .gt("expires_at", now)
+      .order("virality_score", { ascending: false })
+      .limit(5);
+
+    if (!cacheError && cachedTopics && cachedTopics.length > 0) {
+      // Cache HIT — return cached trends instantly
+      const topics = cachedTopics.map((t: any) => ({
+        title: t.title,
+        description: t.description,
+        platforms: t.platforms,
+        heat: t.heat,
+        hook_types: t.hook_types || [],
+        volume: t.volume || "Medium",
+      }));
+
+      return new Response(
+        JSON.stringify({
+          topics,
+          cached: true,
+          niche: nicheKey,
+        }),
+        { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ============================================================
+    // CACHE MISS — Generate via AI (fallback)
     // ============================================================
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -88,7 +141,7 @@ Focus ONLY on verifiable, current trends. Be specific with numbers and platform 
           },
           {
             role: "user",
-            content: `Analyze the "${niche}" niche and find 3-5 ACTUALLY trending topics that are viral or about to go viral right now in February 2026.`,
+            content: `Analyze the "${niche}" niche and find 3-5 ACTUALLY trending topics that are viral or about to go viral right now in May 2026.`,
           },
         ],
         tools: [
@@ -157,11 +210,54 @@ Focus ONLY on verifiable, current trends. Be specific with numbers and platform 
       });
     }
 
-    const topics = JSON.parse(toolCall.function.arguments);
+    const parsed = JSON.parse(toolCall.function.arguments);
+    const topics = parsed.topics || [];
 
-    return new Response(JSON.stringify(topics), {
-      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-    });
+    // ============================================================
+    // STORE TO CACHE for future requests
+    // ============================================================
+    if (topics.length > 0) {
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 4);
+
+      for (const topic of topics) {
+        // Calculate virality score
+        const heatScore = Math.min(topic.heat || 0, 99) * 0.606;
+        const volumeScore = topic.volume === "High" ? 20 : topic.volume === "Medium" ? 10 : 5;
+        const platformCount = topic.platforms
+          ? topic.platforms.split(",").filter((p: string) => p.trim()).length
+          : 0;
+        const platformScore = Math.min(platformCount, 4) * 5;
+        const viralityScore = Math.min(Math.round(heatScore + volumeScore + platformScore), 100);
+
+        await supabase.from("trend_topics").upsert(
+          {
+            niche_key: nicheKey,
+            title: topic.title,
+            description: topic.description,
+            platforms: topic.platforms,
+            heat: Math.min(Math.max(topic.heat || 0, 0), 99),
+            hook_types: JSON.stringify(topic.hook_types || []),
+            volume: topic.volume || "Medium",
+            virality_score: viralityScore,
+            trend_velocity: (topic.heat || 0) / 10,
+            source: "ai",
+            expires_at: expiresAt.toISOString(),
+            collected_at: new Date().toISOString(),
+          },
+          { onConflict: "niche_key, title", ignoreDuplicates: false }
+        );
+      }
+    }
+
+    return new Response(
+      JSON.stringify({
+        topics,
+        cached: false,
+        niche: nicheKey,
+      }),
+      { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+    );
   } catch (e) {
     console.error("scan-trends error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {

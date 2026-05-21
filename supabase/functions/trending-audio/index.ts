@@ -1,3 +1,20 @@
+// ============================================================
+// ROBINOS TRENDING AUDIO & HASHTAGS — CACHE-FIRST
+// Centralized Trend Intelligence Consumer
+// ============================================================
+// FLOW:
+// 1. Entitlement check (unchanged)
+// 2. Cache lookup by platform + type (audios/hashtags) + fresh expires_at
+// 3. If cache hit → return cached data instantly
+// 4. If cache miss → fetch live from free APIs → store to cache → return
+//
+// Audio data sourced from free APIs:
+// - Apple Music RSS (most-played songs)
+// - Deezer Charts
+// Hashtags sourced from:
+// - Google Trends RSS
+// ============================================================
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import {
@@ -121,6 +138,44 @@ const fetchRealHashtags = async (platform: Platform) => {
   }));
 };
 
+// ============================================================
+// CACHE ROUTINES
+// ============================================================
+function calculateExpiresAt(hoursFromNow: number): string {
+  const now = new Date();
+  now.setHours(now.getHours() + hoursFromNow);
+  return now.toISOString();
+}
+
+function calculateAudioVirality(category: string, index: number): number {
+  const categoryBonus = category === "Trending" ? 30 : category === "Viral" ? 40 : category === "Rising" ? 20 : 10;
+  const positionBonus = Math.max(0, 12 - index) * 5;
+  return Math.min(categoryBonus + positionBonus, 100);
+}
+
+function calculateHashtagVirality(category: string, index: number): number {
+  const categoryBonus = category === "Trending" ? 35 : category === "Rising" ? 25 : category === "Niche" ? 10 : 5;
+  const positionBonus = Math.max(0, 15 - index) * 3;
+  return Math.min(categoryBonus + positionBonus, 100);
+}
+
+interface CachedAudio {
+  title: string;
+  artist: string;
+  category: string;
+  uses: string;
+  trend: string;
+  tip: string;
+}
+
+interface CachedHashtag {
+  tag: string;
+  category: string;
+  posts: string;
+  trend: string;
+  tip: string;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
 
@@ -132,7 +187,6 @@ serve(async (req) => {
 
     // ============================================================
     // SERVER-SIDE ENTITLEMENT CHECK + ATOMIC INCREMENT
-    // Trending audio uses trend_scan or hashtag_scan feature key
     // ============================================================
     const featureKey = type === "hashtags" ? FEATURES.HASHTAG_SCAN : FEATURES.TREND_SCAN;
     const effectiveRequestId = crypto.randomUUID();
@@ -164,29 +218,135 @@ serve(async (req) => {
       return entitlementError;
     }
 
-    // ============================================================
-    // FETCH TRENDING DATA
-    // ============================================================
-    const results = type === "hashtags"
-      ? await fetchRealHashtags(platformName)
-      : await fetchRealAudios(platformName);
+    const supabase = createServiceClient();
+    const now = new Date().toISOString();
 
-    if (!Array.isArray(results) || results.length === 0) {
+    if (type === "hashtags") {
+      // ============================================================
+      // HASHTAGS — CACHE LOOKUP
+      // ============================================================
+      const { data: cachedHashtags, error: cacheError } = await supabase
+        .from("trend_hashtags")
+        .select("tag, category, posts, trend, tip")
+        .eq("platform", platformName)
+        .gt("expires_at", now)
+        .order("virality_score", { ascending: false })
+        .limit(15);
+
+      if (!cacheError && cachedHashtags && cachedHashtags.length > 0) {
+        return new Response(
+          JSON.stringify({
+            hashtags: cachedHashtags,
+            usage: entitlement,
+            cached: true,
+          }),
+          { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Cache MISS — fetch live
+      const liveHashtags = await fetchRealHashtags(platformName);
+
+      if (!Array.isArray(liveHashtags) || liveHashtags.length === 0) {
+        return new Response(
+          JSON.stringify({ error: "Live trend data is temporarily unavailable. Please retry in a minute." }),
+          { status: 503, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Store to cache
+      const hashtagExpiresAt = calculateExpiresAt(3);
+      for (let i = 0; i < liveHashtags.length; i++) {
+        const h = liveHashtags[i];
+        await supabase.from("trend_hashtags").upsert(
+          {
+            platform: platformName,
+            tag: h.tag,
+            category: h.category,
+            posts: h.posts,
+            trend: h.trend,
+            tip: h.tip,
+            hashtag_source: "google_trends",
+            virality_score: calculateHashtagVirality(h.category, i),
+            expires_at: hashtagExpiresAt,
+            collected_at: now,
+          },
+          { onConflict: "platform, tag", ignoreDuplicates: false }
+        );
+      }
+
       return new Response(
-        JSON.stringify({ error: "Live trend data is temporarily unavailable. Please retry in a minute." }),
-        { status: 503, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+        JSON.stringify({
+          hashtags: liveHashtags,
+          usage: entitlement,
+          cached: false,
+        }),
+        { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
+    } else {
+      // ============================================================
+      // AUDIOS — CACHE LOOKUP
+      // ============================================================
+      const { data: cachedAudios, error: cacheError } = await supabase
+        .from("trend_audios")
+        .select("title, artist, category, uses, trend, tip")
+        .eq("platform", platformName)
+        .gt("expires_at", now)
+        .order("virality_score", { ascending: false })
+        .limit(12);
+
+      if (!cacheError && cachedAudios && cachedAudios.length > 0) {
+        return new Response(
+          JSON.stringify({
+            audios: cachedAudios,
+            usage: entitlement,
+            cached: true,
+          }),
+          { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Cache MISS — fetch live
+      const liveAudios = await fetchRealAudios(platformName);
+
+      if (!Array.isArray(liveAudios) || liveAudios.length === 0) {
+        return new Response(
+          JSON.stringify({ error: "Live trend data is temporarily unavailable. Please retry in a minute." }),
+          { status: 503, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Store to cache
+      const audioExpiresAt = calculateExpiresAt(3);
+      for (let i = 0; i < liveAudios.length; i++) {
+        const a = liveAudios[i];
+        await supabase.from("trend_audios").upsert(
+          {
+            platform: platformName,
+            title: a.title,
+            artist: a.artist,
+            category: a.category,
+            uses: a.uses,
+            trend: a.trend,
+            tip: a.tip,
+            audio_source: "apple_music",
+            virality_score: calculateAudioVirality(a.category, i),
+            expires_at: audioExpiresAt,
+            collected_at: now,
+          },
+          { onConflict: "platform, title, artist", ignoreDuplicates: false }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          audios: liveAudios,
+          usage: entitlement,
+          cached: false,
+        }),
+        { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
       );
     }
-
-    const responseKey = type === "hashtags" ? "hashtags" : "audios";
-
-    return new Response(
-      JSON.stringify({
-        [responseKey]: results,
-        usage: entitlement,
-      }),
-      { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
-    );
   } catch (e) {
     console.error("trending-audio error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
