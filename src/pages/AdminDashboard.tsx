@@ -8,6 +8,7 @@ import {
   BarChart3,
   CheckCircle2,
   Clock3,
+  Copy,
   Inbox,
   Loader2,
   LogOut,
@@ -1170,11 +1171,25 @@ const AdminDashboard = () => {
                 {filtered.map((row) => {
                   const status = asWithdrawStatus(row.status);
                   const email = profileMap.get(row.user_id)?.email ?? row.user_id.slice(0, 8);
+                  const payoutMethodLabel = row.payout_method === "usdt_trc20" ? "USDT (TRC20)" : "PayPal";
                   return (
                     <tr key={row.id} className="border-t border-border/40 hover:bg-secondary/20">
                       <td className="p-3 text-foreground">{email}</td>
-                      <td className="p-3 text-muted-foreground">{row.payout_method}</td>
-                      <td className="p-3 text-muted-foreground">{row.payout_details}</td>
+                      <td className="p-3 text-muted-foreground">{payoutMethodLabel}</td>
+                      <td className="p-3 text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <span className="max-w-[280px] truncate">{row.payout_details}</span>
+                          <button
+                            onClick={() => {
+                              void navigator.clipboard.writeText(row.payout_details || "");
+                              toast.success("Payout details copied");
+                            }}
+                            className="inline-flex h-7 items-center gap-1 rounded border border-border/60 px-2 text-[10px] text-foreground hover:border-primary/40"
+                          >
+                            <Copy className="h-3 w-3" /> copy
+                          </button>
+                        </div>
+                      </td>
                       <td className="p-3 font-mono text-foreground">{formatCurrency(row.amount)}</td>
                       <td className="p-3 text-muted-foreground">{new Date(row.created_at).toLocaleDateString()}</td>
                       <td className="p-3"><span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] uppercase ${statusClass[status]}`}>{status}</span></td>
