@@ -261,11 +261,22 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
   const frictionBlur = useTransform(frictionScroll, [0, 1], [16, 0]);
   const frictionOpacity = useTransform(frictionScroll, [0, 1], [0.3, 1]);
 
-  const plans = getLandingPricingPlans(currency, billingCycle, {
+  const pricingControls = {
     creator_price: platformSettings?.creator_price,
     pro_price: platformSettings?.pro_price,
     agency_price: platformSettings?.agency_price,
-  });
+  };
+
+  const monthlyPlans = getLandingPricingPlans(currency, "monthly", pricingControls);
+  const yearlyPlans = getLandingPricingPlans(currency, "yearly", pricingControls);
+  const plans = billingCycle === "yearly" ? yearlyPlans : monthlyPlans;
+
+  const parseAmount = (value?: string) => Number((value ?? "0").replace(/[^\d.]/g, ""));
+  const yearlyBadgeByTier: Record<string, { primary: string; secondary?: string }> = {
+    creator: { primary: "2 Months Free" },
+    pro_creator: { primary: "Most Popular", secondary: "Best Value" },
+    agency: { primary: "Scale Faster" },
+  };
 
   return (
     <div className="relative bg-background grain select-none-all overflow-x-hidden">
@@ -703,31 +714,68 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
         </div>
 
         {/* Toggles */}
-        <div className="flex items-center justify-center mb-14">
-          <div className="flex items-center rounded-lg border border-border p-1 glass">
-            {(["monthly", "yearly"] as const).map((cycle) => (
-              <button
-                key={cycle}
-                onClick={() => setBillingCycle(cycle)}
-                className={`px-4 sm:px-5 py-2 rounded-md text-xs font-mono tracking-wider uppercase transition-all ${
-                  billingCycle === cycle
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+        <div className="flex flex-col items-center justify-center mb-14 gap-3">
+          <div className="relative inline-flex items-center rounded-2xl border border-border/60 p-1.5 glass overflow-hidden">
+            <motion.div
+              initial={false}
+              animate={{ x: billingCycle === "monthly" ? "0%" : "100%" }}
+              transition={{ type: "spring", stiffness: 360, damping: 32 }}
+              className="absolute inset-y-1.5 left-1.5 w-[calc(50%-0.375rem)] rounded-xl bg-primary/90 glow-blue"
+            />
+
+            <button
+              onClick={() => setBillingCycle("monthly")}
+              className={`relative z-10 min-w-[132px] px-4 sm:px-6 py-2.5 rounded-xl text-xs font-mono tracking-[0.14em] uppercase transition-colors ${
+                billingCycle === "monthly" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Monthly
+            </button>
+
+            <button
+              onClick={() => setBillingCycle("yearly")}
+              className={`relative z-10 min-w-[132px] px-4 sm:px-6 py-2.5 rounded-xl text-xs font-mono tracking-[0.14em] uppercase transition-colors flex items-center justify-center gap-2 ${
+                billingCycle === "yearly" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Yearly
+              <motion.span
+                whileHover={{ y: -1 }}
+                className="rounded-full px-2 py-0.5 text-[9px] font-semibold tracking-[0.08em] bg-primary/20 text-primary border border-primary/35 shadow-[0_0_20px_hsl(217_91%_60%/0.2)]"
               >
-                {cycle === "yearly" ? "YEARLY -20%" : cycle}
-              </button>
-            ))}
+                SAVE 20%
+              </motion.span>
+            </button>
           </div>
+
+          <motion.p
+            key={billingCycle}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+            className="text-[11px] text-muted-foreground/85 font-medium inline-flex items-center gap-2"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-primary/70 shadow-[0_0_10px_hsl(217_91%_60%/0.5)]" />
+            Save 20% with annual billing
+          </motion.p>
         </div>
 
         {/* Cards */}
         <div className={`grid grid-cols-1 sm:grid-cols-2 ${plans.length > 4 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-5`}>
-          {plans.map((plan: any) => (
+          {plans.map((plan: any) => {
+            const monthlyReferencePlan = monthlyPlans.find((p: any) => p.name === plan.name);
+            const monthlyAmount = parseAmount(monthlyReferencePlan?.price);
+            const yearlyTotalAmount = parseAmount(plan.yearlyTotal);
+            const yearlyReferenceAmount = monthlyAmount * 12;
+            const yearlyBadge = !plan.isFree && billingCycle === "yearly" && plan.tier
+              ? yearlyBadgeByTier[plan.tier]
+              : undefined;
+
+            return (
             <motion.div
               key={plan.name}
-              whileHover={{ y: -4 }}
-              transition={{ type: "spring", stiffness: 300 }}
+              whileHover={{ y: -6, scale: 1.006 }}
+              transition={{ type: "spring", stiffness: 280, damping: 24 }}
                 className={`relative rounded-xl p-6 sm:p-7 transition-all ${
                 plan.isAgency
                     ? "border border-amber-500/30 bg-card/60 shadow-[0_0_24px_-10px_hsl(38_92%_50%/0.24)]"
@@ -736,7 +784,29 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
                       : "border border-border/35 bg-card/30"
               }`}
             >
-              {plan.badge && (
+              {yearlyBadge && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.35 }}
+                  className="absolute -top-4 left-1/2 -translate-x-1/2 z-10"
+                >
+                  <div className={`px-3 py-1 rounded-full text-[10px] font-mono tracking-[0.12em] uppercase border backdrop-blur-md whitespace-nowrap ${
+                    plan.isAgency
+                      ? "bg-amber-500/15 text-amber-300 border-amber-400/40 shadow-[0_0_18px_hsl(38_92%_50%/0.22)]"
+                      : plan.featured
+                        ? "bg-primary/15 text-primary border-primary/40 shadow-[0_0_20px_hsl(217_91%_60%/0.35)]"
+                        : "bg-primary/10 text-primary border-primary/30 shadow-[0_0_14px_hsl(217_91%_60%/0.2)]"
+                  }`}>
+                    {yearlyBadge.primary}
+                  </div>
+                  {yearlyBadge.secondary && (
+                    <p className="text-center text-[9px] mt-1 text-primary/90 font-medium tracking-[0.08em] uppercase">{yearlyBadge.secondary}</p>
+                  )}
+                </motion.div>
+              )}
+
+              {!yearlyBadge && plan.badge && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <span className={`px-3 py-0.5 rounded-full text-[10px] font-mono tracking-widest uppercase ${
                     plan.badge === "PREMIUM" || plan.badge === "ELITE"
@@ -750,13 +820,35 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
 
               <p className="text-xs font-mono tracking-[0.2em] uppercase text-muted-foreground">{plan.name}</p>
               {plan.featured && <p className="text-[10px] text-primary mt-1 font-medium">Best for serious creators</p>}
-              <p className="mt-3 text-chrome text-2xl sm:text-3xl font-semibold">
-                {plan.price}
-                {plan.period && <span className="text-muted-foreground text-sm font-normal">{plan.period}</span>}
-              </p>
-              {plan.yearlyTotal && (
-                <p className="text-[10px] text-muted-foreground/60 font-mono mt-1">{plan.yearlyTotal}</p>
-              )}
+              <motion.div
+                key={`${plan.name}-${billingCycle}`}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.28 }}
+                className="mt-3"
+              >
+                <p className="text-chrome text-2xl sm:text-3xl font-semibold">
+                  {plan.price}
+                  {plan.period && <span className="text-muted-foreground text-sm font-normal">{plan.period}</span>}
+                </p>
+
+                {billingCycle === "yearly" && !plan.isFree && monthlyAmount > 0 && (
+                  <p className="text-[11px] mt-1 text-muted-foreground/70 line-through decoration-muted-foreground/50">{symbol}{monthlyAmount.toLocaleString()}/mo</p>
+                )}
+
+                {billingCycle === "yearly" && !plan.isFree && yearlyTotalAmount > 0 && (
+                  <div className="mt-1.5 space-y-0.5">
+                    <p className="text-[11px] text-primary/90 font-medium">{symbol}{yearlyTotalAmount.toLocaleString()}/year</p>
+                    {yearlyReferenceAmount > yearlyTotalAmount && (
+                      <p className="text-[10px] text-muted-foreground/55 line-through decoration-muted-foreground/50">{symbol}{yearlyReferenceAmount.toLocaleString()}/year</p>
+                    )}
+                  </div>
+                )}
+
+                {billingCycle !== "yearly" && plan.yearlyTotal && (
+                  <p className="text-[10px] text-muted-foreground/60 font-mono mt-1">Billed monthly</p>
+                )}
+              </motion.div>
 
               <ul className="mt-5 space-y-2">
                 {plan.features.map((f: string) => (
@@ -788,7 +880,7 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
                       : "Join RobinOS"}
               </button>
             </motion.div>
-          ))}
+          );})}
         </div>
       </RevealSection>
 
