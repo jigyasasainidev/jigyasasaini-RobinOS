@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:affiliate-flow": "node scripts/test-affiliate-flow.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { initializeUserAccount } from "@/lib/authInitialization";
+import { referralCoordinator } from "@/services/affiliate/referralCoordinator";
 
 const AuthCallbackPage = () => {
   const navigate = useNavigate();
@@ -18,7 +19,8 @@ const AuthCallbackPage = () => {
       const error = url.searchParams.get("error");
       const errorDescription = url.searchParams.get("error_description");
       const code = url.searchParams.get("code");
-      const storedReferral = sessionStorage.getItem("robinos_referral_code");
+      const restored = referralCoordinator.restore();
+      const storedReferral = restored.code;
 
       console.info("[AuthCallback] Started", {
         pathname: url.pathname,
@@ -64,7 +66,8 @@ const AuthCallbackPage = () => {
         return;
       }
 
-      sessionStorage.removeItem("robinos_referral_code");
+      // Clean up all storage layers after successful attribution
+      referralCoordinator.cleanup(restored.traceId);
       console.info("[AuthCallback] Success, redirecting to dashboard");
       navigate("/dashboard", { replace: true });
     };

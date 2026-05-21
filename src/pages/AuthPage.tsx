@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { PageSeo } from "@/components/seo/PageSeo";
 import { initializeUserAccount } from "@/lib/authInitialization";
+import { referralCoordinator } from "@/services/affiliate/referralCoordinator";
 
 const AuthPage = () => {
   const [loading, setLoading] = useState(false);
@@ -57,7 +58,13 @@ const AuthPage = () => {
 
     try {
       if (ref) {
-        sessionStorage.setItem("robinos_referral_code", ref);
+        const captured = referralCoordinator.captureFromUrl(ref);
+        if (captured) {
+          const { overwriteBlocked } = referralCoordinator.persist(captured);
+          if (overwriteBlocked) {
+            console.info(`[Auth] Referral overwrite blocked — existing first-touch preserved (incoming=${ref})`);
+          }
+        }
       }
 
       const callbackUrl = `${window.location.origin}/auth/callback`;
