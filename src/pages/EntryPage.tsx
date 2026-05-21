@@ -65,14 +65,14 @@ const engines = [
     title: "Scan",
     desc: "Real-time trend scanning across platforms. Know what's viral before it peaks.",
     color: "from-primary/20 to-primary/5",
-    stats: "24/7 monitoring",
+    stats: "Always-on monitoring",
   },
   {
     icon: Video,
     title: "Create",
     desc: "Script to video in seconds. AI-powered content generation at scale.",
     color: "from-primary/15 to-primary/5",
-    stats: "< 30s generation",
+    stats: "Fast generation",
   },
   {
     icon: BarChart3,
@@ -168,7 +168,7 @@ const credibilityStrip = [
 const captionEngineBullets = [
   "SEO-optimized YouTube descriptions",
   "High-retention TikTok captions",
-  "Instagram engagement formatting",
+  "Instagram creator formatting",
   "Facebook storytelling captions",
   "Smart hashtags & keyword support",
   "Platform-aware writing styles",
@@ -482,7 +482,7 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
             </div>
             <div className="px-4 py-4 rounded-xl bg-primary/5 border border-primary/20 shadow-[inset_0_0_30px_hsl(217_91%_60%/0.04)]">
               <p className="text-[10px] font-mono text-primary mb-2">🎬 READY TO RECORD:</p>
-              <p className="text-foreground text-sm leading-relaxed font-medium">"Nobody is telling you this about Instagram growth..."</p>
+              <p className="text-foreground text-sm leading-relaxed font-medium">"Nobody is telling you this about Instagram workflow quality..."</p>
               <p className="text-foreground/80 text-sm leading-relaxed mt-1">"Delete your hashtag strategy. Here's what actually works in 2026."</p>
               <p className="text-foreground/70 text-sm leading-relaxed mt-1">"Use this structure to build a consistent, platform-ready content workflow."</p>
             </div>
@@ -534,10 +534,10 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
               <div className="flex-1 p-4 sm:p-6 md:p-8">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-6">
                   {[
-                    { label: "Radar Signals", value: "147" },
-                    { label: "Scripts Created", value: "89" },
-                    { label: "Active Pipelines", value: "12" },
-                    { label: "Success Rate", value: "94%" },
+                    { label: "Signal State", value: "Live" },
+                    { label: "Script Engine", value: "Active" },
+                    { label: "Workflow Sync", value: "Online" },
+                    { label: "System Health", value: "Stable" },
                   ].map((stat) => (
                     <div key={stat.label} className="rounded-lg bg-secondary/50 border border-border/50 p-3">
                       <p className="text-[10px] text-muted-foreground/60 font-mono">{stat.label}</p>
@@ -610,7 +610,7 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
           </div>
           <h3 className="text-chrome text-2xl font-semibold tracking-tight">Caption Engine</h3>
           <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
-            Generate platform-optimized captions and descriptions designed for discoverability, engagement, and growth.
+            Generate platform-optimized captions and descriptions designed for discoverability and content clarity.
           </p>
           <div className="mt-5 grid sm:grid-cols-2 gap-2.5">
             {captionEngineBullets.map((bullet) => (
@@ -631,8 +631,8 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
         >
           {[
             { icon: Shield, text: "AES-256 Encryption" },
-            { icon: Zap, text: "Sub-30s Generation" },
-            { icon: Clock, text: "24/7 Monitoring" },
+            { icon: Zap, text: "Fast Generation" },
+            { icon: Clock, text: "Always-On Monitoring" },
           ].map((badge) => (
             <div key={badge.text} className="flex items-center gap-2 text-muted-foreground/50">
               <badge.icon className="w-3.5 h-3.5" />
@@ -668,7 +668,7 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
       <RevealSection className="py-24 md:py-40 px-4 sm:px-6 flex flex-col items-center text-center">
         <p className="text-xs font-mono tracking-[0.3em] uppercase text-muted-foreground mb-4">Bring Your Own Key</p>
         <h2 className="text-chrome text-2xl sm:text-4xl md:text-5xl font-semibold tracking-tight max-w-2xl">
-          90% Cost Efficiency
+          Cost-Efficient BYOK Control
         </h2>
         <p className="mt-6 text-muted-foreground text-sm sm:text-base max-w-lg leading-relaxed px-4">
           Use your OpenAI & ElevenLabs keys directly. No markups. No hidden fees. No middleman.
@@ -676,9 +676,9 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
         </p>
         <div className="mt-12 grid grid-cols-3 gap-4 sm:gap-6 md:gap-12 text-center">
           {[
-            { value: "0%", label: "Markup" },
-            { value: "90%", label: "Cost Saved" },
-            { value: "∞", label: "Scalability" },
+            { value: "No", label: "Platform Markup" },
+            { value: "Direct", label: "Provider Billing" },
+            { value: "Built", label: "For Scale" },
           ].map((stat) => (
             <motion.div key={stat.label} whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300 }}>
               <p className="text-chrome text-xl sm:text-3xl md:text-4xl font-semibold">{stat.value}</p>
@@ -819,7 +819,7 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
         <div className="rounded-2xl border border-border/60 bg-card/35 p-6 sm:p-8 md:p-10 text-center">
           <p className="text-xs font-mono tracking-[0.24em] uppercase text-primary/85">Contact</p>
           <h2 className="mt-3 text-chrome text-2xl sm:text-3xl font-semibold tracking-tight">Need a custom workflow?</h2>
-          <p className="mt-3 text-sm text-muted-foreground">Talk to the RobinOS team for onboarding, support, and growth strategy.</p>
+          <p className="mt-3 text-sm text-muted-foreground">Talk to the RobinOS team for onboarding, support, and workflow strategy.</p>
           <div className="mt-6 flex justify-center">
             <Link to="/contact" className="btn-primary inline-flex items-center justify-center">Contact RobinOS</Link>
           </div>

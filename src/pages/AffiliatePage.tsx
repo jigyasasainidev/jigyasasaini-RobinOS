@@ -28,23 +28,23 @@ const steps = [
 
 const statCards = [
   {
-    title: "30%",
-    subtitle: "Lifetime Recurring",
-    description: "For all public affiliate partners",
+    title: "Policy-Based",
+    subtitle: "Commission Structure",
+    description: "Commission terms follow the active affiliate policy",
     icon: Percent,
     tone: "default",
   },
   {
-    title: "Up to 50%",
-    subtitle: "Launch Special",
-    description: "For selected JVZoo launch affiliates",
+    title: "Campaign-Based",
+    subtitle: "Partner Programs",
+    description: "Additional incentives may apply during approved campaigns",
     icon: Star,
     tone: "launch",
   },
   {
-    title: "$10",
-    subtitle: "Minimum Withdrawal",
-    description: "Withdraw once your balance reaches threshold",
+    title: "Threshold-Based",
+    subtitle: "Payout Eligibility",
+    description: "Withdrawals are available after policy requirements are met",
     icon: Wallet,
     tone: "default",
   },
@@ -61,24 +61,24 @@ const commissionCards = [
   {
     plan: "Creator Plan",
     price: "$19/mo",
-    earning: "$6/mo recurring",
-    note: "Public affiliate rate",
+    earning: "Policy-based recurring commissions",
+    note: "Applies under active affiliate terms",
     featured: false,
     launch: false,
   },
   {
     plan: "Pro Creator Plan",
     price: "$39/mo",
-    earning: "$12/mo recurring",
-    note: "Most popular affiliate tier",
+    earning: "Recurring partner commissions",
+    note: "Structured for long-term affiliate workflows",
     featured: true,
     launch: false,
   },
   {
     plan: "Agency Plan",
     price: "$99/mo",
-    earning: "Up to $50 launch commission",
-    note: "Available during selected promotional campaigns",
+    earning: "Campaign-linked commission incentives",
+    note: "Available during approved promotional cycles",
     featured: false,
     launch: true,
   },
@@ -133,7 +133,7 @@ const AffiliatePage = () => {
           </motion.div>
           <h1 className="text-chrome text-3xl sm:text-5xl md:text-7xl font-semibold leading-[1.05] tracking-tight">Partner With RobinOS</h1>
           <p className="mt-6 text-muted-foreground text-sm sm:text-base max-w-2xl mx-auto">
-            Earn recurring revenue by referring creators, agencies, and businesses to the AI Content Operating System.
+            Build partner workflows by referring creators, agencies, and businesses to the AI Content Operating System.
           </p>
         </motion.div>
       </section>

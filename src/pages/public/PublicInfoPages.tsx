@@ -969,16 +969,16 @@ export function AffiliatesProgramPage() {
   const payoutDelayDays = Number(platformSettings?.payout_delay_days ?? 7);
 
   const leaderboardRewards = [
-    { rank: "#1", reward: "$500", note: "Champion payout", highlight: true },
-    { rank: "#2", reward: "$250", note: "Growth accelerator", highlight: false },
-    { rank: "#3", reward: "$100", note: "Momentum reward", highlight: false },
+    { rank: "Tier 1", reward: "Featured partner incentives", note: "Priority program tier", highlight: true },
+    { rank: "Tier 2", reward: "Campaign incentive access", note: "Growth operations tier", highlight: false },
+    { rank: "Tier 3", reward: "Partner enablement rewards", note: "Momentum tier", highlight: false },
   ];
 
   const milestoneBonuses = [
-    { sales: "10 Sales", bonus: "$50 Bonus" },
-    { sales: "25 Sales", bonus: "$150 Bonus" },
-    { sales: "50 Sales", bonus: "$400 Bonus" },
-    { sales: "100 Sales", bonus: "$1000 Bonus", elite: true },
+    { sales: "Activation Milestone", bonus: "Bonus eligibility unlocked" },
+    { sales: "Performance Milestone", bonus: "Additional incentive eligibility" },
+    { sales: "Scale Milestone", bonus: "Expanded partner reward access" },
+    { sales: "Elite Milestone", bonus: "Priority program rewards", elite: true },
   ];
 
   return (
@@ -1008,10 +1008,10 @@ export function AffiliatesProgramPage() {
             🔥 Affiliate Rewards Program
           </span>
           <h2 className="mt-5 max-w-3xl text-3xl font-semibold leading-tight text-foreground sm:text-4xl">
-            Earn Recurring Revenue + Monthly <span className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent">Cash Rewards</span>
+            Build Partner Momentum + Monthly <span className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent">Program Rewards</span>
           </h2>
           <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-            RobinOS rewards affiliates who drive real growth. Earn <span className="bg-gradient-to-r from-primary to-foreground bg-clip-text font-medium text-transparent">30% lifetime recurring</span> commissions plus exclusive monthly leaderboard prizes and milestone bonuses.
+            RobinOS rewards affiliates who build policy-safe partner pipelines. Commission terms and campaign incentives are applied under the active affiliate policy.
           </p>
         </motion.div>
 
@@ -1034,7 +1034,7 @@ export function AffiliatesProgramPage() {
             </motion.div>
 
             <h3 className="text-xl font-semibold text-foreground">🏆 Monthly Leaderboard Rewards</h3>
-            <p className="mt-2 text-sm text-muted-foreground">Top-performing affiliates receive additional monthly cash prizes.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Top-performing affiliates may unlock additional campaign rewards under active partner terms.</p>
 
             <div className="mt-6 space-y-3">
               {leaderboardRewards.map((item) => (
@@ -1062,8 +1062,8 @@ export function AffiliatesProgramPage() {
             className="group relative overflow-hidden rounded-[32px] border border-border/70 bg-card/60 p-6 shadow-2xl shadow-background/60 backdrop-blur-2xl sm:p-7"
           >
             <div className="pointer-events-none absolute inset-0 rounded-[32px] border border-primary/0 transition-colors duration-300 group-hover:border-primary/35" />
-            <h3 className="text-xl font-semibold text-foreground">⚡ Performance Milestone Bonuses</h3>
-            <p className="mt-2 text-sm text-muted-foreground">Unlock bonus payouts as your referrals grow.</p>
+            <h3 className="text-xl font-semibold text-foreground">⚡ Performance Milestone Incentives</h3>
+            <p className="mt-2 text-sm text-muted-foreground">Unlock additional incentives as partner activity matures.</p>
 
             <div className="mt-6 space-y-3">
               {milestoneBonuses.map((item, index) => (
@@ -1095,8 +1095,8 @@ export function AffiliatesProgramPage() {
           className="relative z-10 mt-8 rounded-[30px] border border-border/70 bg-card/55 px-5 py-7 text-center backdrop-blur-xl sm:px-8"
         >
           <h3 className="text-2xl font-semibold text-foreground">Start Promoting RobinOS Today</h3>
-          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Build recurring monthly income while competing for exclusive cash rewards.
+            <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Build a durable affiliate workflow while participating in policy-safe partner reward programs.
           </p>
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <motion.div whileHover={{ scale: 1.03, y: -1 }} whileTap={{ scale: 0.98 }}>
@@ -1106,7 +1106,7 @@ export function AffiliatesProgramPage() {
             </motion.div>
             <motion.div whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.99 }}>
               <Button asChild variant="outline" className="min-w-[210px] rounded-2xl border-border/70 bg-secondary/35 text-foreground hover:bg-secondary/55">
-                <Link to="/affiliate-terms">View Commission Structure · Min ${minimumWithdrawal}</Link>
+                <Link to="/affiliate-terms">View Commission Structure · Policy Threshold Applies</Link>
               </Button>
             </motion.div>
           </div>

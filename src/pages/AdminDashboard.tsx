@@ -230,7 +230,7 @@ const pageMeta: Record<AdminPath, { title: string; subtitle: string }> = {
   },
   "/adminsh/analytics": {
     title: "Platform Analytics",
-    subtitle: "Live revenue, growth, AI usage, and feature metrics.",
+    subtitle: "Live revenue, AI usage, and feature metrics.",
   },
   "/adminsh/settings": {
     title: "Platform Settings",
@@ -246,7 +246,7 @@ const pageMeta: Record<AdminPath, { title: string; subtitle: string }> = {
   },
   "/adminsh/affiliates": {
     title: "Affiliate Operations",
-    subtitle: "Monitor referral performance, commissions, and growth quality.",
+    subtitle: "Monitor referral performance, commissions, and quality signals.",
   },
   "/adminsh/withdrawals": {
     title: "Withdrawal Operations",
@@ -308,7 +308,7 @@ const TinySparkline = ({ data }: { data: SparkPoint[] }) => {
   );
 };
 
-const MetricCard = ({ label, value, growth, icon: Icon, spark }: { label: string; value: string; growth: number; icon: ComponentType<{ className?: string }>; spark: SparkPoint[] }) => (
+const MetricCard = ({ label, value, icon: Icon, spark }: { label: string; value: string; growth?: number; icon: ComponentType<{ className?: string }>; spark: SparkPoint[] }) => (
   <div className="rounded-lg border border-border/60 bg-card/45 p-4 backdrop-blur-md">
     <div className="flex items-start justify-between gap-2">
       <div>
@@ -317,10 +317,9 @@ const MetricCard = ({ label, value, growth, icon: Icon, spark }: { label: string
       </div>
       <Icon className="h-4 w-4 text-primary" />
     </div>
-    <div className="mt-1 flex items-center gap-1 text-[11px]">
-      {growth >= 0 ? <ArrowUpRight className="h-3.5 w-3.5 text-primary" /> : <ArrowDownRight className="h-3.5 w-3.5 text-destructive" />}
-      <span className={growth >= 0 ? "text-primary" : "text-destructive"}>{Math.abs(growth).toFixed(1)}%</span>
-      <span className="text-muted-foreground">vs previous window</span>
+    <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+      <Activity className="h-3.5 w-3.5 text-primary" />
+      <span>Live backend snapshot</span>
     </div>
     <TinySparkline data={spark} />
   </div>
@@ -915,11 +914,11 @@ const AdminDashboard = () => {
     { label: "Total Users", value: formatNumber(profiles.length), growth: userGrowthPercent, icon: Users, spark: sparkFrom(dailySeries.map((d) => d.users)) },
     { label: "Active Subscribers", value: formatNumber(activeSubscribers), growth: growthPercent, icon: UserCheck, spark: sparkFrom(dailySeries.map((d) => d.subscriptions)) },
     { label: "Active Plan Value", value: formatCurrency(monthlyRevenue), growth: growthPercent, icon: Wallet, spark: sparkFrom(dailySeries.map((d) => d.revenue)) },
-    { label: "Pending Withdrawals", value: formatNumber(pendingWithdrawals.length), growth: -3.4, icon: Clock3, spark: sparkFrom(pendingWithdrawals.map((w) => Number(w.amount || 0))) },
-    { label: "Affiliate Earnings", value: formatCurrency(totalAffiliateEarnings), growth: 8.4, icon: TrendingUp, spark: sparkFrom(affiliateCommissions.map((a) => Number(a.amount || 0))) },
-    { label: "Scripts Generated", value: formatNumber(scriptsGenerated), growth: 12.6, icon: Sparkles, spark: sparkFrom(dailySeries.map((d) => d.scripts)) },
-    { label: "Trend Searches", value: formatNumber(trendSearches), growth: 9.2, icon: BarChart3, spark: sparkFrom(dailySeries.map((d) => d.scans)) },
-    { label: "Estimated AI Cost", value: formatCurrency(estimatedAiCost), growth: -1.7, icon: Activity, spark: sparkFrom(aiGenerations.map((g) => estimateGenerationCost(g.provider, Number(g.credits_used || 0)))) },
+    { label: "Pending Withdrawals", value: formatNumber(pendingWithdrawals.length), icon: Clock3, spark: sparkFrom(pendingWithdrawals.map((w) => Number(w.amount || 0))) },
+    { label: "Affiliate Earnings", value: formatCurrency(totalAffiliateEarnings), icon: TrendingUp, spark: sparkFrom(affiliateCommissions.map((a) => Number(a.amount || 0))) },
+    { label: "Scripts Generated", value: formatNumber(scriptsGenerated), icon: Sparkles, spark: sparkFrom(dailySeries.map((d) => d.scripts)) },
+    { label: "Trend Searches", value: formatNumber(trendSearches), icon: BarChart3, spark: sparkFrom(dailySeries.map((d) => d.scans)) },
+    { label: "Estimated AI Cost", value: formatCurrency(estimatedAiCost), icon: Activity, spark: sparkFrom(aiGenerations.map((g) => estimateGenerationCost(g.provider, Number(g.credits_used || 0)))) },
   ];
 
   const renderDashboardPage = () => (
@@ -1059,10 +1058,10 @@ const AdminDashboard = () => {
   const renderUsersPage = () => (
     <div className="space-y-4">
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Total Users" value={formatNumber(usersEnriched.length)} growth={userGrowthPercent} icon={Users} spark={sparkFrom(dailySeries.map((d) => d.users))} />
-        <MetricCard label="Active Users" value={formatNumber(activeSubscribers)} growth={growthPercent} icon={UserCheck} spark={sparkFrom(dailySeries.map((d) => d.subscriptions))} />
-        <MetricCard label="Free Users" value={formatNumber(freeUsers)} growth={2.2} icon={Users} spark={sparkFrom(usersEnriched.filter((u) => u.plan === "creator").map((u) => u.scriptsUsed))} />
-        <MetricCard label="Paid Users" value={formatNumber(paidUsers)} growth={6.1} icon={Users} spark={sparkFrom(usersEnriched.filter((u) => u.status === "active").map((u) => u.scriptsUsed))} />
+        <MetricCard label="Total Users" value={formatNumber(usersEnriched.length)} icon={Users} spark={sparkFrom(dailySeries.map((d) => d.users))} />
+        <MetricCard label="Active Users" value={formatNumber(activeSubscribers)} icon={UserCheck} spark={sparkFrom(dailySeries.map((d) => d.subscriptions))} />
+        <MetricCard label="Free Users" value={formatNumber(freeUsers)} icon={Users} spark={sparkFrom(usersEnriched.filter((u) => u.plan === "creator").map((u) => u.scriptsUsed))} />
+        <MetricCard label="Paid Users" value={formatNumber(paidUsers)} icon={Users} spark={sparkFrom(usersEnriched.filter((u) => u.status === "active").map((u) => u.scriptsUsed))} />
       </section>
 
       <SectionCard title="Users Table" subtitle="Search, filters, pagination, and admin actions">
@@ -1108,10 +1107,10 @@ const AdminDashboard = () => {
   const renderSubscriptionsPage = () => (
     <div className="space-y-4">
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Active Plan Value" value={formatCurrency(monthlyRevenue)} growth={growthPercent} icon={Wallet} spark={sparkFrom(dailySeries.map((d) => d.revenue))} />
-        <MetricCard label="Active Subscribers" value={formatNumber(activeSubscribers)} growth={userGrowthPercent} icon={UserCheck} spark={sparkFrom(dailySeries.map((d) => d.subscriptions))} />
-        <MetricCard label="Churn Rate" value={`${churnRate.toFixed(2)}%`} growth={-2.1} icon={ArrowDownRight} spark={sparkFrom(cancelledSubs.map((s) => Number(s.amount || 0)))} />
-        <MetricCard label="At-Risk Subs" value={formatNumber(atRiskSubscriptions.length)} growth={-1.3} icon={Clock3} spark={sparkFrom(atRiskSubscriptions.map((s) => Number(s.amount || 0)))} />
+        <MetricCard label="Active Plan Value" value={formatCurrency(monthlyRevenue)} icon={Wallet} spark={sparkFrom(dailySeries.map((d) => d.revenue))} />
+        <MetricCard label="Active Subscribers" value={formatNumber(activeSubscribers)} icon={UserCheck} spark={sparkFrom(dailySeries.map((d) => d.subscriptions))} />
+        <MetricCard label="Churn Rate" value={`${churnRate.toFixed(2)}%`} icon={ArrowDownRight} spark={sparkFrom(cancelledSubs.map((s) => Number(s.amount || 0)))} />
+        <MetricCard label="At-Risk Subs" value={formatNumber(atRiskSubscriptions.length)} icon={Clock3} spark={sparkFrom(atRiskSubscriptions.map((s) => Number(s.amount || 0)))} />
       </section>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -1133,10 +1132,10 @@ const AdminDashboard = () => {
   const renderAffiliatesPage = () => (
     <div className="space-y-4">
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Total Affiliates" value={formatNumber(affiliateProfiles.length)} growth={7.4} icon={Users} spark={sparkFrom(affiliateProfiles.map((a) => Number(a.total_clicks || 0)))} />
-        <MetricCard label="Pending Commissions" value={formatCurrency(pendingAffiliateCommissions)} growth={4.1} icon={Clock3} spark={sparkFrom(affiliateCommissions.filter((a) => a.status === "pending").map((a) => Number(a.amount || 0)))} />
-        <MetricCard label="Paid Commissions" value={formatCurrency(paidAffiliateCommissions)} growth={6.8} icon={CheckCircle2} spark={sparkFrom(affiliateCommissions.filter((a) => a.status === "paid").map((a) => Number(a.amount || 0)))} />
-        <MetricCard label="Conversion Revenue" value={formatCurrency(totalAffiliateEarnings)} growth={9.6} icon={TrendingUp} spark={sparkFrom(affiliateCommissions.map((a) => Number(a.amount || 0)))} />
+        <MetricCard label="Total Affiliates" value={formatNumber(affiliateProfiles.length)} icon={Users} spark={sparkFrom(affiliateProfiles.map((a) => Number(a.total_clicks || 0)))} />
+        <MetricCard label="Pending Commissions" value={formatCurrency(pendingAffiliateCommissions)} icon={Clock3} spark={sparkFrom(affiliateCommissions.filter((a) => a.status === "pending").map((a) => Number(a.amount || 0)))} />
+        <MetricCard label="Paid Commissions" value={formatCurrency(paidAffiliateCommissions)} icon={CheckCircle2} spark={sparkFrom(affiliateCommissions.filter((a) => a.status === "paid").map((a) => Number(a.amount || 0)))} />
+        <MetricCard label="Conversion Revenue" value={formatCurrency(totalAffiliateEarnings)} icon={TrendingUp} spark={sparkFrom(affiliateCommissions.map((a) => Number(a.amount || 0)))} />
       </section>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -1164,10 +1163,10 @@ const AdminDashboard = () => {
     return (
       <div className="space-y-4">
         <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <MetricCard label="Pending Withdrawals" value={formatNumber(pendingWithdrawals.length)} growth={-2.4} icon={Clock3} spark={sparkFrom(pendingWithdrawals.map((w) => Number(w.amount || 0)))} />
-          <MetricCard label="Paid This Month" value={formatCurrency(paidWithdrawalsMonth.reduce((s, w) => s + Number(w.amount || 0), 0))} growth={8.1} icon={CheckCircle2} spark={sparkFrom(paidWithdrawalsMonth.map((w) => Number(w.amount || 0)))} />
-          <MetricCard label="Total Withdrawal Volume" value={formatCurrency(totalWithdrawalVolume)} growth={6.3} icon={Wallet} spark={sparkFrom(withdrawals.map((w) => Number(w.amount || 0)))} />
-          <MetricCard label="Failed Withdrawals" value={formatNumber(failedWithdrawals)} growth={-1.2} icon={ArrowDownRight} spark={sparkFrom(withdrawals.filter((w) => asWithdrawStatus(w.status) === "rejected").map((w) => Number(w.amount || 0)))} />
+          <MetricCard label="Pending Withdrawals" value={formatNumber(pendingWithdrawals.length)} icon={Clock3} spark={sparkFrom(pendingWithdrawals.map((w) => Number(w.amount || 0)))} />
+          <MetricCard label="Paid This Month" value={formatCurrency(paidWithdrawalsMonth.reduce((s, w) => s + Number(w.amount || 0), 0))} icon={CheckCircle2} spark={sparkFrom(paidWithdrawalsMonth.map((w) => Number(w.amount || 0)))} />
+          <MetricCard label="Total Withdrawal Volume" value={formatCurrency(totalWithdrawalVolume)} icon={Wallet} spark={sparkFrom(withdrawals.map((w) => Number(w.amount || 0)))} />
+          <MetricCard label="Failed Withdrawals" value={formatNumber(failedWithdrawals)} icon={ArrowDownRight} spark={sparkFrom(withdrawals.filter((w) => asWithdrawStatus(w.status) === "rejected").map((w) => Number(w.amount || 0)))} />
         </section>
 
         <SectionCard title="Withdrawal Request Queue" subtitle="Approve, reject, and mark paid" right={<select value={withdrawStatusFilter} onChange={(e) => setWithdrawStatusFilter(e.target.value as "all" | WithdrawStatus)} className="h-8 rounded-md border border-border/60 bg-secondary/70 px-2 text-xs text-foreground"><option value="all">All status</option><option value="pending">pending</option><option value="approved">approved</option><option value="paid">paid</option><option value="rejected">rejected</option></select>}>
