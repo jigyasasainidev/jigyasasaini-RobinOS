@@ -1,1 +1,0 @@
-UPDATE global_settings SET value = '3MWGOLrhA4Ku7BUd7hO0U7LN', updated_at = now() WHERE key = 'razorpay_test_key_secret';
