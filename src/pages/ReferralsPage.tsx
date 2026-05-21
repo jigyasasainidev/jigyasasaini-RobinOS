@@ -53,7 +53,7 @@ const payoutLabel = (method: string | null) => {
 
 const ReferralsPage = () => {
   const queryClient = useQueryClient();
-  const { dashboard, withdrawals, loading, minimumWithdrawal } = useReferralData();
+  const { dashboard, withdrawals, loading, minimumWithdrawal, payoutDelayDays, affiliateCommissionPercent } = useReferralData();
 
   const [copied, setCopied] = useState(false);
   const [savingPayout, setSavingPayout] = useState(false);
@@ -340,7 +340,8 @@ const ReferralsPage = () => {
 
             <div className="mt-3 text-[11px] text-muted-foreground space-y-1">
               <p>Payout method: {payoutLabel(dashboard?.payout_method ?? null)}</p>
-              <p>Estimated processing time: 1-3 business days</p>
+              <p>Estimated processing time: {Math.max(1, payoutDelayDays)} day(s)</p>
+              <p>Current affiliate commission: {affiliateCommissionPercent}%</p>
               <p>Withdrawal fee: ${WITHDRAWAL_FEE.toFixed(2)}</p>
               {!hasPayoutMethod && <p className="text-destructive">Add payout method to enable withdrawals.</p>}
               {hasPendingWithdrawal && <p className="text-primary">You already have a pending payout request in review.</p>}

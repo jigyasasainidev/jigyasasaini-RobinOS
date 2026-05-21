@@ -41,6 +41,33 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_audit_logs: {
+        Row: {
+          action_type: string
+          admin_user_id: string
+          created_at: string
+          details: Json
+          id: string
+          target_id: string
+        }
+        Insert: {
+          action_type: string
+          admin_user_id: string
+          created_at?: string
+          details?: Json
+          id?: string
+          target_id: string
+        }
+        Update: {
+          action_type?: string
+          admin_user_id?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          target_id?: string
+        }
+        Relationships: []
+      }
       affiliate_commissions: {
         Row: {
           affiliate_user_id: string
@@ -655,6 +682,10 @@ export type Database = {
         Args: { p_admin_note?: string; p_request_id: string; p_status: string }
         Returns: Json
       }
+      admin_write_log: {
+        Args: { p_action_type: string; p_details?: Json; p_target_id: string }
+        Returns: Json
+      }
       consume_feature_quota: {
         Args: {
           p_feature_name: string
@@ -699,6 +730,22 @@ export type Database = {
           total_earned: number
           total_referrals: number
           user_id: string
+        }[]
+      }
+      get_public_platform_settings: {
+        Args: never
+        Returns: {
+          affiliate_commission_percent: number
+          agency_price: number
+          announcement_banner: string
+          creator_price: number
+          free_scans_limit: number
+          free_scripts_limit: number
+          maintenance_mode: boolean
+          minimum_withdrawal: number
+          payout_delay_days: number
+          pro_price: number
+          updated_at: string
         }[]
       }
       get_usage_status: { Args: { p_feature_name?: string }; Returns: Json }

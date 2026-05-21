@@ -34,6 +34,15 @@ serve(async (req) => {
         .eq("user_id", user_id)
         .single();
 
+      const { data: platformSettings } = await supabase
+        .from("platform_settings")
+        .select("free_scans_limit")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const freeScanLimit = Math.max(0, Number(platformSettings?.free_scans_limit ?? 1));
+
       if (!profileError && profile) {
         const tier = profile.subscription_tier || "free";
 
@@ -53,10 +62,10 @@ serve(async (req) => {
           }
 
           const freeScans = profile.free_scans_used ?? 0;
-          if (freeScans >= 1) {
+          if (freeScans >= freeScanLimit) {
             await supabase.from("profiles").update({ free_trial_expired: true }).eq("user_id", user_id);
             return new Response(
-              JSON.stringify({ error: "Free scan limit reached (1 scan). Please upgrade to continue." }),
+              JSON.stringify({ error: `Free scan limit reached (${freeScanLimit} scan${freeScanLimit === 1 ? "" : "s"}). Please upgrade to continue.` }),
               { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
           }

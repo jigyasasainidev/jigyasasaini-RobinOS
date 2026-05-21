@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { useCurrency } from "@/hooks/useCurrency";
 import { getPlans, getCurrencySymbol } from "@/lib/pricing";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 interface UpgradeDialogProps {
   open: boolean;
@@ -20,7 +21,12 @@ interface UpgradeDialogProps {
 export const UpgradeDialog = ({ open, onOpenChange, forced = false }: UpgradeDialogProps) => {
   const navigate = useNavigate();
   const { currency } = useCurrency();
-  const plans = getPlans(currency);
+  const { data: platformSettings } = usePlatformSettings();
+  const plans = getPlans(currency, {
+    creator_price: platformSettings?.creator_price,
+    pro_price: platformSettings?.pro_price,
+    agency_price: platformSettings?.agency_price,
+  });
   const symbol = getCurrencySymbol(currency);
 
   const dialogPlans = plans.slice(0, 3).map((plan) => {

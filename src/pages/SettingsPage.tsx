@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { useCurrency } from "@/hooks/useCurrency";
 import { getPlans, getCurrencySymbol, getTierDisplayName, normalizeTier } from "@/lib/pricing";
 import { BrandMark } from "@/components/BrandMark";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 const SettingsPage = () => {
   const { user } = useAuth();
@@ -29,7 +30,12 @@ const SettingsPage = () => {
   const [saving, setSaving] = useState(false);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const { currency } = useCurrency();
-  const plans = getPlans(currency);
+  const { data: platformSettings } = usePlatformSettings();
+  const plans = getPlans(currency, {
+    creator_price: platformSettings?.creator_price,
+    pro_price: platformSettings?.pro_price,
+    agency_price: platformSettings?.agency_price,
+  });
   const symbol = getCurrencySymbol(currency);
 
   const handleSubscribe = (planTier: string) => {
