@@ -1013,7 +1013,7 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
         </div>
 
         {/* Cards */}
-        <div className={`grid grid-cols-1 sm:grid-cols-2 ${plans.length > 4 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-5`}>
+        <div className={`grid grid-cols-1 sm:grid-cols-2 ${plans.length > 4 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-5 pt-6`}>
           {plans.map((plan: any) => {
             const monthlyReferencePlan = monthlyPlans.find((p: any) => p.name === plan.name);
             const monthlyAmount = parseAmount(monthlyReferencePlan?.price);
@@ -1033,7 +1033,7 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
                   : "0 20px 52px hsl(0 0% 0% / 0.35), 0 0 0 1px hsl(217 91% 60% / 0.12)"
               }}
               transition={{ type: "spring", stiffness: 300, damping: 22 }}
-                className={`relative rounded-xl p-6 sm:p-7 overflow-hidden ${
+                className={`relative rounded-xl p-6 sm:p-7 ${
                 plan.isAgency
                     ? "border border-amber-500/30 bg-card/60 shadow-[0_0_24px_-10px_hsl(38_92%_50%/0.24)]"
                   : plan.featured
