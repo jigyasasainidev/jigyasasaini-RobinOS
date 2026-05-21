@@ -218,7 +218,7 @@ export function ContactPage() {
       <section className="grid gap-4 lg:grid-cols-[1fr_1.1fr]">
         <div className="space-y-4 rounded-lg border border-border/60 bg-card/35 p-5">
           <h2 className="text-lg font-semibold text-foreground">Support channels</h2>
-          <p className="text-sm text-muted-foreground">Email: <a href="mailto:helprobinai@zohomail.in" className="text-foreground underline underline-offset-4">helprobinai@zohomail.in</a></p>
+          <p className="text-sm text-muted-foreground">Email: <a href="mailto:support@tryrobin.xyz" className="text-foreground underline underline-offset-4">support@tryrobin.xyz</a></p>
           <p className="text-sm text-muted-foreground">Domain: <a href="https://tryrobin.xyz" target="_blank" rel="noreferrer" className="text-foreground underline underline-offset-4">tryrobin.xyz</a></p>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li>Creator support: response target within 24 hours on business days.</li>
@@ -320,7 +320,7 @@ export function PrivacyPolicyPage() {
           title: "GDPR-style rights and controls",
           body: [
             "Depending on your jurisdiction, you may request access, correction, deletion, objection to processing, or restriction of processing for your personal data.",
-            "For data rights requests, contact helprobinai@zohomail.in with your account email and request details.",
+            "For data rights requests, contact support@tryrobin.xyz with your account email and request details.",
           ],
         },
       ]}
@@ -410,7 +410,7 @@ export function RefundPolicyPage() {
           id: "request-window",
           title: "Refund request window",
           body: [
-            "Refund requests should be submitted to helprobinai@zohomail.in within 14 days of initial subscription charge for eligible first-cycle requests.",
+            "Refund requests should be submitted to support@tryrobin.xyz within 14 days of initial subscription charge for eligible first-cycle requests.",
             "Refund eligibility may depend on account usage volume, abuse checks, and violation review.",
             "Renewal-cycle refunds may be granted for accidental renewals reported promptly and reviewed case by case.",
           ],
@@ -621,7 +621,7 @@ const helpFaq = [
   { category: "login", q: "I cannot access my account.", a: "Use password reset first. If lockout continues, contact support with your account email." },
   { category: "ai", q: "Why does an AI output need manual editing?", a: "AI outputs are drafts and may contain mistakes. Final review is always required before publishing." },
   { category: "affiliate", q: "When do affiliate payouts clear?", a: "Payouts clear after delay rules and fraud checks, once the minimum withdrawal threshold is met." },
-  { category: "refund", q: "Where do I request a refund?", a: "Send a request to helprobinai@zohomail.in with billing details and transaction information." },
+  { category: "refund", q: "Where do I request a refund?", a: "Send a request to support@tryrobin.xyz with billing details and transaction information." },
 ];
 
 export function HelpCenterPage() {
@@ -1304,7 +1304,7 @@ export function SupportPage() {
       <PageSeo title="Support | RobinOS" description="Contact RobinOS support and access help resources for account, billing, and affiliate needs." canonicalPath="/support" />
       <div className="grid gap-4 md:grid-cols-3">
         {[
-          { icon: LifeBuoy, title: "General Support", text: "helprobinai@zohomail.in", helper: "Response target: within 24 hours." },
+          { icon: LifeBuoy, title: "General Support", text: "support@tryrobin.xyz", helper: "Response target: within 24 hours." },
           { icon: Clock3, title: "Billing", text: "Billing and payment disputes", helper: "Include transaction ID for faster handling." },
           { icon: Users, title: "Affiliate Support", text: "Commission and payout review", helper: "Response target: within 48 hours." },
         ].map((card) => (
