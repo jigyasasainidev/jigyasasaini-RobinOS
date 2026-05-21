@@ -41,6 +41,33 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_audit_logs: {
+        Row: {
+          action_type: string
+          admin_user_id: string
+          created_at: string
+          details: Json
+          id: string
+          target_id: string
+        }
+        Insert: {
+          action_type: string
+          admin_user_id: string
+          created_at?: string
+          details?: Json
+          id?: string
+          target_id: string
+        }
+        Update: {
+          action_type?: string
+          admin_user_id?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          target_id?: string
+        }
+        Relationships: []
+      }
       affiliate_commissions: {
         Row: {
           affiliate_user_id: string
@@ -653,6 +680,10 @@ export type Database = {
     Functions: {
       admin_process_withdrawal_request: {
         Args: { p_admin_note?: string; p_request_id: string; p_status: string }
+        Returns: Json
+      }
+      admin_write_log: {
+        Args: { p_action_type: string; p_details?: Json; p_target_id: string }
         Returns: Json
       }
       consume_feature_quota: {
