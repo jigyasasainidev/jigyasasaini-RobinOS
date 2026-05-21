@@ -1,11 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import {
+  checkAndIncrementUsage,
+  CORS_HEADERS,
+  FEATURES,
+  createServiceClient,
+} from "../_shared/entitlement.ts";
 
 type Platform = "TikTok" | "Instagram" | "Facebook" | "YouTube";
 
@@ -14,21 +14,6 @@ const PLATFORM_GEO: Record<Platform, string> = {
   Instagram: "us",
   Facebook: "us",
   YouTube: "us",
-};
-
-const TIER_LIMITS: Record<string, { audioLimit: number; hashtagLimit: number; platforms: Platform[] }> = {
-  free: { audioLimit: 2, hashtagLimit: 3, platforms: ["Instagram"] },
-  creator: { audioLimit: 50, hashtagLimit: 70, platforms: ["Instagram"] },
-  pro_creator: { audioLimit: 200, hashtagLimit: 200, platforms: ["TikTok", "Instagram", "Facebook", "YouTube"] },
-  agency: { audioLimit: 99999, hashtagLimit: 500, platforms: ["TikTok", "Instagram", "Facebook", "YouTube"] },
-  scale_agency: { audioLimit: 99999, hashtagLimit: 500, platforms: ["TikTok", "Instagram", "Facebook", "YouTube"] },
-};
-
-const normalizeTier = (raw: string | null | undefined): string => {
-  const t = String(raw || "free").toLowerCase();
-  if (t === "starter") return "creator";
-  if (t === "pro") return "pro_creator";
-  return t;
 };
 
 const slugifyHashtag = (value: string): string => {
@@ -137,139 +122,75 @@ const fetchRealHashtags = async (platform: Platform) => {
 };
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
 
   try {
     const { platform, type } = await req.json();
     const platformName = (platform || "Instagram") as Platform;
 
     const authHeader = req.headers.get("authorization");
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    let userId: string | null = null;
-    if (authHeader) {
-      const token = authHeader.replace("Bearer ", "");
-      const { data: { user } } = await supabase.auth.getUser(token);
-      userId = user?.id || null;
+    // ============================================================
+    // SERVER-SIDE ENTITLEMENT CHECK + ATOMIC INCREMENT
+    // Trending audio uses trend_scan or hashtag_scan feature key
+    // ============================================================
+    const featureKey = type === "hashtags" ? FEATURES.HASHTAG_SCAN : FEATURES.TREND_SCAN;
+    const effectiveRequestId = crypto.randomUUID();
+
+    const { result: entitlement, error: entitlementError } = await checkAndIncrementUsage(
+      authHeader || "",
+      featureKey,
+      effectiveRequestId
+    );
+
+    if (entitlementError) {
+      if (entitlement && !entitlement.success) {
+        return new Response(
+          JSON.stringify({
+            error: entitlement.code === "FEATURE_DISABLED"
+              ? `${type === "hashtags" ? "Hashtag" : "Trend"} scanning requires a higher plan.`
+              : entitlement.message || "Scan limit reached. Upgrade to continue.",
+            code: entitlement.code,
+            feature: entitlement.feature,
+            plan: entitlement.plan,
+            limit: entitlement.limit,
+            used: entitlement.used,
+            remaining: entitlement.remaining,
+            reset_at: entitlement.reset_at,
+          }),
+          { status: 403, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+        );
+      }
+      return entitlementError;
     }
 
-    if (!userId) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Get profile for tier & usage (auto-create if missing)
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("subscription_tier, current_plan, trending_scans_used, trending_scans_reset_at, hashtag_scans_used, hashtag_scans_reset_at")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    let resolvedProfile = profile;
-    if (!resolvedProfile) {
-      const { data: userData } = await supabase.auth.getUser(authHeader!.replace("Bearer ", ""));
-      const fallbackProfile = {
-        user_id: userId,
-        email: userData.user?.email ?? null,
-        display_name: (userData.user?.user_metadata?.display_name as string | undefined) ?? userData.user?.email ?? null,
-        full_name: (userData.user?.user_metadata?.display_name as string | undefined) ?? userData.user?.email ?? null,
-      };
-      const { data: createdProfile } = await supabase
-        .from("profiles")
-        .upsert(fallbackProfile, { onConflict: "user_id" })
-        .select("subscription_tier, current_plan, trending_scans_used, trending_scans_reset_at, hashtag_scans_used, hashtag_scans_reset_at")
-        .single();
-      resolvedProfile = createdProfile;
-    }
-
-    const normalizedTier = normalizeTier(resolvedProfile?.subscription_tier || resolvedProfile?.current_plan || "free");
-
-    const { data: platformSettings } = await supabase
-      .from("platform_settings")
-      .select("free_scans_limit")
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    const dynamicFreeScanLimit = Math.max(0, Number(platformSettings?.free_scans_limit ?? 3));
-
-    // Monthly reset check
-    const now = new Date();
-    const isHashtagRequest = type === "hashtags";
-
-    const resetField = isHashtagRequest ? "hashtag_scans_reset_at" : "trending_scans_reset_at";
-    const usedField = isHashtagRequest ? "hashtag_scans_used" : "trending_scans_used";
-    const resetAt = resolvedProfile?.[resetField] ? new Date(resolvedProfile[resetField]) : new Date(0);
-    const monthChanged = now.getMonth() !== resetAt.getMonth() || now.getFullYear() !== resetAt.getFullYear();
-    let scansUsed = monthChanged ? 0 : (resolvedProfile?.[usedField] || 0);
-
-    if (monthChanged) {
-      await supabase.from("profiles").update({ [usedField]: 0, [resetField]: now.toISOString() }).eq("user_id", userId);
-      scansUsed = 0;
-    }
-
-    const limits = TIER_LIMITS[normalizedTier] || TIER_LIMITS.free;
-    const currentLimit = normalizedTier === "free"
-      ? dynamicFreeScanLimit
-      : (isHashtagRequest ? limits.hashtagLimit : limits.audioLimit);
-
-    // Check platform access
-    if (!limits.platforms.includes(platformName)) {
-      return new Response(JSON.stringify({ 
-        error: "platform_locked",
-        message: `${platformName} requires Pro Creator or higher plan.`,
-        allowed_platforms: limits.platforms,
-      }), {
-        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Check scan limit
-    if (scansUsed >= currentLimit) {
-      return new Response(JSON.stringify({ 
-        error: "limit_reached",
-        message: normalizedTier === "free" 
-          ? `Free plan limit reached. Upgrade to continue!`
-          : `Monthly limit reached (${currentLimit}). Upgrade for more!`,
-        used: scansUsed,
-        limit: currentLimit,
-      }), {
-        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Increment usage
-    await supabase.from("profiles").update({ 
-      [usedField]: scansUsed + 1 
-    }).eq("user_id", userId);
-
-    const results = isHashtagRequest
+    // ============================================================
+    // FETCH TRENDING DATA
+    // ============================================================
+    const results = type === "hashtags"
       ? await fetchRealHashtags(platformName)
       : await fetchRealAudios(platformName);
 
     if (!Array.isArray(results) || results.length === 0) {
-      await supabase.from("profiles").update({ [usedField]: scansUsed }).eq("user_id", userId);
-      return new Response(JSON.stringify({ error: "Live trend data is temporarily unavailable. Please retry in a minute." }), {
-        status: 503,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Live trend data is temporarily unavailable. Please retry in a minute." }),
+        { status: 503, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
     }
 
-    const responseKey = isHashtagRequest ? "hashtags" : "audios";
+    const responseKey = type === "hashtags" ? "hashtags" : "audios";
 
-    return new Response(JSON.stringify({ 
-      [responseKey]: results, 
-      usage: { used: scansUsed + 1, limit: currentLimit },
-      allowed_platforms: limits.platforms,
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        [responseKey]: results,
+        usage: entitlement,
+      }),
+      { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+    );
   } catch (e) {
     console.error("trending-audio error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   }
 });

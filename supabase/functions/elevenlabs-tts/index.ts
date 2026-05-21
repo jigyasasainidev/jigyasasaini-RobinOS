@@ -1,9 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import {
+  checkAndIncrementUsage,
+  CORS_HEADERS,
+  FEATURES,
+  createServiceClient,
+} from "../_shared/entitlement.ts";
 
 // Per-voice tuned settings for distinct sound
 const voiceSettings: Record<string, { stability: number; similarity_boost: number; style: number; use_speaker_boost: boolean }> = {
@@ -19,43 +20,71 @@ const voiceSettings: Record<string, { stability: number; similarity_boost: numbe
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: CORS_HEADERS });
   }
 
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
     }
 
+    // ============================================================
+    // SERVER-SIDE ENTITLEMENT CHECK + ATOMIC INCREMENT
+    // TTS generation is a premium feature
+    // ============================================================
+    const { result: entitlement, error: entitlementError } = await checkAndIncrementUsage(
+      authHeader,
+      FEATURES.TTS_GENERATION,
+      crypto.randomUUID()
+    );
+
+    if (entitlementError) {
+      if (entitlement && !entitlement.success) {
+        return new Response(
+          JSON.stringify({
+            error: entitlement.code === "FEATURE_DISABLED"
+              ? "Voice Over requires Pro Creator or Agency plan"
+              : entitlement.message || "TTS generation limit reached",
+            code: entitlement.code,
+            feature: entitlement.feature,
+            plan: entitlement.plan,
+            limit: entitlement.limit,
+            used: entitlement.used,
+            remaining: entitlement.remaining,
+            reset_at: entitlement.reset_at,
+          }),
+          { status: 403, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+        );
+      }
+      return entitlementError;
+    }
+
+    // ============================================================
+    // AUTH + PROFILE CHECK
+    // ============================================================
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
     }
 
     const { data: profile } = await supabase.from("profiles").select("elevenlabs_api_key, subscription_tier").eq("user_id", user.id).single();
 
     if (!profile?.elevenlabs_api_key) {
-      return new Response(JSON.stringify({ error: "ElevenLabs API key not configured. Add it in Settings → API Keys." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    const tier = (profile.subscription_tier || "free").toLowerCase();
-    const normalizedTier = tier === "starter" ? "creator" : tier === "pro" ? "pro_creator" : tier;
-    if (!["pro_creator", "agency", "scale_agency"].includes(normalizedTier)) {
-      return new Response(JSON.stringify({ error: "Voice Over requires Pro Creator or Agency plan" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "ElevenLabs API key not configured. Add it in Settings → API Keys." }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
     }
 
     const { text, voiceId } = await req.json();
     if (!text || !voiceId) {
-      return new Response(JSON.stringify({ error: "Text and voiceId are required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Text and voiceId are required" }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
     }
 
     if (text.length > 5000) {
-      return new Response(JSON.stringify({ error: "Text must be under 5000 characters" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Text must be under 5000 characters" }), { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
     }
 
     // Use per-voice tuned settings for distinct sound
@@ -80,19 +109,20 @@ Deno.serve(async (req) => {
     if (!response.ok) {
       const errText = await response.text();
       console.error("ElevenLabs error:", errText);
-      return new Response(JSON.stringify({ error: "ElevenLabs API error. Check your API key." }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "ElevenLabs API error. Check your API key." }), { status: 502, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
     }
 
     const audioBuffer = await response.arrayBuffer();
 
     return new Response(audioBuffer, {
       headers: {
-        ...corsHeaders,
+        ...CORS_HEADERS,
         "Content-Type": "audio/mpeg",
+        "X-Usage-Remaining": String(entitlement.remaining ?? ""),
       },
     });
   } catch (err) {
     console.error("TTS error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
   }
 });

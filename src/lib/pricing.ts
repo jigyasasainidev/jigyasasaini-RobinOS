@@ -1,4 +1,9 @@
-// Centralized global USD pricing configuration
+// ============================================================
+// ROBINOS PLAN ENTITLEMENTS — FRONTEND MIRROR
+// These MUST match the backend plan_entitlements table.
+// The backend is the SOURCE OF TRUTH.
+// Frontend displays only — NEVER enforces.
+// ============================================================
 
 type PricingControls = {
   creator_price?: number;
@@ -28,6 +33,90 @@ export interface PlanConfig {
   dailyCaptions: number;
   monthlyScriptsCap: number;
 }
+
+// ============================================================
+// BACKEND-ALIGNED ENTITLEMENT MAP
+// Mirrors the plan_entitlements table seed data.
+// Used by frontend for display purposes only.
+// ============================================================
+export interface EntitlementConfig {
+  limit: number;       // -1 = unlimited, 0 = disabled, >0 = capped
+  enabled: boolean;
+  period: string;      // day, 24h, lifetime, fair_usage
+}
+
+export type FeatureKey =
+  | "script_generation"
+  | "caption_generation"
+  | "trend_scan"
+  | "hashtag_scan"
+  | "tts_generation"
+  | "video_generation"
+  | "byok_access"
+  | "analytics_access"
+  | "watermark_removal"
+  | "automation_tools"
+  | "export_access"
+  | "team_workspaces";
+
+export const PLAN_ENTITLEMENTS: Record<string, Record<FeatureKey, EntitlementConfig>> = {
+  free: {
+    script_generation: { limit: 2, enabled: true, period: "24h" },
+    caption_generation: { limit: 2, enabled: true, period: "day" },
+    trend_scan: { limit: 1, enabled: true, period: "lifetime" },
+    hashtag_scan: { limit: 0, enabled: false, period: "day" },
+    tts_generation: { limit: 0, enabled: false, period: "day" },
+    video_generation: { limit: 0, enabled: false, period: "day" },
+    byok_access: { limit: 0, enabled: false, period: "day" },
+    analytics_access: { limit: 0, enabled: false, period: "day" },
+    watermark_removal: { limit: 0, enabled: false, period: "day" },
+    automation_tools: { limit: 0, enabled: false, period: "day" },
+    export_access: { limit: 3, enabled: true, period: "day" },
+    team_workspaces: { limit: 1, enabled: true, period: "lifetime" },
+  },
+  creator: {
+    script_generation: { limit: 20, enabled: true, period: "day" },
+    caption_generation: { limit: 20, enabled: true, period: "day" },
+    trend_scan: { limit: 10, enabled: true, period: "day" },
+    hashtag_scan: { limit: 20, enabled: true, period: "day" },
+    tts_generation: { limit: 0, enabled: false, period: "day" },
+    video_generation: { limit: 0, enabled: false, period: "day" },
+    byok_access: { limit: 0, enabled: false, period: "day" },
+    analytics_access: { limit: 5, enabled: true, period: "day" },
+    watermark_removal: { limit: 0, enabled: false, period: "day" },
+    automation_tools: { limit: 0, enabled: false, period: "day" },
+    export_access: { limit: 50, enabled: true, period: "day" },
+    team_workspaces: { limit: 1, enabled: true, period: "lifetime" },
+  },
+  pro_creator: {
+    script_generation: { limit: 100, enabled: true, period: "day" },
+    caption_generation: { limit: 100, enabled: true, period: "day" },
+    trend_scan: { limit: 100, enabled: true, period: "day" },
+    hashtag_scan: { limit: 100, enabled: true, period: "day" },
+    tts_generation: { limit: 200, enabled: true, period: "day" },
+    video_generation: { limit: 50, enabled: true, period: "day" },
+    byok_access: { limit: -1, enabled: true, period: "day" },
+    analytics_access: { limit: -1, enabled: true, period: "day" },
+    watermark_removal: { limit: 1, enabled: true, period: "day" },
+    automation_tools: { limit: 0, enabled: false, period: "day" },
+    export_access: { limit: 250, enabled: true, period: "day" },
+    team_workspaces: { limit: 3, enabled: true, period: "lifetime" },
+  },
+  agency: {
+    script_generation: { limit: -1, enabled: true, period: "fair_usage" },
+    caption_generation: { limit: -1, enabled: true, period: "fair_usage" },
+    trend_scan: { limit: -1, enabled: true, period: "fair_usage" },
+    hashtag_scan: { limit: -1, enabled: true, period: "fair_usage" },
+    tts_generation: { limit: -1, enabled: true, period: "fair_usage" },
+    video_generation: { limit: -1, enabled: true, period: "fair_usage" },
+    byok_access: { limit: -1, enabled: true, period: "day" },
+    analytics_access: { limit: -1, enabled: true, period: "day" },
+    watermark_removal: { limit: 1, enabled: true, period: "day" },
+    automation_tools: { limit: -1, enabled: true, period: "day" },
+    export_access: { limit: -1, enabled: true, period: "fair_usage" },
+    team_workspaces: { limit: -1, enabled: true, period: "lifetime" },
+  },
+};
 
 export const PLAN_LIMITS: Record<string, { dailyScans: number; dailyScripts: number; monthlyCap: number; trendingLimit: number; hashtagLimit: number; captionLimit: number; trendingPlatforms: string[] }> = {
   free: { dailyScans: 1, dailyScripts: 2, monthlyCap: 60, trendingLimit: 10, hashtagLimit: 10, captionLimit: 10, trendingPlatforms: ["Instagram"] },
@@ -61,6 +150,34 @@ export function getTierDisplayName(tier: string): string {
   return names[normalized] || tier.charAt(0).toUpperCase() + tier.slice(1);
 }
 
+// ============================================================
+// BACKEND-DRIVEN ENTITLEMENT HELPERS
+// These use the backend-aligned entitlement map.
+// ============================================================
+export function getEntitlement(tier: string | null | undefined, feature: FeatureKey): EntitlementConfig {
+  const normalized = normalizeTier(tier);
+  const plan = PLAN_ENTITLEMENTS[normalized];
+  if (!plan) return { limit: 0, enabled: false, period: "day" };
+  return plan[feature] || { limit: 0, enabled: false, period: "day" };
+}
+
+export function isFeatureEnabled(tier: string | null | undefined, feature: FeatureKey): boolean {
+  const ent = getEntitlement(tier, feature);
+  return ent.enabled && ent.limit !== 0;
+}
+
+export function getFeatureLimit(tier: string | null | undefined, feature: FeatureKey): number {
+  return getEntitlement(tier, feature).limit;
+}
+
+export function isFeatureUnlimited(tier: string | null | undefined, feature: FeatureKey): boolean {
+  return getEntitlement(tier, feature).limit === -1;
+}
+
+export function isFairUsage(tier: string | null | undefined, feature: FeatureKey): boolean {
+  return getEntitlement(tier, feature).period === "fair_usage";
+}
+
 export function getLimitsForTier(tier: string | null | undefined) {
   const normalized = normalizeTier(tier);
   return PLAN_LIMITS[normalized] || PLAN_LIMITS.free;
@@ -68,8 +185,26 @@ export function getLimitsForTier(tier: string | null | undefined) {
 
 export function getCaptionLimitText(tier: string | null | undefined): string {
   const normalized = normalizeTier(tier);
-  const limit = (PLAN_LIMITS[normalized] || PLAN_LIMITS.free).captionLimit;
-  return normalized === "agency" || normalized === "scale_agency" ? "Near-unlimited daily caption generations" : `${limit} caption generations / day`;
+  if (isFairUsage(normalized, "caption_generation")) {
+    return "Near-unlimited daily caption generations (fair usage)";
+  }
+  if (isFeatureUnlimited(normalized, "caption_generation")) {
+    return "Unlimited daily caption generations";
+  }
+  const limit = getFeatureLimit(normalized, "caption_generation");
+  return `${limit} caption generations / day`;
+}
+
+export function getScriptLimitText(tier: string | null | undefined): string {
+  const normalized = normalizeTier(tier);
+  if (isFairUsage(normalized, "script_generation")) {
+    return "Near-unlimited scripts (fair usage)";
+  }
+  if (isFeatureUnlimited(normalized, "script_generation")) {
+    return "Unlimited scripts";
+  }
+  const limit = getFeatureLimit(normalized, "script_generation");
+  return `${limit} scripts / day`;
 }
 
 const DEFAULT_PRICE_MAP = {
@@ -96,9 +231,9 @@ function buildUsdPlans(controls?: PricingControls | null): PlanConfig[] {
     tier: "creator",
     monthlyPrice: prices.creator,
     yearlyPrice: prices.creator * 10,
-    dailyScans: 10,
-    dailyScripts: 20,
-    dailyCaptions: 20,
+    dailyScans: getFeatureLimit("creator", "trend_scan"),
+    dailyScripts: getFeatureLimit("creator", "script_generation"),
+    dailyCaptions: getFeatureLimit("creator", "caption_generation"),
     monthlyScriptsCap: 620,
     features: [
       "20 scripts/day",
@@ -118,9 +253,9 @@ function buildUsdPlans(controls?: PricingControls | null): PlanConfig[] {
     tier: "pro_creator",
     monthlyPrice: prices.pro_creator,
     yearlyPrice: prices.pro_creator * 10,
-    dailyScans: 40,
-    dailyScripts: 100,
-    dailyCaptions: 100,
+    dailyScans: getFeatureLimit("pro_creator", "trend_scan"),
+    dailyScripts: getFeatureLimit("pro_creator", "script_generation"),
+    dailyCaptions: getFeatureLimit("pro_creator", "caption_generation"),
     monthlyScriptsCap: 3100,
     popular: true,
     badge: "MOST POPULAR",
@@ -223,4 +358,36 @@ export function getLandingPricingPlans(
   });
 
   return [freePlan, ...paidPlans];
+}
+
+// ============================================================
+// FRONTEND USAGE FETCHER (reads from backend, NEVER stores locally)
+// ============================================================
+export async function fetchUsageStatus(
+  sb: typeof import("@/integrations/supabase/client").supabase,
+  featureKey: FeatureKey
+): Promise<{ allowed: boolean; used: number; quota: number | null; remaining: number }> {
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) {
+    return { allowed: false, used: 0, quota: 0, remaining: 0 };
+  }
+
+  // Use the old get_usage_status RPC which exists in the types
+  // This is a read-only check - no incrementing occurs
+  const { data, error } = await (sb as any).rpc("get_usage_status_v2", {
+    p_user_id: user.id,
+    p_feature_key: featureKey,
+  });
+
+  if (error) {
+    console.error(`[pricing] Failed to fetch usage for ${featureKey}:`, error);
+    return { allowed: false, used: 0, quota: 0, remaining: 0 };
+  }
+
+  return {
+    allowed: (data as any)?.allowed ?? false,
+    used: (data as any)?.used ?? 0,
+    quota: (data as any)?.quota ?? null,
+    remaining: (data as any)?.remaining ?? 0,
+  };
 }

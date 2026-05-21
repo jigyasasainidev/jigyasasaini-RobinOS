@@ -1,71 +1,77 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import {
+  checkAndIncrementUsage,
+  CORS_HEADERS,
+  FEATURES,
+  createServiceClient,
+  createErrorResponse,
+} from "../_shared/entitlement.ts";
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
 
   try {
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
 
     const { topic, tone, length, request_id } = await req.json();
     if (!topic) {
       return new Response(JSON.stringify({ error: "Topic is required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
 
+    // ============================================================
+    // SERVER-SIDE ENTITLEMENT CHECK + ATOMIC INCREMENT
+    // This is the authoritative enforcement point.
+    // No frontend trust — all validation happens here.
+    // ============================================================
+    const requestId = String(request_id || crypto.randomUUID());
+    const { result: entitlement, error: entitlementError } = await checkAndIncrementUsage(
+      authHeader,
+      FEATURES.SCRIPT_GENERATION,
+      requestId
+    );
+
+    if (entitlementError) {
+      // If usage limit exceeded, return the standardized error
+      if (entitlement && !entitlement.success) {
+        return new Response(
+          JSON.stringify({
+            error: entitlement.message || "Daily limit reached — upgrade to continue creating",
+            code: entitlement.code,
+            feature: entitlement.feature,
+            plan: entitlement.plan,
+            limit: entitlement.limit,
+            used: entitlement.used,
+            remaining: entitlement.remaining,
+            reset_at: entitlement.reset_at,
+          }),
+          { status: 403, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+        );
+      }
+      return entitlementError;
+    }
+
+    // ============================================================
+    // AI GENERATION
+    // ============================================================
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
-    const userSupabase = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+    const supabase = createServiceClient();
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user?.id) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
-    }
-
-    const requestId = String(request_id || crypto.randomUUID());
-    const { data: usageStatus, error: usageError } = await userSupabase.rpc("get_usage_status", {
-      p_feature_name: "scripts",
-    });
-
-    if (usageError) {
-      console.error("usage status check failed:", usageError);
-      return new Response(JSON.stringify({ error: "Unable to verify usage limits right now." }), {
-        status: 503,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (!usageStatus?.allowed) {
-      return new Response(
-        JSON.stringify({ error: "Daily limit reached — upgrade to continue creating", usage: usageStatus }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -101,18 +107,18 @@ Format the output clearly with markdown headers. Be specific, actionable, and ru
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
         return new Response(JSON.stringify({ error: "AI credits exhausted. Please add funds." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 402, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
         });
       }
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
       return new Response(JSON.stringify({ error: "AI processing failed" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
 
@@ -125,24 +131,7 @@ Format the output clearly with markdown headers. Be specific, actionable, and ru
         .insert({ user_id: user.id, request_id: requestId, prompt: String(topic), tone: tone || "Casual", content_length: length || "60s Reel", generated_output: "", generation_status: "empty" });
 
       return new Response(JSON.stringify({ error: "Empty generation result" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { data: consumeResult, error: consumeError } = await userSupabase.rpc("consume_feature_quota", {
-      p_feature_name: "scripts",
-      p_increment: 1,
-      p_idempotency_key: requestId,
-    });
-
-    if (consumeError || !consumeResult?.ok) {
-      console.error("quota consume failed:", consumeError);
-      return new Response(JSON.stringify({
-        error: "Daily limit reached — upgrade to continue creating",
-        usage: consumeResult?.status ?? usageStatus,
-      }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
 
@@ -164,14 +153,14 @@ Format the output clearly with markdown headers. Be specific, actionable, and ru
       output: content,
     });
 
-    const streamPayload = `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\ndata: [DONE]\n\n`;
+    const streamPayload = `data: ${JSON.stringify({ choices: [{ delta: { content } }], usage: entitlement })}\n\ndata: [DONE]\n\n`;
     return new Response(streamPayload, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: { ...CORS_HEADERS, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
     console.error("generate-script error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   }
 });

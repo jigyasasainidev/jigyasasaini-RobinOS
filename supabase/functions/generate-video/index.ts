@@ -1,14 +1,14 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import {
+  checkAndIncrementUsage,
+  CORS_HEADERS,
+  FEATURES,
+  createServiceClient,
+} from "../_shared/entitlement.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: CORS_HEADERS });
   }
 
   try {
@@ -16,10 +16,44 @@ Deno.serve(async (req) => {
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
 
+    // ============================================================
+    // SERVER-SIDE ENTITLEMENT CHECK + ATOMIC INCREMENT
+    // Video generation is a premium feature — enforce entitlement
+    // ============================================================
+    const { result: entitlement, error: entitlementError } = await checkAndIncrementUsage(
+      authHeader,
+      FEATURES.VIDEO_GENERATION,
+      crypto.randomUUID()
+    );
+
+    if (entitlementError) {
+      if (entitlement && !entitlement.success) {
+        return new Response(
+          JSON.stringify({
+            error: entitlement.code === "FEATURE_DISABLED"
+              ? "Video Studio requires Pro Creator or Agency plan"
+              : entitlement.message || "Video generation limit reached",
+            code: entitlement.code,
+            feature: entitlement.feature,
+            plan: entitlement.plan,
+            limit: entitlement.limit,
+            used: entitlement.used,
+            remaining: entitlement.remaining,
+            reset_at: entitlement.reset_at,
+          }),
+          { status: 403, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+        );
+      }
+      return entitlementError;
+    }
+
+    // ============================================================
+    // AUTH + PROFILE CHECK
+    // ============================================================
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -31,11 +65,11 @@ Deno.serve(async (req) => {
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
 
-    // Get user's video API key + tier
+    // Get user's video API key
     const { data: profile } = await supabase
       .from("profiles")
       .select("video_api_key, subscription_tier")
@@ -45,16 +79,7 @@ Deno.serve(async (req) => {
     if (!profile?.video_api_key) {
       return new Response(
         JSON.stringify({ error: "Video API key not configured. Add it in Settings → API Keys." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const tier = (profile.subscription_tier || "free").toLowerCase();
-    const normalizedTier = tier === "starter" ? "creator" : tier === "pro" ? "pro_creator" : tier;
-    if (!["pro_creator", "agency", "scale_agency"].includes(normalizedTier)) {
-      return new Response(
-        JSON.stringify({ error: "Video Studio requires Pro Creator or Agency plan" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
       );
     }
 
@@ -62,7 +87,7 @@ Deno.serve(async (req) => {
     if (!prompt) {
       return new Response(JSON.stringify({ error: "Prompt is required" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
 
@@ -101,12 +126,12 @@ Deno.serve(async (req) => {
       if (createResponse.status === 401 || createResponse.status === 403) {
         return new Response(
           JSON.stringify({ error: "Invalid Replicate API key. Check your key in Settings." }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 401, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
         );
       }
       return new Response(
         JSON.stringify({ error: "Failed to start video generation. Try again." }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 502, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
       );
     }
 
@@ -116,8 +141,8 @@ Deno.serve(async (req) => {
     if (prediction.status === "succeeded" && prediction.output) {
       const videoUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output;
       return new Response(
-        JSON.stringify({ status: "succeeded", video_url: videoUrl }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ status: "succeeded", video_url: videoUrl, usage: entitlement }),
+        { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
       );
     }
 
@@ -127,14 +152,15 @@ Deno.serve(async (req) => {
         status: prediction.status || "starting",
         prediction_id: prediction.id,
         video_url: null,
+        usage: entitlement,
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
     );
   } catch (err) {
     console.error("generate-video error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
     );
   }
 });

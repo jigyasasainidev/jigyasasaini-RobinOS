@@ -1,79 +1,67 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import {
+  checkAndIncrementUsage,
+  CORS_HEADERS,
+  FEATURES,
+  createServiceClient,
+} from "../_shared/entitlement.ts";
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
 
   try {
-    const { niche, user_id } = await req.json();
+    const authHeader = req.headers.get("authorization");
+
+    const { niche } = await req.json();
     if (!niche || typeof niche !== "string") {
       return new Response(JSON.stringify({ error: "Niche is required" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
 
+    // ============================================================
+    // SERVER-SIDE ENTITLEMENT CHECK + ATOMIC INCREMENT
+    // This is the authoritative enforcement point.
+    // Scan-trends uses trend_scan feature key.
+    // ============================================================
+    if (authHeader) {
+      const { result: entitlement, error: entitlementError } = await checkAndIncrementUsage(
+        authHeader,
+        FEATURES.TREND_SCAN,
+        crypto.randomUUID()
+      );
+
+      if (entitlementError) {
+        if (entitlement && !entitlement.success) {
+          return new Response(
+            JSON.stringify({
+              error: entitlement.message || "Scan limit reached. Upgrade to continue.",
+              code: entitlement.code,
+              feature: entitlement.feature,
+              plan: entitlement.plan,
+              limit: entitlement.limit,
+              used: entitlement.used,
+              remaining: entitlement.remaining,
+              reset_at: entitlement.reset_at,
+            }),
+            { status: 403, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+          );
+        }
+        return entitlementError;
+      }
+    } else {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
+    // ============================================================
+    // AI GENERATION
+    // ============================================================
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
-
-    // --- Free tier scan limit enforcement ---
-    if (user_id) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
-
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("subscription_tier, free_scans_used, free_trial_started_at, free_trial_expired")
-        .eq("user_id", user_id)
-        .single();
-
-      const { data: platformSettings } = await supabase
-        .from("platform_settings")
-        .select("free_scans_limit")
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      const freeScanLimit = Math.max(0, Number(platformSettings?.free_scans_limit ?? 1));
-
-      if (!profileError && profile) {
-        const tier = profile.subscription_tier || "free";
-
-        if (tier === "free") {
-          const trialStart = new Date(profile.free_trial_started_at || 0);
-          const now = new Date();
-          const hoursElapsed = (now.getTime() - trialStart.getTime()) / (1000 * 60 * 60);
-
-          if (profile.free_trial_expired || hoursElapsed >= 24) {
-            if (!profile.free_trial_expired) {
-              await supabase.from("profiles").update({ free_trial_expired: true }).eq("user_id", user_id);
-            }
-            return new Response(
-              JSON.stringify({ error: "Your free trial has ended. Please upgrade to continue." }),
-              { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
-          }
-
-          const freeScans = profile.free_scans_used ?? 0;
-          if (freeScans >= freeScanLimit) {
-            await supabase.from("profiles").update({ free_trial_expired: true }).eq("user_id", user_id);
-            return new Response(
-              JSON.stringify({ error: `Free scan limit reached (${freeScanLimit} scan${freeScanLimit === 1 ? "" : "s"}). Please upgrade to continue.` }),
-              { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
-          }
-
-          await supabase.from("profiles").update({ free_scans_used: freeScans + 1 }).eq("user_id", user_id);
-        }
-      }
-    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -146,18 +134,18 @@ Focus ONLY on verifiable, current trends. Be specific with numbers and platform 
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
         return new Response(JSON.stringify({ error: "AI credits exhausted. Please add funds." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 402, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
         });
       }
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
       return new Response(JSON.stringify({ error: "AI processing failed" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
 
@@ -165,19 +153,19 @@ Focus ONLY on verifiable, current trends. Be specific with numbers and platform 
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) {
       return new Response(JSON.stringify({ error: "No results generated" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
 
     const topics = JSON.parse(toolCall.function.arguments);
 
     return new Response(JSON.stringify(topics), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("scan-trends error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   }
 });

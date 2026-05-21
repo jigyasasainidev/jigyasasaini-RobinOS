@@ -1,10 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import {
+  checkAndIncrementUsage,
+  CORS_HEADERS,
+  FEATURES,
+  createServiceClient,
+} from "../_shared/entitlement.ts";
 
 type Platform = "youtube" | "instagram" | "tiktok" | "facebook";
 type Style = "viral" | "seo_optimized" | "storytelling" | "educational" | "bold" | "conversational";
@@ -17,14 +18,14 @@ const platformGuidance: Record<Platform, string> = {
 };
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
 
   try {
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
 
@@ -40,63 +41,71 @@ serve(async (req) => {
     if (!validPlatforms.includes(normalizedPlatform)) {
       return new Response(JSON.stringify({ error: "Invalid platform" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
 
     if (!validStyles.includes(normalizedStyle)) {
       return new Response(JSON.stringify({ error: "Invalid generation style" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
 
     if (normalizedPrompt.length < 3 || normalizedPrompt.length > 2000) {
       return new Response(JSON.stringify({ error: "Prompt must be 3-2000 characters" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
 
+    // ============================================================
+    // SERVER-SIDE ENTITLEMENT CHECK + ATOMIC INCREMENT
+    // ============================================================
+    const effectiveRequestId = String(requestId || crypto.randomUUID());
+    const { result: entitlement, error: entitlementError } = await checkAndIncrementUsage(
+      authHeader,
+      FEATURES.CAPTION_GENERATION,
+      effectiveRequestId
+    );
+
+    if (entitlementError) {
+      if (entitlement && !entitlement.success) {
+        return new Response(
+          JSON.stringify({
+            error: entitlement.message || "Daily limit reached — upgrade to continue creating",
+            code: entitlement.code,
+            feature: entitlement.feature,
+            plan: entitlement.plan,
+            limit: entitlement.limit,
+            used: entitlement.used,
+            remaining: entitlement.remaining,
+            reset_at: entitlement.reset_at,
+          }),
+          { status: 403, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+        );
+      }
+      return entitlementError;
+    }
+
+    // ============================================================
+    // AI GENERATION
+    // ============================================================
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
 
     if (!lovableApiKey) throw new Error("LOVABLE_API_KEY is not configured");
 
     const supabase = createClient(supabaseUrl, serviceRole);
-    const userSupabase = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
 
     const token = authHeader.replace("Bearer ", "");
-    const {
-      data: { user },
-    } = await supabase.auth.getUser(token);
+    const { data: { user } } = await supabase.auth.getUser(token);
 
     if (!user?.id) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { data: usageStatus, error: usageStatusError } = await userSupabase.rpc("get_usage_status", { p_feature_name: "captions" });
-    if (usageStatusError) {
-      return new Response(JSON.stringify({ error: "Unable to verify usage limits right now." }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (!usageStatus?.allowed) {
-      return new Response(JSON.stringify({
-        error: "Daily limit reached — upgrade to continue creating",
-        usage: usageStatus,
-      }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
 
@@ -146,7 +155,7 @@ Output constraints:
       console.error("generate-caption AI error:", aiResponse.status, errText);
       return new Response(JSON.stringify({ error: "Caption generation failed" }), {
         status: aiResponse.status === 429 || aiResponse.status === 402 ? aiResponse.status : 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
 
@@ -175,50 +184,44 @@ Output constraints:
     if (!generatedCaption) {
       return new Response(JSON.stringify({ error: "Empty generation result" }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
 
-    const effectiveRequestId = String(requestId || crypto.randomUUID());
-    const { data: creationResult, error: creationError } = await userSupabase.rpc("create_caption_generation_if_allowed", {
-      p_request_id: effectiveRequestId,
-      p_platform: normalizedPlatform,
-      p_generation_style: normalizedStyle,
-      p_prompt: normalizedPrompt,
-      p_generated_caption: generatedCaption,
-      p_generated_hashtags: generatedHashtags,
-      p_generated_keywords: generatedKeywords,
-    });
+    // Save generation
+    const { data: generation, error: insertError } = await supabase
+      .from("caption_generations")
+      .insert({
+        user_id: user.id,
+        request_id: effectiveRequestId,
+        platform: normalizedPlatform,
+        generation_style: normalizedStyle,
+        prompt: normalizedPrompt,
+        generated_caption: generatedCaption,
+        generated_hashtags: generatedHashtags,
+        generated_keywords: generatedKeywords,
+        generation_status: "succeeded",
+      })
+      .select()
+      .single();
 
-    if (creationError) {
-      console.error("generate-caption create_caption_generation_if_allowed error:", creationError);
+    if (insertError) {
+      console.error("generate-caption insert error:", insertError);
       return new Response(JSON.stringify({ error: "Could not save generation" }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
 
-    if (!creationResult?.ok) {
-      return new Response(JSON.stringify({
-        error: "Daily limit reached — upgrade to continue creating",
-        usage: creationResult?.status ?? usageStatus,
-      }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const row = creationResult?.generation;
-
-    return new Response(JSON.stringify({ generation: row, usage: creationResult?.status ?? usageStatus }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    return new Response(
+      JSON.stringify({ generation, usage: entitlement }),
+      { headers: { ...CORS_HEADERS, "Content-Type": "application/json" }, status: 200 }
+    );
   } catch (e) {
     console.error("generate-caption error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   }
 });
