@@ -23,9 +23,16 @@ export function usePlatformSettings() {
   const query = useQuery({
     queryKey: ["platform-settings-live-v1"],
     queryFn: async (): Promise<PlatformSettingsLive | null> => {
-      const { data, error } = await db.rpc("get_public_platform_settings");
+      const { data, error } = await db
+        .from("platform_settings")
+        .select(
+          "creator_price,pro_price,agency_price,free_scripts_limit,free_scans_limit,affiliate_commission_percent,minimum_withdrawal,payout_delay_days,maintenance_mode,announcement_banner,updated_at",
+        )
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
       if (error) throw error;
-      if (Array.isArray(data)) return (data[0] ?? null) as PlatformSettingsLive | null;
       return (data ?? null) as PlatformSettingsLive | null;
     },
     staleTime: 15 * 1000,
