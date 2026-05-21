@@ -1132,10 +1132,10 @@ const AdminDashboard = () => {
   const renderAffiliatesPage = () => (
     <div className="space-y-4">
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Total Affiliates" value={formatNumber(affiliateProfiles.length)} growth={7.4} icon={Users} spark={sparkFrom(affiliateProfiles.map((a) => Number(a.total_clicks || 0)))} />
-        <MetricCard label="Pending Commissions" value={formatCurrency(pendingAffiliateCommissions)} growth={4.1} icon={Clock3} spark={sparkFrom(affiliateCommissions.filter((a) => a.status === "pending").map((a) => Number(a.amount || 0)))} />
-        <MetricCard label="Paid Commissions" value={formatCurrency(paidAffiliateCommissions)} growth={6.8} icon={CheckCircle2} spark={sparkFrom(affiliateCommissions.filter((a) => a.status === "paid").map((a) => Number(a.amount || 0)))} />
-        <MetricCard label="Conversion Revenue" value={formatCurrency(totalAffiliateEarnings)} growth={9.6} icon={TrendingUp} spark={sparkFrom(affiliateCommissions.map((a) => Number(a.amount || 0)))} />
+        <MetricCard label="Total Affiliates" value={formatNumber(affiliateProfiles.length)} icon={Users} spark={sparkFrom(affiliateProfiles.map((a) => Number(a.total_clicks || 0)))} />
+        <MetricCard label="Pending Commissions" value={formatCurrency(pendingAffiliateCommissions)} icon={Clock3} spark={sparkFrom(affiliateCommissions.filter((a) => a.status === "pending").map((a) => Number(a.amount || 0)))} />
+        <MetricCard label="Paid Commissions" value={formatCurrency(paidAffiliateCommissions)} icon={CheckCircle2} spark={sparkFrom(affiliateCommissions.filter((a) => a.status === "paid").map((a) => Number(a.amount || 0)))} />
+        <MetricCard label="Conversion Revenue" value={formatCurrency(totalAffiliateEarnings)} icon={TrendingUp} spark={sparkFrom(affiliateCommissions.map((a) => Number(a.amount || 0)))} />
       </section>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -1163,10 +1163,10 @@ const AdminDashboard = () => {
     return (
       <div className="space-y-4">
         <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <MetricCard label="Pending Withdrawals" value={formatNumber(pendingWithdrawals.length)} growth={-2.4} icon={Clock3} spark={sparkFrom(pendingWithdrawals.map((w) => Number(w.amount || 0)))} />
-          <MetricCard label="Paid This Month" value={formatCurrency(paidWithdrawalsMonth.reduce((s, w) => s + Number(w.amount || 0), 0))} growth={8.1} icon={CheckCircle2} spark={sparkFrom(paidWithdrawalsMonth.map((w) => Number(w.amount || 0)))} />
-          <MetricCard label="Total Withdrawal Volume" value={formatCurrency(totalWithdrawalVolume)} growth={6.3} icon={Wallet} spark={sparkFrom(withdrawals.map((w) => Number(w.amount || 0)))} />
-          <MetricCard label="Failed Withdrawals" value={formatNumber(failedWithdrawals)} growth={-1.2} icon={ArrowDownRight} spark={sparkFrom(withdrawals.filter((w) => asWithdrawStatus(w.status) === "rejected").map((w) => Number(w.amount || 0)))} />
+          <MetricCard label="Pending Withdrawals" value={formatNumber(pendingWithdrawals.length)} icon={Clock3} spark={sparkFrom(pendingWithdrawals.map((w) => Number(w.amount || 0)))} />
+          <MetricCard label="Paid This Month" value={formatCurrency(paidWithdrawalsMonth.reduce((s, w) => s + Number(w.amount || 0), 0))} icon={CheckCircle2} spark={sparkFrom(paidWithdrawalsMonth.map((w) => Number(w.amount || 0)))} />
+          <MetricCard label="Total Withdrawal Volume" value={formatCurrency(totalWithdrawalVolume)} icon={Wallet} spark={sparkFrom(withdrawals.map((w) => Number(w.amount || 0)))} />
+          <MetricCard label="Failed Withdrawals" value={formatNumber(failedWithdrawals)} icon={ArrowDownRight} spark={sparkFrom(withdrawals.filter((w) => asWithdrawStatus(w.status) === "rejected").map((w) => Number(w.amount || 0)))} />
         </section>
 
         <SectionCard title="Withdrawal Request Queue" subtitle="Approve, reject, and mark paid" right={<select value={withdrawStatusFilter} onChange={(e) => setWithdrawStatusFilter(e.target.value as "all" | WithdrawStatus)} className="h-8 rounded-md border border-border/60 bg-secondary/70 px-2 text-xs text-foreground"><option value="all">All status</option><option value="pending">pending</option><option value="approved">approved</option><option value="paid">paid</option><option value="rejected">rejected</option></select>}>
