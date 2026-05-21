@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Lenis from "lenis";
-import { ChevronDown, Scan, Video, BarChart3, Globe, Check, Zap, Shield, Clock, Music, Mic, Layers, Brain, Hash, CheckCircle2, Sparkles, Type } from "lucide-react";
+import { ChevronDown, Scan, Video, BarChart3, Globe, Check, Zap, Shield, Clock, Music, Mic, Layers, Brain, Hash, Type } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -12,16 +12,6 @@ import {
 import { useState } from "react";
 import { useCurrency } from "@/hooks/useCurrency";
 import { getLandingPricingPlans, getCurrencySymbol } from "@/lib/pricing";
-import creator1 from "@/assets/creators/creator-1.jpg";
-import creator2 from "@/assets/creators/creator-2.jpg";
-import creator3 from "@/assets/creators/creator-3.jpg";
-import creator4 from "@/assets/creators/creator-4.jpg";
-import creator5 from "@/assets/creators/creator-5.jpg";
-import creator6 from "@/assets/creators/creator-6.jpg";
-import creator7 from "@/assets/creators/creator-7.jpg";
-import creator8 from "@/assets/creators/creator-8.jpg";
-import creator9 from "@/assets/creators/creator-9.jpg";
-import creator10 from "@/assets/creators/creator-10.jpg";
 import { BrandMark } from "@/components/BrandMark";
 import { PublicNavbar } from "@/components/public/PublicNavbar";
 import { PublicFooter } from "@/components/public/PublicFooter";
@@ -135,20 +125,45 @@ const engines = [
   },
 ];
 
-const creatorProof = [
-  { username: "@creatoralex", followers: "120K followers", growth: "+48K in 30 days", weekly: "+2.4K this week", niche: "AI Creator", badge: "Trending now", liveTag: "AI boosted", verified: true, avatar: creator1 },
-  { username: "@reelgod", followers: "890K followers", growth: "+210K in 60 days", weekly: "+6.8K this week", niche: "Short-form Video", badge: "Top Growth", liveTag: "Live momentum", verified: true, avatar: creator2 },
-  { username: "@viralera", followers: "2.1M followers", growth: "+800K in 90 days", weekly: "+12.2K this week", niche: "Content Strategy", badge: "Elite", liveTag: "Signal surge", verified: true, avatar: creator3 },
-  { username: "@facelessgrowth", followers: "340K followers", growth: "+120K growth", weekly: "+3.1K this week", niche: "Automation", badge: "Scaling", liveTag: "Auto-optimized", verified: false, avatar: creator4 },
-  { username: "@scriptlab", followers: "75K followers", growth: "Generated 900+ scripts", weekly: "+1.2K this week", niche: "AI Education", badge: "High Output", liveTag: "Script engine", verified: true, avatar: creator5 },
-  { username: "@founderframe", followers: "260K followers", growth: "+96K in 45 days", weekly: "+2.9K this week", niche: "Startup Content", badge: "Fast Track", liveTag: "Creator mode", verified: false, avatar: creator6 },
-  { username: "@hooksmith", followers: "430K followers", growth: "+180K in 75 days", weekly: "+4.5K this week", niche: "Hook Engineering", badge: "Conversion", liveTag: "Hook tested", verified: true, avatar: creator7 },
-  { username: "@narrativeops", followers: "190K followers", growth: "+67K in 30 days", weekly: "+2.1K this week", niche: "Storytelling", badge: "Consistent", liveTag: "Retention up", verified: true, avatar: creator8 },
-  { username: "@brandpulsehq", followers: "510K followers", growth: "+140K in 50 days", weekly: "+5.2K this week", niche: "Personal Branding", badge: "Authority", liveTag: "Brand lift", verified: false, avatar: creator9 },
-  { username: "@cinematiccreator", followers: "980K followers", growth: "+320K in 90 days", weekly: "+7.4K this week", niche: "Visual Direction", badge: "Breakout", liveTag: "Velocity high", verified: true, avatar: creator10 },
+const creatorFeatureCards = [
+  {
+    title: "AI Script Creator",
+    subtitle: "Short-form Workflow",
+    features: [
+      "AI-assisted content pipeline",
+      "Caption optimization",
+      "Content planning support",
+      "Fast generation workflow",
+    ],
+  },
+  {
+    title: "Growth Creator",
+    subtitle: "Content Strategy",
+    features: [
+      "Multi-platform workflow",
+      "AI caption engine",
+      "Trend discovery tools",
+      "Workflow optimization",
+    ],
+  },
+  {
+    title: "Automation Creator",
+    subtitle: "Content Automation",
+    features: [
+      "AI-powered workflows",
+      "Creator dashboard",
+      "Fast generation system",
+      "Automation infrastructure",
+    ],
+  },
 ];
 
-const credibilityStrip = ["42K+ scripts generated", "1.8M+ creator reach analyzed", "1200+ growth workflows", "Used in 17+ countries"];
+const credibilityStrip = [
+  "AI-powered content workflow",
+  "Built for modern creators",
+  "Designed for content teams",
+  "Professional creator infrastructure",
+];
 
 const captionEngineBullets = [
   "SEO-optimized YouTube descriptions",
