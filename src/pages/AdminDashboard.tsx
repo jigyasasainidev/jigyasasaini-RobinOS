@@ -1058,10 +1058,10 @@ const AdminDashboard = () => {
   const renderUsersPage = () => (
     <div className="space-y-4">
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Total Users" value={formatNumber(usersEnriched.length)} growth={userGrowthPercent} icon={Users} spark={sparkFrom(dailySeries.map((d) => d.users))} />
-        <MetricCard label="Active Users" value={formatNumber(activeSubscribers)} growth={growthPercent} icon={UserCheck} spark={sparkFrom(dailySeries.map((d) => d.subscriptions))} />
-        <MetricCard label="Free Users" value={formatNumber(freeUsers)} growth={2.2} icon={Users} spark={sparkFrom(usersEnriched.filter((u) => u.plan === "creator").map((u) => u.scriptsUsed))} />
-        <MetricCard label="Paid Users" value={formatNumber(paidUsers)} growth={6.1} icon={Users} spark={sparkFrom(usersEnriched.filter((u) => u.status === "active").map((u) => u.scriptsUsed))} />
+        <MetricCard label="Total Users" value={formatNumber(usersEnriched.length)} icon={Users} spark={sparkFrom(dailySeries.map((d) => d.users))} />
+        <MetricCard label="Active Users" value={formatNumber(activeSubscribers)} icon={UserCheck} spark={sparkFrom(dailySeries.map((d) => d.subscriptions))} />
+        <MetricCard label="Free Users" value={formatNumber(freeUsers)} icon={Users} spark={sparkFrom(usersEnriched.filter((u) => u.plan === "creator").map((u) => u.scriptsUsed))} />
+        <MetricCard label="Paid Users" value={formatNumber(paidUsers)} icon={Users} spark={sparkFrom(usersEnriched.filter((u) => u.status === "active").map((u) => u.scriptsUsed))} />
       </section>
 
       <SectionCard title="Users Table" subtitle="Search, filters, pagination, and admin actions">
@@ -1107,10 +1107,10 @@ const AdminDashboard = () => {
   const renderSubscriptionsPage = () => (
     <div className="space-y-4">
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Active Plan Value" value={formatCurrency(monthlyRevenue)} growth={growthPercent} icon={Wallet} spark={sparkFrom(dailySeries.map((d) => d.revenue))} />
-        <MetricCard label="Active Subscribers" value={formatNumber(activeSubscribers)} growth={userGrowthPercent} icon={UserCheck} spark={sparkFrom(dailySeries.map((d) => d.subscriptions))} />
-        <MetricCard label="Churn Rate" value={`${churnRate.toFixed(2)}%`} growth={-2.1} icon={ArrowDownRight} spark={sparkFrom(cancelledSubs.map((s) => Number(s.amount || 0)))} />
-        <MetricCard label="At-Risk Subs" value={formatNumber(atRiskSubscriptions.length)} growth={-1.3} icon={Clock3} spark={sparkFrom(atRiskSubscriptions.map((s) => Number(s.amount || 0)))} />
+        <MetricCard label="Active Plan Value" value={formatCurrency(monthlyRevenue)} icon={Wallet} spark={sparkFrom(dailySeries.map((d) => d.revenue))} />
+        <MetricCard label="Active Subscribers" value={formatNumber(activeSubscribers)} icon={UserCheck} spark={sparkFrom(dailySeries.map((d) => d.subscriptions))} />
+        <MetricCard label="Churn Rate" value={`${churnRate.toFixed(2)}%`} icon={ArrowDownRight} spark={sparkFrom(cancelledSubs.map((s) => Number(s.amount || 0)))} />
+        <MetricCard label="At-Risk Subs" value={formatNumber(atRiskSubscriptions.length)} icon={Clock3} spark={sparkFrom(atRiskSubscriptions.map((s) => Number(s.amount || 0)))} />
       </section>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
