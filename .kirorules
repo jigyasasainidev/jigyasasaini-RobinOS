@@ -94,3 +94,23 @@ Always verify:
 4. UI consistency remains intact
 5. No unrelated files changed
 6. No production regressions introduced
+
+# Core Rules
+
+- Never modify authentication flows without approval
+- Never change database schema automatically
+- Never execute destructive migrations
+- Never remove existing business logic without explicit confirmation
+- Preserve affiliate attribution lifecycle
+- Preserve RLS compatibility
+- Never replace architecture patterns globally
+- Prefer minimal scoped changes
+- Always analyze impact before editing
+- Generate implementation plan before execution
+- Never touch production credentials
+- Never rewrite entire files unless necessary
+
+- Never modify environment variable structure without approval
+- Never disable existing security checks or validation
+- Prefer extracting components over rewriting existing systems
+- If uncertain about architectural intent, ask before implementing
