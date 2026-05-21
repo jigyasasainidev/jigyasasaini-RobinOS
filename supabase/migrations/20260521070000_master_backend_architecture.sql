@@ -2025,7 +2025,7 @@ select
   false,
   null,
   'https://tryrobin.xyz',
-  'helprobinai@zohomail'
+  'support@tryrobin.xyz'
 where not exists (select 1 from public.platform_settings);
 
 insert into public.feature_flags (flag_key, flag_value, description)
