@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Lenis from "lenis";
-import { ChevronDown, Scan, Video, BarChart3, Globe, Check, Zap, Shield, Clock, Music, Mic, Layers, Brain, Hash, CheckCircle2, Sparkles, Type } from "lucide-react";
+import { ChevronDown, Scan, Video, BarChart3, Globe, Check, Zap, Shield, Clock, Music, Mic, Layers, Brain, Hash, Type } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -12,16 +12,6 @@ import {
 import { useState } from "react";
 import { useCurrency } from "@/hooks/useCurrency";
 import { getLandingPricingPlans, getCurrencySymbol } from "@/lib/pricing";
-import creator1 from "@/assets/creators/creator-1.jpg";
-import creator2 from "@/assets/creators/creator-2.jpg";
-import creator3 from "@/assets/creators/creator-3.jpg";
-import creator4 from "@/assets/creators/creator-4.jpg";
-import creator5 from "@/assets/creators/creator-5.jpg";
-import creator6 from "@/assets/creators/creator-6.jpg";
-import creator7 from "@/assets/creators/creator-7.jpg";
-import creator8 from "@/assets/creators/creator-8.jpg";
-import creator9 from "@/assets/creators/creator-9.jpg";
-import creator10 from "@/assets/creators/creator-10.jpg";
 import { BrandMark } from "@/components/BrandMark";
 import { PublicNavbar } from "@/components/public/PublicNavbar";
 import { PublicFooter } from "@/components/public/PublicFooter";
@@ -135,20 +125,45 @@ const engines = [
   },
 ];
 
-const creatorProof = [
-  { username: "@creatoralex", followers: "120K followers", growth: "+48K in 30 days", weekly: "+2.4K this week", niche: "AI Creator", badge: "Trending now", liveTag: "AI boosted", verified: true, avatar: creator1 },
-  { username: "@reelgod", followers: "890K followers", growth: "+210K in 60 days", weekly: "+6.8K this week", niche: "Short-form Video", badge: "Top Growth", liveTag: "Live momentum", verified: true, avatar: creator2 },
-  { username: "@viralera", followers: "2.1M followers", growth: "+800K in 90 days", weekly: "+12.2K this week", niche: "Content Strategy", badge: "Elite", liveTag: "Signal surge", verified: true, avatar: creator3 },
-  { username: "@facelessgrowth", followers: "340K followers", growth: "+120K growth", weekly: "+3.1K this week", niche: "Automation", badge: "Scaling", liveTag: "Auto-optimized", verified: false, avatar: creator4 },
-  { username: "@scriptlab", followers: "75K followers", growth: "Generated 900+ scripts", weekly: "+1.2K this week", niche: "AI Education", badge: "High Output", liveTag: "Script engine", verified: true, avatar: creator5 },
-  { username: "@founderframe", followers: "260K followers", growth: "+96K in 45 days", weekly: "+2.9K this week", niche: "Startup Content", badge: "Fast Track", liveTag: "Creator mode", verified: false, avatar: creator6 },
-  { username: "@hooksmith", followers: "430K followers", growth: "+180K in 75 days", weekly: "+4.5K this week", niche: "Hook Engineering", badge: "Conversion", liveTag: "Hook tested", verified: true, avatar: creator7 },
-  { username: "@narrativeops", followers: "190K followers", growth: "+67K in 30 days", weekly: "+2.1K this week", niche: "Storytelling", badge: "Consistent", liveTag: "Retention up", verified: true, avatar: creator8 },
-  { username: "@brandpulsehq", followers: "510K followers", growth: "+140K in 50 days", weekly: "+5.2K this week", niche: "Personal Branding", badge: "Authority", liveTag: "Brand lift", verified: false, avatar: creator9 },
-  { username: "@cinematiccreator", followers: "980K followers", growth: "+320K in 90 days", weekly: "+7.4K this week", niche: "Visual Direction", badge: "Breakout", liveTag: "Velocity high", verified: true, avatar: creator10 },
+const creatorFeatureCards = [
+  {
+    title: "AI Script Creator",
+    subtitle: "Short-form Workflow",
+    features: [
+      "AI-assisted content pipeline",
+      "Caption optimization",
+      "Content planning support",
+      "Fast generation workflow",
+    ],
+  },
+  {
+    title: "Growth Creator",
+    subtitle: "Content Strategy",
+    features: [
+      "Multi-platform workflow",
+      "AI caption engine",
+      "Trend discovery tools",
+      "Workflow optimization",
+    ],
+  },
+  {
+    title: "Automation Creator",
+    subtitle: "Content Automation",
+    features: [
+      "AI-powered workflows",
+      "Creator dashboard",
+      "Fast generation system",
+      "Automation infrastructure",
+    ],
+  },
 ];
 
-const credibilityStrip = ["42K+ scripts generated", "1.8M+ creator reach analyzed", "1200+ growth workflows", "Used in 17+ countries"];
+const credibilityStrip = [
+  "AI-powered content workflow",
+  "Built for modern creators",
+  "Designed for content teams",
+  "Professional creator infrastructure",
+];
 
 const captionEngineBullets = [
   "SEO-optimized YouTube descriptions",
@@ -356,9 +371,9 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
             transition={{ delay: 1.3, duration: 0.8 }}
             className="flex items-center gap-6 mt-6 text-muted-foreground/50"
           >
-            <span className="text-[11px] font-mono">10,000+ scripts generated</span>
+            <span className="text-[11px] font-mono">AI-powered content workflow</span>
             <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-            <span className="text-[11px] font-mono">Used by creators daily</span>
+            <span className="text-[11px] font-mono">Built for modern creators</span>
           </motion.div>
         </motion.div>
 
@@ -391,121 +406,63 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
         </div>
       </div>
 
-      {/* ─── CREATOR PROOF WALL ─── */}
+      {/* ─── CREATOR WORKFLOW SECTION ─── */}
       <RevealSection className="py-14 sm:py-20 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8 sm:mb-10">
-            <p className="text-[10px] sm:text-xs font-mono tracking-[0.28em] uppercase text-muted-foreground/70 mb-3">Social Proof</p>
+            <p className="text-[10px] sm:text-xs font-mono tracking-[0.28em] uppercase text-muted-foreground/70 mb-3">Creator Workflows</p>
             <h2 className="text-chrome text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight leading-tight">
-              Creators Growing With RobinOS
+              Built For Modern Content Creators
             </h2>
             <p className="mt-3 text-muted-foreground text-xs sm:text-sm max-w-xl mx-auto px-2">
-              Real creator workflows. Measurable growth. Built for modern content teams.
+              AI-powered workflows for creators, brands, and content teams.
             </p>
           </div>
 
           <div className="md:hidden -mx-4 px-4 overflow-x-auto pb-2 snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex gap-4 w-max">
-              {creatorProof.map((creator) => (
+              {creatorFeatureCards.map((card) => (
                 <motion.article
-                  key={creator.username}
+                  key={card.title}
                   className="snap-start w-[280px] rounded-2xl glass-card card-glow p-4 border border-border/70 shadow-[0_18px_45px_hsl(0_0%_0%/0.35)]"
                   whileHover={{ y: -3, boxShadow: "0 28px 65px hsl(217 91% 60% / 0.16), 0 0 0 1px hsl(217 91% 60% / 0.2)" }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="relative">
-                        <img src={creator.avatar} alt={`${creator.username} creator profile`} loading="lazy" width={96} height={96} className="w-11 h-11 rounded-full object-cover border border-primary/25" />
-                        <motion.span className="absolute -right-0.5 -bottom-0.5 w-2.5 h-2.5 rounded-full bg-primary border border-background" animate={{ opacity: [0.35, 1, 0.35], scale: [0.92, 1.15, 0.92] }} transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }} />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <p className="text-sm font-medium text-foreground truncate">{creator.username}</p>
-                          {creator.verified && <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />}
-                        </div>
-                        <p className="text-[11px] text-muted-foreground/80 font-mono">{creator.niche}</p>
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-mono text-primary bg-primary/10 border border-primary/25 px-2 py-1 rounded-full">{creator.badge}</span>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    <div className="flex items-center justify-between rounded-lg bg-secondary/45 border border-border/60 px-3 py-2">
-                      <span className="text-[10px] font-mono text-muted-foreground/70 uppercase tracking-wider">Audience</span>
-                      <span className="text-xs text-foreground">{creator.followers}</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg bg-primary/8 border border-primary/20 px-3 py-2">
-                      <span className="text-[10px] font-mono text-primary/90 uppercase tracking-wider">Result</span>
-                      <span className="text-xs text-primary">{creator.growth}</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg bg-card/50 border border-border/60 px-3 py-2">
-                      <span className="text-[10px] font-mono text-muted-foreground/80 uppercase tracking-wider">Live</span>
-                      <motion.span className="text-[11px] text-foreground/85" animate={{ opacity: [0.65, 1, 0.65] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}>
-                        {creator.weekly}
-                      </motion.span>
-                    </div>
-                    <div className="flex items-center justify-end">
-                      <span className="text-[10px] font-mono text-primary bg-primary/10 border border-primary/25 px-2 py-1 rounded-full">{creator.liveTag}</span>
-                    </div>
-                  </div>
+                  <p className="text-sm font-semibold text-foreground">{card.title}</p>
+                  <p className="mt-1 text-[11px] font-mono uppercase tracking-[0.16em] text-primary/90">{card.subtitle}</p>
+                  <ul className="mt-4 space-y-2.5">
+                    {card.features.map((feature) => (
+                      <li key={feature} className="flex items-center gap-2.5 rounded-lg bg-card/50 border border-border/60 px-3 py-2">
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                        <span className="text-xs text-foreground/90">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </motion.article>
               ))}
             </div>
           </div>
 
-          <div className="hidden md:block relative overflow-hidden rounded-2xl border border-border/60 bg-card/20 p-4">
-            <div className="pointer-events-none absolute inset-y-0 left-0 w-28 bg-gradient-to-r from-background to-transparent z-10" />
-            <div className="pointer-events-none absolute inset-y-0 right-0 w-28 bg-gradient-to-l from-background to-transparent z-10" />
-            <motion.div
-              className="flex gap-4 w-max"
-              animate={{ x: [0, -1280] }}
-              transition={{ duration: 60, ease: "linear", repeat: Infinity }}
-            >
-              {[...creatorProof, ...creatorProof].map((creator, index) => (
-                <motion.article key={`${creator.username}-${index}`} className="w-[300px] rounded-2xl glass-card card-glow p-4 border border-border/70 shadow-[0_18px_45px_hsl(0_0%_0%/0.35)]" whileHover={{ y: -3, boxShadow: "0 28px 65px hsl(217 91% 60% / 0.16), 0 0 0 1px hsl(217 91% 60% / 0.2)" }} transition={{ duration: 0.3, ease: "easeOut" }}>
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="relative">
-                        <img src={creator.avatar} alt={`${creator.username} creator profile`} loading="lazy" width={96} height={96} className="w-11 h-11 rounded-full object-cover border border-primary/25" />
-                        <motion.span className="absolute -right-0.5 -bottom-0.5 w-2.5 h-2.5 rounded-full bg-primary border border-background" animate={{ opacity: [0.35, 1, 0.35], scale: [0.92, 1.15, 0.92] }} transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }} />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <p className="text-sm font-medium text-foreground truncate">{creator.username}</p>
-                          {creator.verified && <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />}
-                        </div>
-                        <p className="text-[11px] text-muted-foreground/80 font-mono">{creator.niche}</p>
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-mono text-primary bg-primary/10 border border-primary/25 px-2 py-1 rounded-full">{creator.badge}</span>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    <div className="flex items-center justify-between rounded-lg bg-secondary/45 border border-border/60 px-3 py-2">
-                      <span className="text-[10px] font-mono text-muted-foreground/70 uppercase tracking-wider">Audience</span>
-                      <span className="text-xs text-foreground">{creator.followers}</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg bg-primary/8 border border-primary/20 px-3 py-2">
-                      <div className="flex items-center gap-1.5">
-                        <Sparkles className="w-3 h-3 text-primary/80" />
-                        <span className="text-[10px] font-mono text-primary/90 uppercase tracking-wider">Result</span>
-                      </div>
-                      <span className="text-xs text-primary">{creator.growth}</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg bg-card/50 border border-border/60 px-3 py-2">
-                      <span className="text-[10px] font-mono text-muted-foreground/80 uppercase tracking-wider">Live</span>
-                      <motion.span className="text-[11px] text-foreground/85" animate={{ opacity: [0.65, 1, 0.65] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}>
-                        {creator.weekly}
-                      </motion.span>
-                    </div>
-                    <div className="flex items-center justify-end">
-                      <span className="text-[10px] font-mono text-primary bg-primary/10 border border-primary/25 px-2 py-1 rounded-full">{creator.liveTag}</span>
-                    </div>
-                  </div>
-                </motion.article>
-              ))}
-            </motion.div>
+          <div className="hidden md:grid grid-cols-3 gap-4">
+            {creatorFeatureCards.map((card) => (
+              <motion.article
+                key={card.title}
+                className="rounded-2xl glass-card card-glow p-5 border border-border/70 shadow-[0_18px_45px_hsl(0_0%_0%/0.35)]"
+                whileHover={{ y: -3, boxShadow: "0 28px 65px hsl(217 91% 60% / 0.16), 0 0 0 1px hsl(217 91% 60% / 0.2)" }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+              >
+                <p className="text-base font-semibold text-foreground">{card.title}</p>
+                <p className="mt-1 text-[11px] font-mono uppercase tracking-[0.16em] text-primary/90">{card.subtitle}</p>
+                <ul className="mt-4 space-y-2.5">
+                  {card.features.map((feature) => (
+                    <li key={feature} className="flex items-center gap-2.5 rounded-lg bg-card/50 border border-border/60 px-3 py-2">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                      <span className="text-xs text-foreground/90">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.article>
+            ))}
           </div>
         </div>
       </RevealSection>
@@ -527,10 +484,10 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
               <p className="text-[10px] font-mono text-primary mb-2">🎬 READY TO RECORD:</p>
               <p className="text-foreground text-sm leading-relaxed font-medium">"Nobody is telling you this about Instagram growth..."</p>
               <p className="text-foreground/80 text-sm leading-relaxed mt-1">"Delete your hashtag strategy. Here's what actually works in 2026."</p>
-              <p className="text-foreground/70 text-sm leading-relaxed mt-1">"I tested this for 30 days and gained 50K followers."</p>
+              <p className="text-foreground/70 text-sm leading-relaxed mt-1">"Use this structure to build a consistent, platform-ready content workflow."</p>
             </div>
           </div>
-          <p className="text-center text-muted-foreground/50 text-[11px] font-mono">Generated in 8 seconds</p>
+          <p className="text-center text-muted-foreground/50 text-[11px] font-mono">Fast generation workflow</p>
         </div>
       </RevealSection>
 
