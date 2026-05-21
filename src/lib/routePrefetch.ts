@@ -45,7 +45,9 @@ export const prefetchRoute = (to: string) => {
 
   prefetched.add(path);
   for (const entry of matches) {
-    void entry.load();
+    void entry.load().catch(() => {
+      prefetched.delete(path);
+    });
   }
 };
 

@@ -11,21 +11,22 @@ import robinosLogo from "@/assets/robinos-logo.png";
 import { AdminRouteGuard } from "@/components/admin/AdminRouteGuard";
 import { warmCriticalRoutes } from "@/lib/routePrefetch";
 import { TopScrollProgress } from "@/components/TopScrollProgress";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
 const EntryPage = lazy(() => import("./pages/EntryPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 const DashboardLayout = lazy(() => import("./pages/DashboardLayout"));
 
 // Lazy load dashboard pages
-const IntelligencePage = lazy(() => import("./pages/IntelligencePage"));
-const StudioPage = lazy(() => import("./pages/StudioPage"));
-const CaptionEnginePage = lazy(() => import("./pages/CaptionEnginePage"));
-const VoiceOverStudioPage = lazy(() => import("./pages/VoiceOverStudioPage"));
-const TrendingAudioPage = lazy(() => import("./pages/TrendingAudioPage"));
-const VideoStudioPage = lazy(() => import("./pages/VideoStudioPage"));
-const SettingsPage = lazy(() => import("./pages/SettingsPage"));
-const HistoryPage = lazy(() => import("./pages/HistoryPage"));
-const ReferralsPage = lazy(() => import("./pages/ReferralsPage"));
+const IntelligencePage = lazy(lazyWithRetry(() => import("./pages/IntelligencePage"), "dashboard-intelligence"));
+const StudioPage = lazy(lazyWithRetry(() => import("./pages/StudioPage"), "dashboard-studio"));
+const CaptionEnginePage = lazy(lazyWithRetry(() => import("./pages/CaptionEnginePage"), "dashboard-caption"));
+const VoiceOverStudioPage = lazy(lazyWithRetry(() => import("./pages/VoiceOverStudioPage"), "dashboard-voice"));
+const TrendingAudioPage = lazy(lazyWithRetry(() => import("./pages/TrendingAudioPage"), "dashboard-trending"));
+const VideoStudioPage = lazy(lazyWithRetry(() => import("./pages/VideoStudioPage"), "dashboard-video"));
+const SettingsPage = lazy(lazyWithRetry(() => import("./pages/SettingsPage"), "dashboard-settings"));
+const HistoryPage = lazy(lazyWithRetry(() => import("./pages/HistoryPage"), "dashboard-history"));
+const ReferralsPage = lazy(lazyWithRetry(() => import("./pages/ReferralsPage"), "dashboard-referrals"));
 
 // Lazy load other pages
 const AboutPage = lazy(() => import("./pages/public/PublicInfoPages").then((m) => ({ default: m.AboutPage })));
