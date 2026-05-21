@@ -701,6 +701,22 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_public_platform_settings: {
+        Args: never
+        Returns: {
+          affiliate_commission_percent: number
+          agency_price: number
+          announcement_banner: string
+          creator_price: number
+          free_scans_limit: number
+          free_scripts_limit: number
+          maintenance_mode: boolean
+          minimum_withdrawal: number
+          payout_delay_days: number
+          pro_price: number
+          updated_at: string
+        }[]
+      }
       get_usage_status: { Args: { p_feature_name?: string }; Returns: Json }
       initialize_user_account:
         | { Args: never; Returns: Json }
