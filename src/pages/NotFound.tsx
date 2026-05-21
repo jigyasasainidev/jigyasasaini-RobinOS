@@ -1,17 +1,18 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 
 const NotFound = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (location.pathname.startsWith("/~oauth/")) {
-      window.location.assign(`${location.pathname}${location.search}${location.hash}`);
+      navigate("/login", { replace: true });
       return;
     }
 
     console.warn("404 route:", location.pathname);
-  }, [location.pathname]);
+  }, [location.pathname, navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted">
