@@ -1,2 +1,0 @@
-ALTER FUNCTION public.consume_feature_quota(text, integer, text) SECURITY DEFINER;
-ALTER FUNCTION public.create_caption_generation_if_allowed(text, text, text, text, text, text[], text[]) SECURITY DEFINER;
