@@ -26,6 +26,7 @@ import { BrandMark } from "@/components/BrandMark";
 import { PublicNavbar } from "@/components/public/PublicNavbar";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { PageSeo } from "@/components/seo/PageSeo";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 /* ─── Scroll-triggered section wrapper ─── */
 const RevealSection = ({
@@ -167,6 +168,7 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
   const [searchParams] = useSearchParams();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const { currency } = useCurrency();
+  const { data: platformSettings } = usePlatformSettings();
   const symbol = getCurrencySymbol(currency);
   const referralParam = searchParams.get("ref")?.trim() ?? "";
   const authHref = referralParam ? `/auth?ref=${encodeURIComponent(referralParam)}` : "/auth";
@@ -244,7 +246,11 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
   const frictionBlur = useTransform(frictionScroll, [0, 1], [16, 0]);
   const frictionOpacity = useTransform(frictionScroll, [0, 1], [0.3, 1]);
 
-  const plans = getLandingPricingPlans(currency, billingCycle);
+  const plans = getLandingPricingPlans(currency, billingCycle, {
+    creator_price: platformSettings?.creator_price,
+    pro_price: platformSettings?.pro_price,
+    agency_price: platformSettings?.agency_price,
+  });
 
   return (
     <div className="relative bg-background grain select-none-all overflow-x-hidden">
