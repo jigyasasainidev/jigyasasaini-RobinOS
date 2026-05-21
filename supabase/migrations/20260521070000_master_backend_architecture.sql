@@ -2100,3 +2100,71 @@ create index if not exists idx_signup_ips_ip_created on public.signup_ips (ip_ad
 -- 3) Verify service role secrets are only used in backend functions/webhooks.
 -- 4) Confirm payment webhooks (Creem/Stripe) write into user_subscriptions + payments + payment_events.
 -- 5) This script consolidates prior fragmented architecture into one authoritative production baseline.
+
+
+begin;
+
+create or replace view public.admin_dashboard_stats
+with (security_invoker = true) as
+select
+  (select count(*) from public.profiles) as total_users,
+  (select count(*) from public.user_subscriptions where lower(status) = 'active' and lower(plan) <> 'free') as active_subscriptions,
+  (select coalesce(sum(amount),0) from public.payments where status = 'succeeded') as total_revenue,
+  (select count(*) from public.withdrawal_requests where status in ('pending','reviewing','approved')) as pending_withdrawals,
+  (select coalesce(sum(estimated_cost_usd),0) from public.ai_generations) as total_ai_cost;
+
+create or replace view public.revenue_analytics
+with (security_invoker = true) as
+select
+  date_trunc('day', p.created_at)::date as day,
+  count(*) as payment_count,
+  coalesce(sum(p.amount),0) as gross_revenue,
+  coalesce(sum(p.refunded_amount),0) as refunded_revenue,
+  coalesce(sum(case when p.status = 'succeeded' then p.amount else 0 end),0) as net_success_revenue
+from public.payments p
+group by 1
+order by 1 desc;
+
+create or replace view public.affiliate_analytics
+with (security_invoker = true) as
+select
+  ap.user_id,
+  ap.referral_code,
+  ap.total_clicks,
+  ap.total_conversions,
+  ap.total_earned,
+  ap.pending_balance,
+  ap.paid_balance,
+  case when ap.total_clicks > 0
+    then round((ap.total_conversions::numeric / ap.total_clicks::numeric) * 100, 2)
+    else 0
+  end as conversion_rate
+from public.affiliate_profiles ap;
+
+create or replace view public.user_growth_analytics
+with (security_invoker = true) as
+select
+  date_trunc('day', p.created_at)::date as day,
+  count(*) as users_created
+from public.profiles p
+group by 1
+order by 1 desc;
+
+create or replace view public.admin_profiles_view
+with (security_invoker = true) as
+select
+  p.user_id,
+  p.email,
+  p.display_name,
+  p.current_plan,
+  p.subscription_tier,
+  p.is_suspended,
+  p.created_at,
+  p.updated_at,
+  coalesce(us.status, 'none') as subscription_status,
+  coalesce(us.plan, 'free') as subscription_plan
+from public.profiles p
+left join public.user_subscriptions us on us.user_id = p.user_id;
+
+commit;
+
