@@ -5,7 +5,12 @@ const NotFound = () => {
   const location = useLocation();
 
   useEffect(() => {
-    console.error("404 Error: User attempted to access non-existent route:", location.pathname);
+    if (location.pathname.startsWith("/~oauth/")) {
+      window.location.assign(`${location.pathname}${location.search}${location.hash}`);
+      return;
+    }
+
+    console.warn("404 route:", location.pathname);
   }, [location.pathname]);
 
   return (

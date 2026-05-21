@@ -32,7 +32,15 @@ export function usePlatformSettings() {
         .limit(1)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        const isMissingTable =
+          error.code === "PGRST205" ||
+          error.message?.toLowerCase().includes("platform_settings") ||
+          error.message?.toLowerCase().includes("schema cache");
+
+        if (isMissingTable) return null;
+        throw error;
+      }
       return (data ?? null) as PlatformSettingsLive | null;
     },
     staleTime: 15 * 1000,
