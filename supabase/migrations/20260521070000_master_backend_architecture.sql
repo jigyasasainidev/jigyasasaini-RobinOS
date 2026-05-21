@@ -1,5 +1,16 @@
 -- RobinOS Master Backend Architecture (Consolidated)
 -- Generated as a single production-ready SQL blueprint
+do $$ begin
+  create type public.app_role as enum ('super_admin','admin','support','user');
+exception when duplicate_object then null; end $$;
+
+create table if not exists public.user_roles (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  role public.app_role not null default 'user',
+  created_at timestamptz not null default now(),
+  unique (user_id, role)
+);
 
 /* ============================================================
 1) EXTENSIONS
