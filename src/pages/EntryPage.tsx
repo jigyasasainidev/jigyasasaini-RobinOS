@@ -484,10 +484,10 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
               <p className="text-[10px] font-mono text-primary mb-2">🎬 READY TO RECORD:</p>
               <p className="text-foreground text-sm leading-relaxed font-medium">"Nobody is telling you this about Instagram growth..."</p>
               <p className="text-foreground/80 text-sm leading-relaxed mt-1">"Delete your hashtag strategy. Here's what actually works in 2026."</p>
-              <p className="text-foreground/70 text-sm leading-relaxed mt-1">"I tested this for 30 days and gained 50K followers."</p>
+              <p className="text-foreground/70 text-sm leading-relaxed mt-1">"Use this structure to build a consistent, platform-ready content workflow."</p>
             </div>
           </div>
-          <p className="text-center text-muted-foreground/50 text-[11px] font-mono">Generated in 8 seconds</p>
+          <p className="text-center text-muted-foreground/50 text-[11px] font-mono">Fast generation workflow</p>
         </div>
       </RevealSection>
 
