@@ -42,15 +42,35 @@ export function useReferralData() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  const isNonFatalRpcError = (error: any) => {
+    const code = String(error?.code ?? "").toUpperCase();
+    const message = String(error?.message ?? "").toLowerCase();
+    return (
+      code === "PGRST202" ||
+      code === "42883" ||
+      code === "P0001" ||
+      message.includes("authentication required") ||
+      message.includes("not found")
+    );
+  };
+
   const dashboardQuery = useQuery({
     queryKey: ["affiliate-dashboard", user?.id],
     queryFn: async (): Promise<DashboardRow | null> => {
       const { data: profileData, error: profileErr } = await db.rpc("ensure_affiliate_profile");
-      if (profileErr) throw profileErr;
-      if (!profileData?.user_id) return null;
+      if (profileErr) {
+        const { error: initErr } = await db.rpc("initialize_user_account");
+        if (initErr && !isNonFatalRpcError(initErr)) throw initErr;
+        if (!initErr && !isNonFatalRpcError(profileErr)) throw profileErr;
+      }
+
+      if (profileData && !profileData?.user_id && profileData?.ok === false) return null;
 
       const { data, error } = await db.rpc("get_affiliate_dashboard");
-      if (error) throw error;
+      if (error) {
+        if (isNonFatalRpcError(error)) return null;
+        throw error;
+      }
       const row = Array.isArray(data) ? data[0] : data;
       return (row ?? null) as DashboardRow | null;
     },
