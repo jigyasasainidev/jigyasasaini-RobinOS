@@ -715,51 +715,97 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
 
         {/* Toggles */}
         <div className="flex flex-col items-center justify-center mb-14 gap-3">
-          <div className="relative inline-flex items-center rounded-xl border border-border/70 p-1.5 bg-card/60 backdrop-blur-sm overflow-hidden">
+
+          {/* Toggle track — recessed dark groove */}
+          <div
+            className="relative inline-flex items-center rounded-[13px] p-[5px]"
+            style={{
+              background: "linear-gradient(180deg, hsl(222 28% 5%) 0%, hsl(222 24% 7%) 100%)",
+              border: "1px solid hsl(217 30% 13%)",
+              boxShadow:
+                "inset 0 2px 5px hsl(0 0% 0% / 0.75), inset 0 1px 2px hsl(0 0% 0% / 0.9), 0 1px 0 hsl(0 0% 100% / 0.04)",
+            }}
+          >
+            {/* Sliding active pill */}
             <motion.div
               initial={false}
-              animate={{ x: billingCycle === "monthly" ? "0%" : "100%" }}
-              transition={{ type: "spring", stiffness: 360, damping: 32 }}
-              className="absolute inset-y-1.5 left-1.5 w-[calc(50%-0.375rem)] rounded-lg bg-primary shadow-[0_2px_12px_hsl(217_91%_60%/0.45),inset_0_1px_0_hsl(0_0%_100%/0.12)]"
+              animate={{ x: billingCycle === "monthly" ? 0 : "100%" }}
+              transition={{ type: "spring", stiffness: 480, damping: 30, mass: 0.75 }}
+              className="absolute inset-[5px] w-[calc(50%-2.5px)] rounded-[8px] pointer-events-none"
+              style={{
+                background:
+                  "linear-gradient(180deg, hsl(217 100% 58%) 0%, hsl(217 100% 50%) 60%, hsl(218 100% 46%) 100%)",
+                boxShadow:
+                  "inset 0 1px 0 hsl(0 0% 100% / 0.22), inset 0 -1px 0 hsl(0 0% 0% / 0.3), 0 2px 10px hsl(217 91% 55% / 0.55), 0 4px 24px hsl(217 91% 60% / 0.22)",
+              }}
             />
 
+            {/* Monthly */}
             <button
               onClick={() => setBillingCycle("monthly")}
-              className={`relative z-10 min-w-[132px] px-4 sm:px-6 py-2.5 rounded-lg text-xs font-mono tracking-[0.14em] uppercase transition-colors ${
-                billingCycle === "monthly" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              className={`relative z-10 px-8 sm:px-10 py-[10px] text-[11px] font-mono tracking-[0.16em] uppercase select-none transition-colors duration-200 ${
+                billingCycle === "monthly"
+                  ? "text-white"
+                  : "text-zinc-500 hover:text-zinc-300"
               }`}
             >
               Monthly
             </button>
 
+            {/* Yearly */}
             <button
               onClick={() => setBillingCycle("yearly")}
-              className={`relative z-10 min-w-[132px] px-4 sm:px-6 py-2.5 rounded-lg text-xs font-mono tracking-[0.14em] uppercase transition-colors flex items-center justify-center gap-2 ${
-                billingCycle === "yearly" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              className={`relative z-10 px-8 sm:px-10 py-[10px] text-[11px] font-mono tracking-[0.16em] uppercase select-none transition-colors duration-200 inline-flex items-center justify-center gap-2 ${
+                billingCycle === "yearly"
+                  ? "text-white"
+                  : "text-zinc-500 hover:text-zinc-300"
               }`}
             >
               Yearly
               <span
-                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.08em] border transition-colors ${
+                className="rounded-[4px] px-[6px] py-[2.5px] text-[9px] font-bold tracking-[0.1em] transition-all duration-300"
+                style={
                   billingCycle === "yearly"
-                    ? "bg-white/15 text-white/90 border-white/20"
-                    : "bg-primary/15 text-primary border-primary/30"
-                }`}
+                    ? {
+                        background: "hsl(0 0% 100% / 0.13)",
+                        border: "1px solid hsl(0 0% 100% / 0.16)",
+                        color: "hsl(0 0% 90%)",
+                      }
+                    : {
+                        background: "hsl(217 91% 60% / 0.13)",
+                        border: "1px solid hsl(217 91% 60% / 0.32)",
+                        color: "hsl(217 95% 74%)",
+                        boxShadow: "0 0 8px hsl(217 91% 60% / 0.15)",
+                      }
+                }
               >
-                SAVE 20%
+                −20%
               </span>
             </button>
           </div>
 
+          {/* Contextual hint */}
           <motion.p
             key={billingCycle}
-            initial={{ opacity: 0, y: 4 }}
+            initial={{ opacity: 0, y: 3 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
-            className="text-[11px] text-muted-foreground/70 font-medium inline-flex items-center gap-2"
+            transition={{ duration: 0.22 }}
+            className="inline-flex items-center gap-[7px] text-[11px] font-mono tracking-[0.05em]"
+            style={{ color: "hsl(0 0% 36%)" }}
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-primary/60" />
-            {billingCycle === "yearly" ? "Annual billing active — saving 20%" : "Save 20% with annual billing"}
+            <span
+              className="w-[5px] h-[5px] rounded-full flex-shrink-0"
+              style={{
+                background:
+                  billingCycle === "yearly"
+                    ? "hsl(217 91% 60% / 0.65)"
+                    : "hsl(0 0% 28%)",
+                transition: "background 0.3s",
+              }}
+            />
+            {billingCycle === "yearly"
+              ? "Annual plan active · saving 20%"
+              : "Switch to annual · save 20%"}
           </motion.p>
         </div>
 
