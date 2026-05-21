@@ -668,7 +668,7 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
       <RevealSection className="py-24 md:py-40 px-4 sm:px-6 flex flex-col items-center text-center">
         <p className="text-xs font-mono tracking-[0.3em] uppercase text-muted-foreground mb-4">Bring Your Own Key</p>
         <h2 className="text-chrome text-2xl sm:text-4xl md:text-5xl font-semibold tracking-tight max-w-2xl">
-          90% Cost Efficiency
+          Cost-Efficient BYOK Control
         </h2>
         <p className="mt-6 text-muted-foreground text-sm sm:text-base max-w-lg leading-relaxed px-4">
           Use your OpenAI & ElevenLabs keys directly. No markups. No hidden fees. No middleman.
@@ -676,9 +676,9 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
         </p>
         <div className="mt-12 grid grid-cols-3 gap-4 sm:gap-6 md:gap-12 text-center">
           {[
-            { value: "0%", label: "Markup" },
-            { value: "90%", label: "Cost Saved" },
-            { value: "∞", label: "Scalability" },
+            { value: "No", label: "Platform Markup" },
+            { value: "Direct", label: "Provider Billing" },
+            { value: "Built", label: "For Scale" },
           ].map((stat) => (
             <motion.div key={stat.label} whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300 }}>
               <p className="text-chrome text-xl sm:text-3xl md:text-4xl font-semibold">{stat.value}</p>
@@ -819,7 +819,7 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
         <div className="rounded-2xl border border-border/60 bg-card/35 p-6 sm:p-8 md:p-10 text-center">
           <p className="text-xs font-mono tracking-[0.24em] uppercase text-primary/85">Contact</p>
           <h2 className="mt-3 text-chrome text-2xl sm:text-3xl font-semibold tracking-tight">Need a custom workflow?</h2>
-          <p className="mt-3 text-sm text-muted-foreground">Talk to the RobinOS team for onboarding, support, and growth strategy.</p>
+          <p className="mt-3 text-sm text-muted-foreground">Talk to the RobinOS team for onboarding, support, and workflow strategy.</p>
           <div className="mt-6 flex justify-center">
             <Link to="/contact" className="btn-primary inline-flex items-center justify-center">Contact RobinOS</Link>
           </div>
