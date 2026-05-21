@@ -1,8 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { db } from "@/lib/cloudDb";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { subscribePostgresChanges } from "@/lib/realtime/channelManager";
 
 type DashboardRow = {
   profile_id: string;
@@ -109,8 +109,11 @@ export function useReferralData() {
     staleTime: 30 * 1000,
   });
 
+  // Stable, deterministic realtime subscriptions via centralized manager
   useEffect(() => {
     if (!user?.id) return;
+
+    const unsubscribers: (() => void)[] = [];
 
     const refreshAffiliateData = () => {
       void Promise.all([
@@ -120,42 +123,47 @@ export function useReferralData() {
       ]);
     };
 
-    const channel = supabase
-      .channel(`affiliate-dashboard-${user.id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "affiliate_profiles", filter: `user_id=eq.${user.id}` },
-        refreshAffiliateData,
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "affiliate_commissions", filter: `affiliate_user_id=eq.${user.id}` },
-        refreshAffiliateData,
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "withdrawal_requests", filter: `user_id=eq.${user.id}` },
-        refreshAffiliateData,
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "user_subscriptions", filter: `user_id=eq.${user.id}` },
-        refreshAffiliateData,
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "profiles", filter: `user_id=eq.${user.id}` },
-        refreshAffiliateData,
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "platform_settings" },
-        refreshAffiliateData,
-      )
-      .subscribe();
+    // Use unified channel per table for each user
+    unsubscribers.push(
+      subscribePostgresChanges({
+        channelName: `affiliate-profiles-${user.id}`,
+        table: "affiliate_profiles",
+        filter: `user_id=eq.${user.id}`,
+        callback: refreshAffiliateData,
+      }),
+      subscribePostgresChanges({
+        channelName: `affiliate-commissions-${user.id}`,
+        table: "affiliate_commissions",
+        filter: `affiliate_user_id=eq.${user.id}`,
+        callback: refreshAffiliateData,
+      }),
+      subscribePostgresChanges({
+        channelName: `withdrawal-requests-${user.id}`,
+        table: "withdrawal_requests",
+        filter: `user_id=eq.${user.id}`,
+        callback: refreshAffiliateData,
+      }),
+      subscribePostgresChanges({
+        channelName: `user-subscriptions-${user.id}`,
+        table: "user_subscriptions",
+        filter: `user_id=eq.${user.id}`,
+        callback: refreshAffiliateData,
+      }),
+      subscribePostgresChanges({
+        channelName: `profiles-${user.id}`,
+        table: "profiles",
+        filter: `user_id=eq.${user.id}`,
+        callback: refreshAffiliateData,
+      }),
+      subscribePostgresChanges({
+        channelName: `affiliate-platform-settings-global`,
+        table: "platform_settings",
+        callback: refreshAffiliateData,
+      }),
+    );
 
     return () => {
-      void supabase.removeChannel(channel);
+      unsubscribers.forEach((unsub) => unsub());
     };
   }, [queryClient, user?.id]);
 

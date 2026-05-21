@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { db } from "@/lib/cloudDb";
-import { supabase } from "@/integrations/supabase/client";
+import { subscribePostgresChanges } from "@/lib/realtime/channelManager";
 
 export type PlatformSettingsLive = {
   creator_price: number;
@@ -46,17 +46,17 @@ export function usePlatformSettings() {
     staleTime: 15 * 1000,
   });
 
+  // Stable, deterministic realtime subscription via centralized manager
   useEffect(() => {
-    const channel = supabase
-      .channel("platform-settings-live-global")
-      .on("postgres_changes", { event: "*", schema: "public", table: "platform_settings" }, () => {
+    const unsubscribe = subscribePostgresChanges({
+      channelName: "platform-settings-live-global",
+      table: "platform_settings",
+      event: "*",
+      callback: () => {
         queryClient.invalidateQueries({ queryKey: ["platform-settings-live-v1"] });
-      })
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+      },
+    });
+    return unsubscribe;
   }, [queryClient]);
 
   return query;

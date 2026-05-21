@@ -10,7 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import robinosLogo from "@/assets/robinos-logo.png";
 import { AlertTriangle, X } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { subscribePostgresChanges } from "@/lib/realtime/channelManager";
 
 const DashboardLayout = () => {
   const { user, loading } = useAuth();
@@ -83,18 +83,14 @@ const DashboardLayout = () => {
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
-      .channel("platform-maintenance-live")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "platform_settings" },
-        () => queryClient.invalidateQueries({ queryKey: ["platform-maintenance-v1"] }),
-      )
-      .subscribe();
+    const unsubscribe = subscribePostgresChanges({
+      channelName: "platform-maintenance-live",
+      table: "platform_settings",
+      event: "*",
+      callback: () => queryClient.invalidateQueries({ queryKey: ["platform-maintenance-v1"] }),
+    });
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return unsubscribe;
   }, [user, queryClient]);
 
   useEffect(() => {
