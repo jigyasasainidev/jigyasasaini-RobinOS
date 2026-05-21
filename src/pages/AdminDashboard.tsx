@@ -308,7 +308,7 @@ const TinySparkline = ({ data }: { data: SparkPoint[] }) => {
   );
 };
 
-const MetricCard = ({ label, value, icon: Icon, spark }: { label: string; value: string; icon: ComponentType<{ className?: string }>; spark: SparkPoint[] }) => (
+const MetricCard = ({ label, value, icon: Icon, spark }: { label: string; value: string; growth?: number; icon: ComponentType<{ className?: string }>; spark: SparkPoint[] }) => (
   <div className="rounded-lg border border-border/60 bg-card/45 p-4 backdrop-blur-md">
     <div className="flex items-start justify-between gap-2">
       <div>
