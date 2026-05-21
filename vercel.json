@@ -1,5 +1,15 @@
 {
+  "redirects": [
+    {
+      "source": "/~oauth/:path*",
+      "destination": "https://oauth.lovable.app/~oauth/:path*",
+      "permanent": false
+    }
+  ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/((?!~oauth).*)",
+      "destination": "/index.html"
+    }
   ]
 }
