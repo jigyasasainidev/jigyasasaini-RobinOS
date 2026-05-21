@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 function PublicPageShell({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
@@ -962,6 +963,11 @@ export function ResourcesPage() {
 }
 
 export function AffiliatesProgramPage() {
+  const { data: platformSettings } = usePlatformSettings();
+  const commissionPercent = Number(platformSettings?.affiliate_commission_percent ?? 30);
+  const minimumWithdrawal = Number(platformSettings?.minimum_withdrawal ?? 25);
+  const payoutDelayDays = Number(platformSettings?.payout_delay_days ?? 7);
+
   const leaderboardRewards = [
     { rank: "#1", reward: "$500", note: "Champion payout", highlight: true },
     { rank: "#2", reward: "$250", note: "Growth accelerator", highlight: false },
@@ -981,8 +987,8 @@ export function AffiliatesProgramPage() {
 
       <div className="grid gap-4 md:grid-cols-2">
         {[
-          ["Commission model", "Standard partner commission is 30% on qualifying paid referrals under the active affiliate terms."],
-          ["Payout operations", "Payouts are processed after verification windows and threshold rules to reduce fraud and disputes."],
+          ["Commission model", `Standard partner commission is ${commissionPercent}% on qualifying paid referrals under the active affiliate terms.`],
+          ["Payout operations", `Payouts are processed after verification windows and threshold rules. Current payout delay target is ${Math.max(1, payoutDelayDays)} day(s).`],
           ["Traffic quality", "Partners should use transparent, policy-compliant acquisition channels and avoid misleading claims."],
           ["Operational links", "Use Affiliate Guide for best practices and Affiliate Terms for legal payout conditions."],
         ].map(([title, text]) => (
@@ -1100,7 +1106,7 @@ export function AffiliatesProgramPage() {
             </motion.div>
             <motion.div whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.99 }}>
               <Button asChild variant="outline" className="min-w-[210px] rounded-2xl border-border/70 bg-secondary/35 text-foreground hover:bg-secondary/55">
-                <Link to="/affiliate-terms">View Commission Structure</Link>
+                <Link to="/affiliate-terms">View Commission Structure · Min ${minimumWithdrawal}</Link>
               </Button>
             </motion.div>
           </div>
