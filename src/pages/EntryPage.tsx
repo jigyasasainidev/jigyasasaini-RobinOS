@@ -261,6 +261,26 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
   const frictionBlur = useTransform(frictionScroll, [0, 1], [16, 0]);
   const frictionOpacity = useTransform(frictionScroll, [0, 1], [0.3, 1]);
 
+  // Mini demo typing animation
+  const demoRef = useRef<HTMLDivElement>(null);
+  const demoInView = useInView(demoRef, { once: true, margin: "-80px" });
+  const [visibleLines, setVisibleLines] = useState(0);
+  const [cursorVisible, setCursorVisible] = useState(true);
+
+  useEffect(() => {
+    const id = setInterval(() => setCursorVisible((v) => !v), 530);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (!demoInView) return;
+    const delays = [600, 1600, 2600];
+    const timers = delays.map((delay, i) =>
+      setTimeout(() => setVisibleLines(i + 1), delay)
+    );
+    return () => timers.forEach(clearTimeout);
+  }, [demoInView]);
+
   const pricingControls = {
     creator_price: platformSettings?.creator_price,
     pro_price: platformSettings?.pro_price,
@@ -355,8 +375,8 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.9, duration: 0.6 }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: 1.02, y: -1, boxShadow: "0 8px 32px hsl(217 91% 60% / 0.35), 0 0 0 1px hsl(217 91% 60% / 0.2)" }}
+              whileTap={{ scale: 0.98, y: 0 }}
               onClick={() => navigate(authHref)}
               className="btn-primary shimmer-btn w-full sm:w-auto !px-8 !py-3"
             >
@@ -366,8 +386,8 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.1, duration: 0.6 }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.98, y: 0 }}
               onClick={() => document.getElementById("mini-demo")?.scrollIntoView({ behavior: "smooth" })}
               className="btn-secondary w-full sm:w-auto !px-8 !py-3"
             >
@@ -435,16 +455,17 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
               {creatorFeatureCards.map((card) => (
                 <motion.article
                   key={card.title}
-                  className="snap-start w-[280px] rounded-2xl glass-card card-glow p-4 border border-border/70 shadow-[0_18px_45px_hsl(0_0%_0%/0.35)]"
-                  whileHover={{ y: -3, boxShadow: "0 28px 65px hsl(217 91% 60% / 0.16), 0 0 0 1px hsl(217 91% 60% / 0.2)" }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className="snap-start w-[280px] rounded-2xl glass-card card-glow p-4 border border-border/70 shadow-[0_18px_45px_hsl(0_0%_0%/0.35)] overflow-hidden relative"
+                  whileHover={{ y: -4, boxShadow: "0 24px 60px hsl(0 0% 0% / 0.45), 0 0 0 1px hsl(217 91% 60% / 0.18)" }}
+                  transition={{ type: "spring", stiffness: 300, damping: 22 }}
                 >
+                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   <p className="text-sm font-semibold text-foreground">{card.title}</p>
                   <p className="mt-1 text-[11px] font-mono uppercase tracking-[0.16em] text-primary/90">{card.subtitle}</p>
                   <ul className="mt-4 space-y-2.5">
                     {card.features.map((feature) => (
-                      <li key={feature} className="flex items-center gap-2.5 rounded-lg bg-card/50 border border-border/60 px-3 py-2">
-                        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                      <li key={feature} className="flex items-center gap-2.5 rounded-lg bg-card/50 border border-border/60 px-3 py-2 transition-all duration-200 hover:border-primary/25 hover:bg-primary/[0.04]">
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
                         <span className="text-xs text-foreground/90">{feature}</span>
                       </li>
                     ))}
@@ -458,16 +479,17 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
             {creatorFeatureCards.map((card) => (
               <motion.article
                 key={card.title}
-                className="rounded-2xl glass-card card-glow p-5 border border-border/70 shadow-[0_18px_45px_hsl(0_0%_0%/0.35)]"
-                whileHover={{ y: -3, boxShadow: "0 28px 65px hsl(217 91% 60% / 0.16), 0 0 0 1px hsl(217 91% 60% / 0.2)" }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="group rounded-2xl glass-card card-glow p-5 border border-border/70 shadow-[0_18px_45px_hsl(0_0%_0%/0.35)] overflow-hidden relative"
+                whileHover={{ y: -4, boxShadow: "0 24px 60px hsl(0 0% 0% / 0.45), 0 0 0 1px hsl(217 91% 60% / 0.18)" }}
+                transition={{ type: "spring", stiffness: 300, damping: 22 }}
               >
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <p className="text-base font-semibold text-foreground">{card.title}</p>
                 <p className="mt-1 text-[11px] font-mono uppercase tracking-[0.16em] text-primary/90">{card.subtitle}</p>
                 <ul className="mt-4 space-y-2.5">
                   {card.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2.5 rounded-lg bg-card/50 border border-border/60 px-3 py-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    <li key={feature} className="flex items-center gap-2.5 rounded-lg bg-card/50 border border-border/60 px-3 py-2 transition-all duration-200 hover:border-primary/25 hover:bg-primary/[0.04]">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
                       <span className="text-xs text-foreground/90">{feature}</span>
                     </li>
                   ))}
@@ -480,22 +502,82 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
 
       {/* ─── MINI DEMO ─── */}
       <RevealSection id="mini-demo" className="py-16 px-4 sm:px-6 max-w-2xl mx-auto">
-        <div className="glass-card p-6 sm:p-8 relative overflow-hidden">
+        <div ref={demoRef} className="glass-card p-6 sm:p-8 relative overflow-hidden">
+          {/* Ambient internal glow */}
           <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-primary/5 blur-[60px] pointer-events-none" />
-          <p className="text-[10px] font-mono uppercase tracking-widest text-primary mb-4">⚡ See it in action</p>
+          <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-primary/4 blur-[50px] pointer-events-none" />
+
+          {/* Header row */}
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-[10px] font-mono uppercase tracking-widest text-primary">⚡ Live AI Generation</p>
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-emerald-400/80">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              ACTIVE
+            </span>
+          </div>
+
           <div className="mb-4">
+            {/* Input row */}
             <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary/50 border border-border/30">
               <span className="text-muted-foreground/40 text-sm">Topic:</span>
               <span className="text-foreground text-sm">"How to grow on Instagram"</span>
             </div>
+
+            {/* Connector */}
             <div className="flex justify-center my-3">
               <div className="w-px h-8 bg-gradient-to-b from-primary/60 to-transparent" />
             </div>
+
+            {/* Output panel */}
             <div className="px-4 py-4 rounded-xl bg-primary/5 border border-primary/20 shadow-[inset_0_0_30px_hsl(217_91%_60%/0.04)]">
-              <p className="text-[10px] font-mono text-primary mb-2">🎬 READY TO RECORD:</p>
-              <p className="text-foreground text-sm leading-relaxed font-medium">"Nobody is telling you this about Instagram workflow quality..."</p>
-              <p className="text-foreground/80 text-sm leading-relaxed mt-1">"Delete your hashtag strategy. Here's what actually works in 2026."</p>
-              <p className="text-foreground/70 text-sm leading-relaxed mt-1">"Use this structure to build a consistent, platform-ready content workflow."</p>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] font-mono text-primary">🎬 SCRIPT OUTPUT:</p>
+                <span className="text-[9px] font-mono text-muted-foreground/40 tracking-widest">
+                  {visibleLines >= 3 ? "COMPLETE" : "GENERATING..."}
+                </span>
+              </div>
+
+              {/* Line 1 */}
+              <motion.p
+                initial={{ opacity: 0, x: -4 }}
+                animate={visibleLines >= 1 ? { opacity: 1, x: 0 } : {}}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="text-foreground text-sm leading-relaxed font-medium"
+              >
+                "Nobody is telling you this about Instagram workflow quality..."
+              </motion.p>
+
+              {/* Line 2 */}
+              <motion.p
+                initial={{ opacity: 0, x: -4 }}
+                animate={visibleLines >= 2 ? { opacity: 1, x: 0 } : {}}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="text-foreground/80 text-sm leading-relaxed mt-1"
+              >
+                "Delete your hashtag strategy. Here's what actually works in 2026."
+              </motion.p>
+
+              {/* Line 3 */}
+              <motion.p
+                initial={{ opacity: 0, x: -4 }}
+                animate={visibleLines >= 3 ? { opacity: 1, x: 0 } : {}}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="text-foreground/70 text-sm leading-relaxed mt-1"
+              >
+                "Use this structure to build a consistent, platform-ready content workflow."
+              </motion.p>
+
+              {/* Blinking cursor — hides when done */}
+              {visibleLines < 3 && (
+                <span
+                  className="inline-block mt-1 w-[7px] h-[14px] rounded-sm align-middle"
+                  style={{
+                    background: "hsl(217 91% 60%)",
+                    opacity: cursorVisible ? 0.9 : 0,
+                    transition: "opacity 0.1s",
+                  }}
+                />
+              )}
             </div>
           </div>
           <p className="text-center text-muted-foreground/50 text-[11px] font-mono">Fast generation workflow</p>
@@ -503,10 +585,34 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
       </RevealSection>
 
       {/* ─── 2. FRICTION ─── */}
-      <section ref={frictionRef} className="min-h-screen flex items-center justify-center px-4 sm:px-6 py-32">
+      <section ref={frictionRef} className="min-h-screen flex items-center justify-center px-4 sm:px-6 py-32 relative overflow-hidden">
+        {/* Floating fragmented words — subliminal tension */}
+        <div className="absolute inset-0 pointer-events-none select-none" aria-hidden="true">
+          {[
+            { text: "12 tabs open", top: "18%", left: "8%", delay: 0 },
+            { text: "context switching", top: "28%", right: "10%", delay: 0.4 },
+            { text: "manual research", top: "55%", left: "6%", delay: 0.8 },
+            { text: "export → copy → paste", top: "70%", right: "8%", delay: 0.6 },
+            { text: "no system", top: "42%", left: "72%", delay: 1.0 },
+            { text: "re-doing everything", top: "82%", left: "18%", delay: 0.3 },
+          ].map((f) => (
+            <motion.span
+              key={f.text}
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: f.delay, duration: 1.2 }}
+              className="absolute text-[10px] sm:text-xs font-mono text-foreground/[0.045] tracking-widest uppercase whitespace-nowrap"
+              style={{ top: f.top, left: (f as any).left, right: (f as any).right }}
+            >
+              {f.text}
+            </motion.span>
+          ))}
+        </div>
+
         <motion.div
           style={{ filter: useTransform(frictionBlur, (v) => `blur(${v}px)`), opacity: frictionOpacity }}
-          className="text-center max-w-3xl"
+          className="relative text-center max-w-3xl z-10"
         >
           <h2 className="text-chrome text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight leading-tight">
             Broken. Expensive.
@@ -525,13 +631,27 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
         <div ref={mockupRef} className="w-full max-w-4xl" style={{ perspective: "1200px" }}>
           <motion.div
             style={{ rotateX, y: mockupY }}
-            className="w-full rounded-xl border border-border bg-card/60 backdrop-blur-sm overflow-hidden shadow-2xl shadow-primary/5"
+            className="w-full rounded-xl border border-border bg-card/60 backdrop-blur-sm overflow-hidden shadow-2xl shadow-primary/5 relative"
           >
+            {/* Subtle scan line that sweeps top-to-bottom once on load */}
+            <motion.div
+              initial={{ top: "-4px", opacity: 0.5 }}
+              animate={{ top: "100%", opacity: 0 }}
+              transition={{ delay: 1.2, duration: 2.2, ease: "linear" }}
+              className="absolute left-0 right-0 h-[2px] pointer-events-none z-20"
+              style={{ background: "linear-gradient(90deg, transparent, hsl(217 91% 60% / 0.35), transparent)" }}
+            />
+
             <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
               <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/30" />
               <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/20" />
               <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/15" />
               <div className="ml-4 h-2 w-24 sm:w-32 rounded bg-muted" />
+              {/* Live indicator */}
+              <div className="ml-auto flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />
+                <span className="text-[9px] font-mono text-emerald-400/70 tracking-widest">LIVE</span>
+              </div>
             </div>
             <div className="flex">
               <div className="hidden sm:flex flex-col w-48 border-r border-border p-4 gap-1">
@@ -545,24 +665,42 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
               <div className="flex-1 p-4 sm:p-6 md:p-8">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-6">
                   {[
-                    { label: "Signal State", value: "Live" },
-                    { label: "Script Engine", value: "Active" },
-                    { label: "Workflow Sync", value: "Online" },
-                    { label: "System Health", value: "Stable" },
-                  ].map((stat) => (
+                    { label: "Signal State", value: "Live", pulse: true },
+                    { label: "Script Engine", value: "Active", pulse: true },
+                    { label: "Workflow Sync", value: "Online", pulse: false },
+                    { label: "System Health", value: "Stable", pulse: false },
+                  ].map((stat, si) => (
                     <div key={stat.label} className="rounded-lg bg-secondary/50 border border-border/50 p-3">
                       <p className="text-[10px] text-muted-foreground/60 font-mono">{stat.label}</p>
-                      <p className="text-lg sm:text-xl font-semibold text-chrome mt-0.5">{stat.value}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        {stat.pulse && (
+                          <span
+                            className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"
+                            style={{ animationDelay: `${si * 0.4}s`, animationDuration: "2.5s" }}
+                          />
+                        )}
+                        <p className="text-lg sm:text-xl font-semibold text-chrome">{stat.value}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
                 <div className="space-y-2">
-                  {["AI in Content Creation", "Short-Form Video Trends", "Creator Economy Growth", "Voice AI Revolution"].map((trend) => (
-                    <div key={trend} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card/40 border border-border/30">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                  {["AI in Content Creation", "Short-Form Video Trends", "Creator Economy Growth", "Voice AI Revolution"].map((trend, ti) => (
+                    <motion.div
+                      key={trend}
+                      initial={{ opacity: 0, x: -6 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.8 + ti * 0.1, duration: 0.4 }}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card/40 border border-border/30"
+                    >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 animate-pulse"
+                        style={{ animationDelay: `${ti * 0.6}s`, animationDuration: "3s" }}
+                      />
                       <span className="text-xs text-foreground/70 flex-1 truncate">{trend}</span>
                       <div className="hidden sm:block h-5 w-12 rounded bg-primary/10 border border-primary/20" />
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               </div>
@@ -585,26 +723,38 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {engines.map((engine, i) => (
-            <RevealSection
+            <motion.article
               key={engine.title}
-              delay={i * 0.08}
-              className="group relative rounded-xl border border-border bg-card/40 p-6 sm:p-8 overflow-hidden transition-all duration-500 hover:border-primary/30 hover:bg-card/60 hover:-translate-y-1 hover:shadow-[0_12px_40px_hsl(217_91%_60%/0.08)]"
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ delay: i * 0.07, duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] }}
+              whileHover={{ y: -5, boxShadow: "0 20px 52px hsl(0 0% 0% / 0.4), 0 0 0 1px hsl(217 91% 60% / 0.16)" }}
+              className="group relative rounded-xl border border-border/60 bg-card/40 p-6 sm:p-7 overflow-hidden"
+              style={{ transition: "border-color 0.3s, background-color 0.3s" }}
             >
+              {/* Top edge glow on hover */}
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              {/* Internal gradient bloom */}
               <div className={`absolute inset-0 bg-gradient-to-br ${engine.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+
               <div className="relative z-10">
-                <div className="flex items-center justify-between mb-5">
-                  <motion.div
-                    whileHover={{ rotate: 10, scale: 1.1 }}
-                    transition={{ type: "spring", stiffness: 300 }}
+                <div className="flex items-start justify-between mb-5">
+                  {/* Icon in a pill container */}
+                  <div
+                    className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-300 group-hover:shadow-[0_0_16px_hsl(217_91%_60%/0.25)]"
+                    style={{ background: "hsl(217 91% 60% / 0.1)", border: "1px solid hsl(217 91% 60% / 0.18)" }}
                   >
-                    <engine.icon className="w-6 h-6 text-primary" strokeWidth={1.5} />
-                  </motion.div>
-                  <span className="text-[10px] font-mono tracking-wider text-primary/60 uppercase">{engine.stats}</span>
+                    <motion.div whileHover={{ rotate: 8, scale: 1.15 }} transition={{ type: "spring", stiffness: 350, damping: 14 }}>
+                      <engine.icon className="w-4 h-4 text-primary" strokeWidth={1.5} />
+                    </motion.div>
+                  </div>
+                  <span className="text-[10px] font-mono tracking-wider text-primary/50 uppercase pt-1">{engine.stats}</span>
                 </div>
-                <h3 className="text-chrome text-lg font-semibold mb-3">{engine.title}</h3>
+                <h3 className="text-chrome text-base font-semibold mb-2">{engine.title}</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">{engine.desc}</p>
               </div>
-            </RevealSection>
+            </motion.article>
           ))}
         </div>
 
@@ -613,8 +763,9 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="mt-6 sm:mt-8 rounded-xl border border-primary/20 bg-card/45 backdrop-blur-xl p-6 sm:p-8 shadow-[0_12px_40px_hsl(217_91%_60%/0.08),inset_0_1px_0_hsl(0_0%_100%/0.05)]"
+          className="group mt-6 sm:mt-8 rounded-xl border border-primary/20 bg-card/45 backdrop-blur-xl p-6 sm:p-8 shadow-[0_12px_40px_hsl(217_91%_60%/0.08),inset_0_1px_0_hsl(0_0%_100%/0.05)] relative overflow-hidden"
         >
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <div className="flex items-center gap-2.5 mb-4">
             <span className="inline-flex items-center rounded-full border border-primary/35 bg-primary/10 px-2 py-0.5 text-[10px] font-mono tracking-[0.14em] uppercase text-primary">NEW</span>
             <Type className="w-4 h-4 text-primary" />
@@ -625,7 +776,7 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
           </p>
           <div className="mt-5 grid sm:grid-cols-2 gap-2.5">
             {captionEngineBullets.map((bullet) => (
-              <div key={bullet} className="flex items-start gap-2.5 rounded-lg border border-border/40 bg-secondary/25 px-3 py-2.5">
+              <div key={bullet} className="flex items-start gap-2.5 rounded-lg border border-border/40 bg-secondary/25 px-3 py-2.5 transition-all duration-200 hover:border-primary/25 hover:bg-primary/[0.04]">
                 <Check className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
                 <span className="text-xs text-foreground/85">{bullet}</span>
               </div>
@@ -654,25 +805,64 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
       </RevealSection>
 
       <RevealSection id="affiliates" className="py-18 md:py-24 px-4 sm:px-6 max-w-5xl mx-auto">
-        <div className="rounded-2xl border border-primary/25 bg-card/45 p-6 sm:p-8 md:p-10 backdrop-blur-md shadow-[0_0_40px_hsl(217_91%_60%/0.12)]">
+        <motion.div
+          whileHover={{ y: -4, boxShadow: "0 20px 52px hsl(0 0% 0% / 0.35), 0 0 0 1px hsl(217 91% 60% / 0.15)" }}
+          transition={{ type: "spring", stiffness: 300, damping: 22 }}
+          className="group rounded-2xl border border-primary/25 bg-card/45 p-6 sm:p-8 md:p-10 backdrop-blur-md shadow-[0_0_40px_hsl(217_91%_60%/0.12)] relative overflow-hidden"
+        >
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/35 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="absolute -bottom-12 -right-12 w-32 h-32 rounded-full bg-primary/5 blur-[40px] pointer-events-none" />
+
           <p className="text-xs font-mono tracking-[0.24em] uppercase text-primary/85">Affiliates</p>
           <h2 className="mt-3 text-chrome text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight">Earn recurring commissions with RobinOS</h2>
           <p className="mt-3 text-sm text-muted-foreground max-w-2xl">Join the affiliate program and unlock monthly recurring commissions with performance rewards for top partners.</p>
-          <div className="mt-6">
-            <Link to="/affiliates" className="btn-primary inline-flex items-center justify-center">Explore Affiliate Program</Link>
+
+          {/* Commission metrics strip */}
+          <div className="mt-6 grid grid-cols-3 gap-3 max-w-sm">
+            {[
+              { value: "30%", label: "Commission" },
+              { value: "$25", label: "Min Payout" },
+              { value: "Monthly", label: "Recurring" },
+            ].map((m) => (
+              <div key={m.label} className="rounded-lg border border-border/40 bg-secondary/30 px-3 py-2.5 text-center">
+                <p className="text-sm font-semibold text-chrome">{m.value}</p>
+                <p className="text-[10px] font-mono text-muted-foreground/60 mt-0.5">{m.label}</p>
+              </div>
+            ))}
           </div>
-        </div>
+
+          <div className="mt-6">
+            <motion.div whileHover={{ y: -1, boxShadow: "0 6px 24px hsl(217 91% 60% / 0.3)" }} whileTap={{ scale: 0.98 }}>
+              <Link to="/affiliates" className="btn-primary inline-flex items-center justify-center">Explore Affiliate Program</Link>
+            </motion.div>
+          </div>
+        </motion.div>
       </RevealSection>
 
       <RevealSection id="api" className="py-18 md:py-24 px-4 sm:px-6 max-w-5xl mx-auto">
-        <div className="rounded-2xl border border-border/60 bg-card/35 p-6 sm:p-8 md:p-10 backdrop-blur-sm">
+        <motion.div
+          whileHover={{ y: -4, boxShadow: "0 20px 52px hsl(0 0% 0% / 0.3), 0 0 0 1px hsl(217 91% 60% / 0.1)" }}
+          transition={{ type: "spring", stiffness: 300, damping: 22 }}
+          className="group rounded-2xl border border-border/60 bg-card/35 p-6 sm:p-8 md:p-10 backdrop-blur-sm relative overflow-hidden"
+        >
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <p className="text-xs font-mono tracking-[0.24em] uppercase text-primary/85">API</p>
           <h2 className="mt-3 text-chrome text-2xl sm:text-3xl font-semibold tracking-tight">Ship faster with RobinOS API access</h2>
           <p className="mt-3 text-sm text-muted-foreground max-w-2xl">Integrate script generation, trend intelligence, and content workflows into your own products using API-first endpoints.</p>
+
+          {/* Minimal terminal preview */}
+          <div className="mt-5 rounded-lg border border-border/40 bg-background/60 p-3 font-mono text-[11px] max-w-sm">
+            <p className="text-muted-foreground/40 mb-1">// POST /v1/generate-script</p>
+            <p><span className="text-primary/70">{"{"}</span></p>
+            <p className="pl-4"><span className="text-primary/60">"topic"</span><span className="text-muted-foreground/50">: </span><span className="text-emerald-400/70">"Instagram growth"</span><span className="text-muted-foreground/40">,</span></p>
+            <p className="pl-4"><span className="text-primary/60">"mode"</span><span className="text-muted-foreground/50">: </span><span className="text-emerald-400/70">"hooks"</span></p>
+            <p><span className="text-primary/70">{"}"}</span></p>
+          </div>
+
           <div className="mt-6">
             <a href="https://www.tryrobin.xyz/api-access" className="btn-secondary inline-flex items-center justify-center">Open API Docs</a>
           </div>
-        </div>
+        </motion.div>
       </RevealSection>
 
       {/* ─── 5. BYOK ─── */}
@@ -691,9 +881,22 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
             { value: "Direct", label: "Provider Billing" },
             { value: "Built", label: "For Scale" },
           ].map((stat) => (
-            <motion.div key={stat.label} whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300 }}>
+            <motion.div
+              key={stat.label}
+              whileHover={{ y: -3 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className="relative"
+            >
               <p className="text-chrome text-xl sm:text-3xl md:text-4xl font-semibold">{stat.value}</p>
               <p className="mt-1 text-muted-foreground text-[10px] sm:text-xs font-mono tracking-wider uppercase">{stat.label}</p>
+              {/* Underline glow on hover */}
+              <motion.div
+                initial={{ scaleX: 0, opacity: 0 }}
+                whileHover={{ scaleX: 1, opacity: 1 }}
+                transition={{ duration: 0.25 }}
+                className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-px"
+                style={{ background: "linear-gradient(90deg, transparent, hsl(217 91% 60% / 0.5), transparent)" }}
+              />
             </motion.div>
           ))}
         </div>
@@ -823,13 +1026,18 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
             return (
             <motion.div
               key={plan.name}
-              whileHover={{ y: -6, scale: 1.006 }}
-              transition={{ type: "spring", stiffness: 280, damping: 24 }}
-                className={`relative rounded-xl p-6 sm:p-7 transition-all ${
+              whileHover={{ y: -6, boxShadow: plan.isAgency
+                ? "0 20px 52px hsl(0 0% 0% / 0.4), 0 0 0 1px hsl(38 92% 50% / 0.22)"
+                : plan.featured
+                  ? "0 20px 52px hsl(0 0% 0% / 0.4), 0 0 28px hsl(217 91% 60% / 0.2), 0 0 0 1px hsl(217 91% 60% / 0.25)"
+                  : "0 20px 52px hsl(0 0% 0% / 0.35), 0 0 0 1px hsl(217 91% 60% / 0.12)"
+              }}
+              transition={{ type: "spring", stiffness: 300, damping: 22 }}
+                className={`relative rounded-xl p-6 sm:p-7 overflow-hidden ${
                 plan.isAgency
                     ? "border border-amber-500/30 bg-card/60 shadow-[0_0_24px_-10px_hsl(38_92%_50%/0.24)]"
                   : plan.featured
-                      ? "border border-primary/30 bg-card/60 glow-blue"
+                      ? "border border-primary/30 bg-card/60 shadow-[0_0_24px_-10px_hsl(217_91%_60%/0.2)]"
                       : "border border-border/35 bg-card/30"
               }`}
             >
@@ -908,13 +1116,21 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
                 ))}
               </ul>
 
-              <button
+              <motion.button
                 onClick={() => navigate(authHref)}
-                className={`mt-6 w-full py-3 rounded-lg text-sm font-medium tracking-wide transition-all ${
+                whileHover={{ y: -1, boxShadow: plan.isAgency
+                  ? "0 6px 20px hsl(38 92% 50% / 0.35)"
+                  : plan.featured
+                    ? "0 6px 20px hsl(217 91% 60% / 0.4)"
+                    : "0 4px 14px hsl(0 0% 0% / 0.3)"
+                }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 360, damping: 22 }}
+                className={`mt-6 w-full py-3 rounded-lg text-sm font-medium tracking-wide transition-colors ${
                   plan.isAgency
                     ? "bg-amber-500 text-black hover:opacity-90"
                     : plan.featured
-                      ? "bg-primary text-primary-foreground glow-blue"
+                      ? "bg-primary text-primary-foreground"
                       : plan.isFree
                         ? "border border-border text-foreground hover:border-primary/40"
                         : "border border-border text-foreground hover:border-primary/40"
@@ -927,7 +1143,7 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
                     : plan.isAgency
                       ? "Scale Your Content"
                       : "Join RobinOS"}
-              </button>
+              </motion.button>
             </motion.div>
           );})}
         </div>
@@ -944,11 +1160,11 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
 
         <Accordion type="single" collapsible className="space-y-1.5">
           {faqItems.map((item, i) => (
-            <AccordionItem key={i} value={`faq-${i}`} className="border-border/35 border rounded-lg px-3.5 sm:px-5 data-[state=open]:border-primary/25 transition-colors">
-              <AccordionTrigger className="text-sm text-foreground hover:no-underline py-3 text-left leading-snug pr-3 break-words">
+            <AccordionItem key={i} value={`faq-${i}`} className="border-border/35 border rounded-lg px-3.5 sm:px-5 data-[state=open]:border-primary/25 data-[state=open]:bg-primary/[0.02] transition-all duration-300">
+              <AccordionTrigger className="text-sm text-foreground hover:no-underline py-3 text-left leading-snug pr-3 break-words hover:text-foreground/90">
                 {item.q}
               </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground text-sm leading-relaxed pb-3">
+              <AccordionContent className="text-muted-foreground text-sm leading-relaxed pb-3 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-1">
                 {item.a}
               </AccordionContent>
             </AccordionItem>
@@ -957,14 +1173,21 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
       </RevealSection>
 
       <RevealSection id="contact" className="pb-20 px-4 sm:px-6 max-w-5xl mx-auto">
-        <div className="rounded-2xl border border-border/60 bg-card/35 p-6 sm:p-8 md:p-10 text-center">
+        <motion.div
+          whileHover={{ y: -4, boxShadow: "0 20px 52px hsl(0 0% 0% / 0.3), 0 0 0 1px hsl(217 91% 60% / 0.1)" }}
+          transition={{ type: "spring", stiffness: 300, damping: 22 }}
+          className="group rounded-2xl border border-border/60 bg-card/35 p-6 sm:p-8 md:p-10 text-center relative overflow-hidden"
+        >
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <p className="text-xs font-mono tracking-[0.24em] uppercase text-primary/85">Contact</p>
           <h2 className="mt-3 text-chrome text-2xl sm:text-3xl font-semibold tracking-tight">Need a custom workflow?</h2>
           <p className="mt-3 text-sm text-muted-foreground">Talk to the RobinOS team for onboarding, support, and workflow strategy.</p>
           <div className="mt-6 flex justify-center">
-            <Link to="/contact" className="btn-primary inline-flex items-center justify-center">Contact RobinOS</Link>
+            <motion.div whileHover={{ y: -1, boxShadow: "0 6px 24px hsl(217 91% 60% / 0.3)" }} whileTap={{ scale: 0.98 }}>
+              <Link to="/contact" className="btn-primary inline-flex items-center justify-center">Contact RobinOS</Link>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       </RevealSection>
 
       <PublicFooter />

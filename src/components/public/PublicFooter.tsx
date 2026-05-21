@@ -51,7 +51,7 @@ function LinkColumn({ title, links }: { title: string; links: { label: string; t
               to={item.to}
               onMouseEnter={() => prefetchRoute(item.to)}
               onFocus={() => prefetchRoute(item.to)}
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="text-sm text-muted-foreground transition-all duration-200 hover:text-foreground hover:translate-x-0.5 inline-block"
             >
               {item.label}
             </Link>

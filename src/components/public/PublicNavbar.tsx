@@ -67,7 +67,7 @@ export function PublicNavbar() {
           to="/login"
           onMouseEnter={() => prefetchRoute("/login")}
           onFocus={() => prefetchRoute("/login")}
-          className="rounded-md border border-border/55 bg-background/35 px-3 py-1.5 text-[11px] font-mono tracking-[0.08em] text-foreground/90 backdrop-blur-md transition-colors hover:border-primary/30 hover:text-foreground"
+          className="rounded-md border border-border/55 bg-background/35 px-3 py-1.5 text-[11px] font-mono tracking-[0.08em] text-foreground/90 backdrop-blur-md transition-all duration-200 hover:border-primary/35 hover:text-foreground hover:bg-primary/5 hover:shadow-[0_0_16px_hsl(217_91%_60%/0.12)]"
         >
           Sign In
         </Link>
