@@ -122,13 +122,27 @@ export function PublicFooter() {
       </div>
 
       <div className="relative border-t border-border/60">
-        <div className="mx-auto flex max-w-[1240px] flex-col gap-2 items-start px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p className="text-sm text-muted-foreground">© 2026 RobinOS. All rights reserved.</p>
-          <div className="flex flex-wrap items-center gap-4">
-            <Link to="/trust-safety" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Trust & Safety</Link>
-            <Link to="/acceptable-use-policy" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Acceptable Use</Link>
-            <Link to="/privacy" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Privacy</Link>
-            <Link to="/terms" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Terms</Link>
+        <div className="mx-auto flex max-w-[1240px] flex-col gap-2 items-start px-4 py-5 sm:px-6">
+          {/* Compliance statement */}
+          <p className="text-[10.5px] text-muted-foreground/40 leading-relaxed max-w-2xl">
+            RobinOS actively blocks unsafe, exploitative, hateful, violent, and illegal AI-generated content. All generations are protected by automated moderation systems.
+          </p>
+          <div className="flex flex-wrap items-center justify-between w-full gap-3 mt-1">
+            <p className="text-sm text-muted-foreground">© 2026 RobinOS. All rights reserved.</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <a
+                href="mailto:trust@tryrobin.xyz"
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-all hover:opacity-90"
+                style={{ background: "hsl(0 72% 55% / 0.08)", border: "1px solid hsl(0 72% 55% / 0.18)", color: "hsl(0 72% 65%)" }}
+              >
+                <span className="w-1 h-1 rounded-full bg-red-400" />
+                Report Abuse
+              </a>
+              <Link to="/trust-safety" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Trust & Safety</Link>
+              <Link to="/acceptable-use-policy" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Acceptable Use</Link>
+              <Link to="/privacy" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Privacy</Link>
+              <Link to="/terms" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Terms</Link>
+            </div>
           </div>
         </div>
       </div>

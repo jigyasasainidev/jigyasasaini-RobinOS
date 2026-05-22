@@ -406,6 +406,34 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
             AI Content Operating System
           </motion.p>
 
+          {/* Trust / Compliance badges */}
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.0, duration: 0.6 }}
+            className="flex flex-wrap items-center justify-center gap-2 px-4"
+          >
+            {[
+              { dot: "bg-emerald-400", label: "AI Moderation Active" },
+              { dot: "bg-emerald-400", label: "Responsible AI Platform" },
+              { dot: "bg-blue-400",    label: "Enterprise-grade Safety" },
+              { dot: "bg-emerald-400", label: "Abuse Prevention Enabled" },
+            ].map(({ dot, label }) => (
+              <span
+                key={label}
+                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-mono tracking-wider"
+                style={{
+                  background: "hsl(217 91% 60% / 0.05)",
+                  border: "1px solid hsl(217 91% 60% / 0.12)",
+                  color: "hsl(var(--muted-foreground) / 0.5)",
+                }}
+              >
+                <span className={`w-1 h-1 rounded-full animate-pulse ${dot}`} style={{ animationDuration: "2.5s" }} />
+                {label}
+              </span>
+            ))}
+          </motion.div>
+
           <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 mt-4 w-full sm:w-auto px-4 sm:px-0">
             <motion.button
               initial={{ opacity: 0, y: 10 }}

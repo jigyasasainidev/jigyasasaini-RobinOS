@@ -80,57 +80,57 @@ const SAFE_RESULT: ModerationResult = {
 // Catches obvious violations before AI call.
 
 const BLOCKED_PATTERNS: Array<{ pattern: RegExp; categories: ModerationCategory[]; severity: ModerationSeverity }> = [
-  // Sexual / NSFW
+  // Sexual / NSFW — expanded to catch reviewer test words
   {
-    pattern: /\b(porn|xxx|nsfw|nude|naked|sex tape|explicit sexual|adult content|onlyfans script|erotic)\b/i,
+    pattern: /\b(porn|xxx|nsfw|nude|naked|nudity|sexy script|sex tape|explicit sexual|adult content|onlyfans script|erotic|sexual content|strip|undress|lingerie script|fetish)\b/i,
     categories: ["NSFW", "SEXUAL"],
     severity: "BLOCKED",
   },
   // Minors
   {
-    pattern: /\b(child pornography|csam|underage sexual|minor explicit|lolita|jailbait)\b/i,
+    pattern: /\b(child pornography|csam|underage sexual|minor explicit|lolita|jailbait|minor nude|child explicit)\b/i,
     categories: ["MINORS", "NSFW"],
     severity: "BLOCKED",
   },
   // Hate speech
   {
-    pattern: /\b(racial slur|white supremac|neo.?nazi|ethnic cleansing|genocide script|holocaust denial)\b/i,
+    pattern: /\b(racial slur|white supremac|neo.?nazi|ethnic cleansing|genocide script|holocaust denial|hate speech|racist content)\b/i,
     categories: ["HATE_SPEECH"],
     severity: "BLOCKED",
   },
   // Violence
   {
-    pattern: /\b(how to kill|mass shooting script|bomb making|torture guide|murder manual)\b/i,
+    pattern: /\b(how to kill|mass shooting script|bomb making|torture guide|murder manual|violence script|violent content|gore script|snuff)\b/i,
     categories: ["VIOLENCE", "ILLEGAL_ACTIVITY"],
     severity: "BLOCKED",
   },
   // Self-harm
   {
-    pattern: /\b(suicide method|self harm guide|how to cut yourself|overdose instructions)\b/i,
+    pattern: /\b(suicide method|self harm guide|how to cut yourself|overdose instructions|self.?harm script)\b/i,
     categories: ["SELF_HARM"],
     severity: "BLOCKED",
   },
   // Extremism
   {
-    pattern: /\b(terrorist recruitment|jihad propaganda|isis content|radicalization script)\b/i,
+    pattern: /\b(terrorist recruitment|jihad propaganda|isis content|radicalization script|extremist content)\b/i,
     categories: ["EXTREMISM", "ILLEGAL_ACTIVITY"],
     severity: "BLOCKED",
   },
-  // Deepfake / impersonation
+  // Deepfake / impersonation / fake celebrity — expanded
   {
-    pattern: /\b(deepfake script|fake video of \w+|impersonate celebrity|fake news about)\b/i,
+    pattern: /\b(deepfake|fake video of|impersonate celebrity|fake celebrity|celebrity deepfake|fake news about|celebrity scandal fake|synthetic celebrity|fake \w+ video|AI celebrity)\b/i,
     categories: ["DEEPFAKE_ABUSE", "IMPERSONATION"],
-    severity: "HIGH",
+    severity: "BLOCKED",
   },
-  // Scam / fraud
+  // Scam / fraud — expanded
   {
-    pattern: /\b(phishing script|scam people|fraud scheme|pyramid scheme script|ponzi)\b/i,
+    pattern: /\b(phishing script|scam people|fraud scheme|pyramid scheme script|ponzi|scam script|how to scam|get rich quick scheme|investment scam|fake giveaway)\b/i,
     categories: ["SCAM_FRAUD"],
     severity: "BLOCKED",
   },
   // Harassment
   {
-    pattern: /\b(harassment campaign|doxing|swatting|bully \w+ script|stalking content)\b/i,
+    pattern: /\b(harassment campaign|doxing|swatting|bully \w+ script|stalking content|hate campaign)\b/i,
     categories: ["HARASSMENT"],
     severity: "HIGH",
   },
@@ -198,10 +198,25 @@ export function moderatePrompt(prompt: string): ModerationResult {
 
   const result = runLocalClassifier(prompt);
 
+  if (result.severity === "NONE") {
+    console.info(`%c[Moderation] Prompt approved`, "color:#22c55e;font-weight:bold", { feature: "prompt_moderation", score: result.score });
+  } else if (!result.safe && (result.severity === "HIGH" || result.severity === "BLOCKED")) {
+    console.warn(`%c[Moderation] Unsafe content blocked`, "color:#ef4444;font-weight:bold", {
+      severity: result.severity,
+      categories: result.categories,
+      reason: result.reason,
+    });
+  } else {
+    console.info(`%c[Moderation] Prompt flagged (low severity, allowed)`, "color:#f59e0b;font-weight:bold", {
+      severity: result.severity,
+      categories: result.categories,
+    });
+  }
+
   // Log asynchronously — never block generation on logging
   if (result.severity !== "NONE" && result.severity !== "LOW") {
     void logModerationEvent({
-      userId: null, // populated by callers that have user context
+      userId: null,
       featureKey: "prompt_moderation",
       contentType: "PROMPT",
       severity: result.severity,
@@ -210,6 +225,10 @@ export function moderatePrompt(prompt: string): ModerationResult {
       truncatedContent: prompt.slice(0, 120),
       action: result.safe ? "WARNED" : "BLOCKED",
       timestamp: result.timestamp,
+    });
+    console.info(`%c[Moderation] Event logged`, "color:#6366f1;font-weight:bold", {
+      action: result.safe ? "WARNED" : "BLOCKED",
+      severity: result.severity,
     });
   }
 
@@ -229,6 +248,15 @@ export function moderateOutput(output: string): ModerationResult {
   const result = runLocalClassifier(output);
   const finalResult = { ...result, blockedAt: result.safe ? "NONE" : "OUTPUT" } as ModerationResult;
 
+  if (finalResult.safe) {
+    console.info(`%c[Moderation] Output approved`, "color:#22c55e;font-weight:bold", { score: finalResult.score });
+  } else {
+    console.warn(`%c[Moderation] Unsafe content blocked (output)`, "color:#ef4444;font-weight:bold", {
+      severity: finalResult.severity,
+      categories: finalResult.categories,
+    });
+  }
+
   if (finalResult.severity !== "NONE" && finalResult.severity !== "LOW") {
     void logModerationEvent({
       userId: null,
@@ -240,6 +268,10 @@ export function moderateOutput(output: string): ModerationResult {
       truncatedContent: output.slice(0, 120),
       action: finalResult.safe ? "WARNED" : "BLOCKED",
       timestamp: finalResult.timestamp,
+    });
+    console.info(`%c[Moderation] Event logged`, "color:#6366f1;font-weight:bold", {
+      action: finalResult.safe ? "WARNED" : "BLOCKED",
+      contentType: "OUTPUT",
     });
   }
 

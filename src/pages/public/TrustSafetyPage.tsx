@@ -168,6 +168,12 @@ export function TrustSafetyPage() {
                 <Paragraph>
                   RobinOS operates as a responsible AI content platform. Our mission is to provide creators with powerful AI tools while maintaining rigorous safeguards against misuse, harmful content, and platform abuse. Safety is not an afterthought — it is infrastructure.
                 </Paragraph>
+                {/* AI Governance copy — key compliance statement */}
+                <div className="mt-4 rounded-xl px-4 py-3.5" style={{ background: "hsl(217 91% 60% / 0.05)", border: "1px solid hsl(217 91% 60% / 0.14)" }}>
+                  <p className="text-sm text-foreground/75 leading-relaxed">
+                    RobinOS combines automated moderation systems, abuse detection infrastructure, and human oversight to maintain a safe AI generation environment.
+                  </p>
+                </div>
                 <BulletList items={[
                   "Automated content moderation active on every AI generation request",
                   "Multi-layer safety architecture: pre-generation prompt filtering + post-generation output validation",
@@ -278,6 +284,12 @@ export function TrustSafetyPage() {
                 <Paragraph>
                   RobinOS operates rate limiting, abuse detection, and automated threat monitoring across all AI generation endpoints. Abuse prevention is enforced at both the API layer and the application layer.
                 </Paragraph>
+                {/* Governance statement */}
+                <div className="mt-4 rounded-xl px-4 py-3.5" style={{ background: "hsl(38 92% 50% / 0.04)", border: "1px solid hsl(38 92% 50% / 0.12)" }}>
+                  <p className="text-sm text-foreground/70 leading-relaxed">
+                    Repeated policy violations trigger automated account restrictions and enforcement review. Accounts flagged by our abuse detection system are reviewed by the Trust & Safety team within 72 hours.
+                  </p>
+                </div>
                 <BulletList items={[
                   "Per-user rate limits enforced on all AI generation features (daily and per-request)",
                   "Automated detection of repeated safety violation attempts within a session",

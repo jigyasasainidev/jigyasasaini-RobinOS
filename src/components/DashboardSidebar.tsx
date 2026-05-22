@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Zap, PenTool, Settings, LogOut, Clock, Link2, Crown, Mic, Film, Music, BarChart3, Type } from "lucide-react";
+import { Zap, PenTool, Settings, LogOut, Clock, Link2, Crown, Mic, Film, Music, BarChart3, Type, Flag } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlanKey, useIsProOrAbove, useIsAgency } from "@/hooks/useEntitlements";
 import { Badge } from "@/components/ui/badge";
@@ -186,6 +186,13 @@ export function DashboardSidebar() {
         </nav>
 
         <div className="p-3 border-t border-border">
+          <a
+            href="mailto:trust@tryrobin.xyz"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm border border-red-500/15 bg-red-500/5 text-red-400/70 hover:text-red-400 hover:border-red-500/25 w-full transition-colors mb-2"
+          >
+            <Flag className="w-4 h-4 shrink-0" />
+            <span>Report Abuse</span>
+          </a>
           <button onClick={signOut} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent w-full transition-colors">
             <LogOut className="w-4 h-4" />
             <span>Sign Out</span>
