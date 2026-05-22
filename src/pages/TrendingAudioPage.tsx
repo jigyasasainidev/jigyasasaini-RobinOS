@@ -41,21 +41,22 @@ const platforms: { id: Platform; label: string }[] = [
 // ── Signal language helpers ───────────────────────────────
 
 const velocityLabel = (v?: string, trend?: string): { icon: React.ReactNode; text: string } => {
-  if (v === "exploding") return { icon: <Zap className="w-3 h-3 text-red-400" />,        text: "Exploding momentum" };
-  if (v === "hot")       return { icon: <TrendingUp className="w-3 h-3 text-amber-400" />, text: "High creator traction" };
-  if (v === "rising")    return { icon: <ArrowUpRight className="w-3 h-3 text-primary" />,  text: "Fast growth signal" };
-  if (v === "stable")    return { icon: <Minus className="w-3 h-3 text-muted-foreground/60" />, text: "Consistent traction" };
-  // fallback from trend field if velocity absent
-  if (trend === "up")    return { icon: <ArrowUpRight className="w-3 h-3 text-primary" />,       text: "Growing engagement" };
-  if (trend === "new")   return { icon: <Sparkles className="w-3 h-3 text-amber-400" />,          text: "Emerging signal" };
-  return                        { icon: <Minus className="w-3 h-3 text-muted-foreground/60" />,   text: "Stable signal" };
+  // Arrow icons: emerald green for growth, amber for hot, red for exploding, muted for stable
+  if (v === "exploding") return { icon: <Zap         className="w-3 h-3 text-red-400 shrink-0" />,             text: "Exploding momentum" };
+  if (v === "hot")       return { icon: <TrendingUp  className="w-3 h-3 text-amber-400 shrink-0" />,           text: "High creator traction" };
+  if (v === "rising")    return { icon: <ArrowUpRight className="w-3 h-3 text-emerald-400 shrink-0" />,        text: "Fast growth signal" };
+  if (v === "stable")    return { icon: <Minus        className="w-3 h-3 text-muted-foreground/50 shrink-0" />, text: "Consistent traction" };
+  // fallback from trend field
+  if (trend === "up")    return { icon: <ArrowUpRight className="w-3 h-3 text-emerald-400 shrink-0" />,        text: "Growing engagement" };
+  if (trend === "new")   return { icon: <Sparkles     className="w-3 h-3 text-amber-400 shrink-0" />,          text: "Emerging signal" };
+  return                        { icon: <Minus        className="w-3 h-3 text-muted-foreground/50 shrink-0" />, text: "Stable signal" };
 };
 
 const velocityBadgeClass = (v?: string) => {
-  if (v === "exploding") return "border-red-500/30 text-red-400 bg-red-500/8";
-  if (v === "hot")       return "border-amber-500/30 text-amber-400 bg-amber-500/8";
-  if (v === "rising")    return "border-primary/30 text-primary bg-primary/8";
-  return                        "border-border/40 text-muted-foreground/50";
+  if (v === "exploding") return "border-red-500/25 text-red-400/90";
+  if (v === "hot")       return "border-amber-500/25 text-amber-400/90";
+  if (v === "rising")    return "border-emerald-500/25 text-emerald-400/90";
+  return                        "border-border/30 text-muted-foreground/45";
 };
 
 const categoryColor = (cat: string) => {
@@ -305,18 +306,18 @@ const TrendingAudioPage = () => {
                         </button>
                       </div>
 
-                      {/* Signal metadata — no fake numbers */}
-                      <div className="flex items-center gap-2 mb-3 flex-wrap">
-                        <Badge variant="outline" className={`text-[9px] font-mono ${categoryColor(audio.category)}`}>
+                      {/* Signal metadata — compact premium inline row */}
+                      <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+                        <Badge variant="outline" className={`text-[9px] font-mono shrink-0 ${categoryColor(audio.category)}`}>
                           {audio.category}
                         </Badge>
-                        <span className={`inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded-full border ${velocityBadgeClass(audio.velocity)}`}>
+                        <span className={`inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded-full border shrink-0 ${velocityBadgeClass(audio.velocity)}`}>
                           {sig.icon}
-                          <span>{sig.text}</span>
+                          <span className="leading-none">{sig.text}</span>
                         </span>
                         {audio.confidence != null && (
-                          <span className="text-[9px] font-mono text-muted-foreground/45 border border-border/30 px-1.5 py-0.5 rounded-full">
-                            {audio.confidence}% confidence
+                          <span className="text-[9px] font-mono text-muted-foreground/40 shrink-0">
+                            · {audio.confidence}% conf
                           </span>
                         )}
                       </div>
@@ -379,18 +380,18 @@ const TrendingAudioPage = () => {
                         </button>
                       </div>
 
-                      {/* Signal metadata — no fake post counts */}
-                      <div className="flex items-center gap-2 mb-3 flex-wrap">
-                        <Badge variant="outline" className={`text-[9px] font-mono ${categoryColor(tag.category)}`}>
+                      {/* Signal metadata — compact premium inline row */}
+                      <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+                        <Badge variant="outline" className={`text-[9px] font-mono shrink-0 ${categoryColor(tag.category)}`}>
                           {tag.category}
                         </Badge>
-                        <span className={`inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded-full border ${velocityBadgeClass(tag.velocity)}`}>
+                        <span className={`inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded-full border shrink-0 ${velocityBadgeClass(tag.velocity)}`}>
                           {sig.icon}
-                          <span>{sig.text}</span>
+                          <span className="leading-none">{sig.text}</span>
                         </span>
                         {tag.confidence != null && (
-                          <span className="text-[9px] font-mono text-muted-foreground/45 border border-border/30 px-1.5 py-0.5 rounded-full">
-                            {tag.confidence}% confidence
+                          <span className="text-[9px] font-mono text-muted-foreground/40 shrink-0">
+                            · {tag.confidence}% conf
                           </span>
                         )}
                       </div>

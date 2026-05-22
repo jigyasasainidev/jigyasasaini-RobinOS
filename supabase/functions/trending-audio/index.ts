@@ -135,7 +135,105 @@ function deriveConfidence(
   return Math.min(95, conf);
 }
 
-// ── Virality scoring ─────────────────────────────────────────
+// ── Platform personality profiles ────────────────────────────
+// Each platform applies different scoring multipliers, rotation offsets,
+// and category preferences to produce distinct-feeling outputs from
+// the same shared source pool. No fake data — only ranking diversification.
+
+interface PlatformProfile {
+  // Score bonus per category (additive to base virality score)
+  categoryBonus: Partial<Record<string, number>>;
+  // Offset into the merged pool before slicing (creates different starting position)
+  rotationOffset: number;
+  // Whether to prefer cross-source items (both Apple + Deezer) at the top
+  preferCrossSource: boolean;
+  // Velocity bias: push certain velocities to higher positions
+  velocityBias: Partial<Record<string, number>>;
+  // Platform-specific tip suffix to vary tip wording
+  tipContext: string;
+}
+
+const PLATFORM_PROFILES: Record<Platform, PlatformProfile> = {
+  Instagram: {
+    categoryBonus:    { Viral: 15, Trending: 10, "Classic Remix": 12 },
+    rotationOffset:   0,
+    preferCrossSource: true,
+    velocityBias:     { hot: 8, rising: 5 },
+    tipContext:       "on Instagram Reels with a strong visual hook and aesthetic framing",
+  },
+  TikTok: {
+    categoryBonus:    { Viral: 20, Rising: 15, Trending: 5 },
+    rotationOffset:   12,  // starts from position 12 in merged pool
+    preferCrossSource: false,
+    velocityBias:     { exploding: 15, hot: 8 },
+    tipContext:       "on TikTok with a fast-paced hook, meme energy, and trending sound overlay",
+  },
+  YouTube: {
+    categoryBonus:    { Trending: 15, "Classic Remix": 20, Viral: 5 },
+    rotationOffset:   6,
+    preferCrossSource: true,
+    velocityBias:     { stable: 10, hot: 5 },
+    tipContext:       "on YouTube Shorts with a clear narrative hook and high retention first 3 seconds",
+  },
+  Facebook: {
+    categoryBonus:    { Trending: 12, "Classic Remix": 18, Rising: 8 },
+    rotationOffset:   18,
+    preferCrossSource: true,
+    velocityBias:     { stable: 12, rising: 4 },
+    tipContext:       "on Facebook Reels with mainstream-friendly framing and broad audience appeal",
+  },
+};
+
+// Platform-specific hashtag category preferences and offset
+interface HashtagPlatformProfile {
+  categoryBonus:  Partial<Record<string, number>>;
+  rotationOffset: number;
+  tipContext:     string;
+}
+
+const HASHTAG_PROFILES: Record<Platform, HashtagPlatformProfile> = {
+  Instagram: {
+    categoryBonus:  { Trending: 12, Niche: 8 },
+    rotationOffset: 0,
+    tipContext:     "on Instagram with strong visual context and caption depth",
+  },
+  TikTok: {
+    categoryBonus:  { Trending: 18, Rising: 12 },
+    rotationOffset: 8,
+    tipContext:     "on TikTok with fast delivery and trend-aware framing",
+  },
+  YouTube: {
+    categoryBonus:  { Evergreen: 18, Trending: 8 },
+    rotationOffset: 4,
+    tipContext:     "on YouTube with topic-specific framing and search-optimized context",
+  },
+  Facebook: {
+    categoryBonus:  { Evergreen: 15, Trending: 10 },
+    rotationOffset: 12,
+    tipContext:     "on Facebook with broad-audience tone and community-friendly framing",
+  },
+};
+
+// ── Platform-aware score modifier ────────────────────────────
+function applyPlatformScoreAudio(
+  baseScore: number,
+  category: string,
+  velocity: string,
+  profile: PlatformProfile
+): number {
+  const catMod = profile.categoryBonus[category] ?? 0;
+  const velMod = profile.velocityBias[velocity]  ?? 0;
+  return Math.min(100, baseScore + catMod + velMod);
+}
+
+// ── Deterministic rotation: wraps the pool without repeating ─
+function rotateSlice<T>(arr: T[], offset: number, count: number): T[] {
+  if (!arr.length) return [];
+  const safe = offset % arr.length;
+  // concat to allow wrap-around
+  const doubled = [...arr, ...arr];
+  return doubled.slice(safe, safe + count);
+}
 
 function calcAudioVirality(category: string, index: number): number {
   const catBonus =
@@ -170,6 +268,8 @@ function calculateExpiresAt(hoursFromNow: number): string {
 // ── Audio fetch + normalize + rank ──────────────────────────
 async function fetchRealAudios(platform: Platform) {
   const geo = PLATFORM_GEO[platform] || "us";
+  const profile = PLATFORM_PROFILES[platform];
+
   const [appleData, deezerData] = await Promise.all([
     safeFetchJson(
       `https://rss.applemarketingtools.com/api/v2/${geo}/music/most-played/100/songs.json`
@@ -177,7 +277,7 @@ async function fetchRealAudios(platform: Platform) {
     safeFetchJson("https://api.deezer.com/chart/0/tracks?limit=100"),
   ]);
 
-  // Collect rows from both sources; track which appeared in both (cross-source bonus)
+  // Collect rows from both sources; track cross-source bonus
   const appleSet = new Set<string>();
   const appleRows: Array<{ title: string; artist: string }> = [];
   if (Array.isArray(appleData?.feed?.results)) {
@@ -200,52 +300,72 @@ async function fetchRealAudios(platform: Platform) {
     }
   }
 
-  // Merge with cross-source tracking
-  const seen = new Map<string, boolean>(); // key → crossSource
-  const merged: Array<{ title: string; artist: string; crossSource: boolean }> = [];
+  // Merge into deduped pool with cross-source flag
+  const seen = new Map<string, boolean>();
+  const pool: Array<{ title: string; artist: string; crossSource: boolean }> = [];
 
   for (const item of appleRows) {
     const key = normalizeAudioKey(item.title, item.artist);
-    if (!seen.has(key)) {
-      seen.set(key, false);
-      merged.push({ ...item, crossSource: false });
-    }
+    if (!seen.has(key)) { seen.set(key, false); pool.push({ ...item, crossSource: false }); }
   }
   for (const item of deezerRows) {
     const key = normalizeAudioKey(item.title, item.artist);
     if (!seen.has(key)) {
       seen.set(key, false);
-      merged.push({ ...item, crossSource: false });
+      pool.push({ ...item, crossSource: false });
     } else {
-      // Mark cross-source if already in list from apple
-      const idx = merged.findIndex(
-        (m) => normalizeAudioKey(m.title, m.artist) === key
-      );
-      if (idx >= 0) merged[idx] = { ...merged[idx], crossSource: true };
+      const idx = pool.findIndex((m) => normalizeAudioKey(m.title, m.artist) === key);
+      if (idx >= 0) pool[idx] = { ...pool[idx], crossSource: true };
     }
   }
 
-  // Slice to cap
-  const final = merged.slice(0, AUDIO_CAP);
+  // Platform-specific rotation: each platform starts from a different offset
+  // Ensures distinct selections even from the same shared pool
+  const rotated = rotateSlice(pool, profile.rotationOffset, AUDIO_CAP * 2);
 
+  // If platform prefers cross-source items, bubble them up first
+  let sorted = rotated;
+  if (profile.preferCrossSource) {
+    sorted = [
+      ...rotated.filter((x) => x.crossSource),
+      ...rotated.filter((x) => !x.crossSource),
+    ];
+  }
+
+  const final = sorted.slice(0, AUDIO_CAP);
+
+  // Assign base categories from position, then compute platform-adjusted score
   return final.map((item, idx) => {
-    const category =
+    const baseCategory =
       idx < 4  ? "Viral" :
       idx < 9  ? "Trending" :
       idx < 14 ? "Rising" :
                  "Classic Remix";
+
+    // Platform personality remaps some category assignments
+    const category =
+      platform === "TikTok"   && idx < 6  ? "Viral" :
+      platform === "TikTok"   && idx < 12 ? "Rising" :
+      platform === "YouTube"  && idx >= 14 ? "Classic Remix" :
+      platform === "Facebook" && idx >= 12 ? "Classic Remix" :
+      baseCategory;
+
     const trend = idx < 6 ? "up" : idx < 12 ? "stable" : "new";
-    const score = calcAudioVirality(category, idx);
-    const velocity = deriveVelocity(score, trend, idx + 1);
-    const confidence = deriveConfidence(score, item.crossSource, idx + 1);
+
+    const baseScore  = calcAudioVirality(category, idx);
+    const baseVel    = deriveVelocity(baseScore, trend, idx + 1);
+    // Apply platform score modifier — may promote/demote velocity tier
+    const adjScore   = applyPlatformScoreAudio(baseScore, category, baseVel, profile);
+    const velocity   = deriveVelocity(adjScore, trend, idx + 1);
+    const confidence = deriveConfidence(adjScore, item.crossSource, idx + 1);
 
     return {
       title:      item.title,
       artist:     item.artist,
       category,
-      uses:       `Signal #${idx + 1}`,   // internal rank only — UI uses velocity/confidence
+      uses:       `Signal #${idx + 1}`,
       trend,
-      tip:        `Use this audio on ${platform} with a strong hook in the first 2 seconds and clear on-screen context for better retention.`,
+      tip:        `Use this audio ${profile.tipContext} for maximum platform retention.`,
       velocity,
       confidence,
     };
@@ -254,12 +374,14 @@ async function fetchRealAudios(platform: Platform) {
 
 // ── Hashtag fetch + normalize + rank ────────────────────────
 async function fetchRealHashtags(platform: Platform) {
+  const profile = HASHTAG_PROFILES[platform];
+
   const rss = await safeFetchText(
     "https://trends.google.com/trending/rss?geo=US"
   );
   if (!rss) return [];
 
-  // Parse RSS titles
+  // Parse RSS titles — collect more than needed so rotation has room
   const rawTitles: string[] = [];
   const itemRx =
     /<item>[\s\S]*?<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>[\s\S]*?<\/item>/gi;
@@ -267,39 +389,55 @@ async function fetchRealHashtags(platform: Platform) {
   while ((m = itemRx.exec(rss)) !== null) {
     const t = String(m[1] || "").trim();
     if (t) rawTitles.push(t);
-    if (rawTitles.length >= 60) break;
+    if (rawTitles.length >= 80) break;  // collect more for rotation pool
   }
 
-  // Normalize + dedup
+  // Normalize + dedup entire pool
   const seen = new Set<string>();
-  const tags: Array<{ display: string; crossSource: boolean }> = [];
+  const tagPool: Array<{ display: string; crossSource: boolean }> = [];
 
   for (const raw of rawTitles) {
     const normalized = normalizeHashtag(raw);
     if (!normalized) continue;
     if (seen.has(normalized.key)) continue;
     seen.add(normalized.key);
-    tags.push({ display: normalized.display, crossSource: false });
-    if (tags.length >= HASHTAG_CAP) break;
+    tagPool.push({ display: normalized.display, crossSource: false });
   }
 
-  return tags.map((item, idx) => {
-    const category =
+  // Platform-specific rotation: each platform starts from different offset
+  const rotated = rotateSlice(tagPool, profile.rotationOffset, HASHTAG_CAP * 2);
+  const final   = rotated.slice(0, HASHTAG_CAP);
+
+  return final.map((item, idx) => {
+    const baseCategory =
       idx < 5  ? "Trending" :
       idx < 11 ? "Rising" :
       idx < 16 ? "Evergreen" :
                  "Niche";
+
+    // Platform personality remaps some categories
+    const category =
+      platform === "YouTube"  && idx >= 10 ? "Evergreen" :
+      platform === "Facebook" && idx >= 8  ? "Evergreen" :
+      platform === "TikTok"   && idx < 8   ? "Trending" :
+      platform === "TikTok"   && idx < 14  ? "Rising" :
+      baseCategory;
+
     const trend = idx < 7 ? "up" : idx < 13 ? "stable" : "new";
-    const score = calcHashtagVirality(category, idx);
-    const velocity = deriveVelocity(score, trend, idx + 1);
-    const confidence = deriveConfidence(score, item.crossSource, idx + 1);
+
+    const baseScore  = calcHashtagVirality(category, idx);
+    // Apply platform category bonus
+    const catBonus   = profile.categoryBonus[category] ?? 0;
+    const adjScore   = Math.min(100, baseScore + catBonus);
+    const velocity   = deriveVelocity(adjScore, trend, idx + 1);
+    const confidence = deriveConfidence(adjScore, item.crossSource, idx + 1);
 
     return {
       tag:      item.display,
       category,
-      posts:    `Signal #${idx + 1}`,   // internal rank only — UI uses velocity/confidence
+      posts:    `Signal #${idx + 1}`,
       trend,
-      tip:      `Pair ${item.display} with a platform-specific hook and current context on ${platform} for stronger discoverability.`,
+      tip:      `Pair ${item.display} with a timely hook and platform-specific context ${profile.tipContext} for stronger discoverability.`,
       velocity,
       confidence,
     };
