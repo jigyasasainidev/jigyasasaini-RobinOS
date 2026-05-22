@@ -364,8 +364,8 @@ export function PrivacyPolicyPage() {
           title: "Privacy Contact",
           body: [
             "For privacy questions, data rights requests, or concerns: support@tryrobin.xyz",
-            "For trust and safety matters: trust@tryrobin.xyz",
-            "For legal inquiries and law enforcement requests: legal@tryrobin.xyz",
+            "For trust and safety, abuse reports, compliance inquiries, and moderation appeals: support@tryrobin.xyz",
+            "For legal inquiries and law enforcement requests: support@tryrobin.xyz",
           ],
         },
       ]}
@@ -486,7 +486,7 @@ export function TermsOfServicePage() {
           title: "Governing Law",
           body: [
             "These Terms are governed by the laws of India. Any disputes related to RobinOS services, subscriptions, or affiliate operations shall be resolved under applicable Indian jurisdiction.",
-            "For questions about these Terms, contact legal@tryrobin.xyz.",
+            "For questions about these Terms, contact support@tryrobin.xyz.",
           ],
         },
       ]}

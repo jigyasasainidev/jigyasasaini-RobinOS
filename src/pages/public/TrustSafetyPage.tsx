@@ -372,7 +372,7 @@ export function TrustSafetyPage() {
                 <BulletList items={[
                   "Users are responsible for ensuring their prompts do not violate copyright",
                   "Bulk reproduction of copyrighted material using RobinOS is prohibited",
-                  "Copyright takedown requests can be submitted to legal@tryrobin.xyz",
+                  "Copyright takedown requests can be submitted to support@tryrobin.xyz",
                   "Accounts engaged in systematic copyright infringement may be suspended",
                   "We respond to valid DMCA / copyright notices in accordance with applicable law",
                 ]} />
@@ -387,17 +387,17 @@ export function TrustSafetyPage() {
                   RobinOS provides a reporting mechanism for users who encounter policy violations, abuse, or safety concerns. All reports are taken seriously and reviewed by our Trust & Safety team.
                 </Paragraph>
                 <BulletList items={[
-                  "Report abuse or safety concerns: trust@tryrobin.xyz",
+                  "Report abuse or safety concerns: support@tryrobin.xyz",
                   "Reports are triaged based on severity within 72 business hours",
                   "Reporters may remain anonymous — personal information is not disclosed",
                   "Confirmed violations result in immediate action and are logged to our audit system",
                   "Serial false reporters may be subject to account review",
                 ]} />
                 <div className="mt-5 flex flex-wrap gap-3">
-                  <a href="mailto:trust@tryrobin.xyz" className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-medium text-primary transition-all hover:opacity-90" style={{ background: "hsl(217 91% 60% / 0.1)", border: "1px solid hsl(217 91% 60% / 0.2)" }}>
+                  <a href="mailto:support@tryrobin.xyz" className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-medium text-primary transition-all hover:opacity-90" style={{ background: "hsl(217 91% 60% / 0.1)", border: "1px solid hsl(217 91% 60% / 0.2)" }}>
                     <Flag className="w-3.5 h-3.5" /> Report Abuse
                   </a>
-                  <a href="mailto:legal@tryrobin.xyz" className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-medium text-muted-foreground transition-all hover:text-foreground" style={{ border: "1px solid hsl(217 28% 14%)" }}>
+                  <a href="mailto:support@tryrobin.xyz" className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-medium text-muted-foreground transition-all hover:text-foreground" style={{ border: "1px solid hsl(217 28% 14%)" }}>
                     <Scale className="w-3.5 h-3.5" /> Legal Inquiries
                   </a>
                 </div>
@@ -463,8 +463,8 @@ export function TrustSafetyPage() {
                 <SectionHeader icon={FileText} title="Trust & Safety Contact" />
                 <div className="grid gap-4 sm:grid-cols-3">
                   {[
-                    { label: "Abuse Reports", email: "trust@tryrobin.xyz", desc: "Safety violations, abuse, harmful content reports" },
-                    { label: "Legal Inquiries", email: "legal@tryrobin.xyz", desc: "DMCA, copyright, law enforcement requests" },
+                    { label: "Abuse Reports", email: "support@tryrobin.xyz", desc: "Safety violations, abuse, harmful content reports" },
+                    { label: "Legal Inquiries", email: "support@tryrobin.xyz", desc: "DMCA, copyright, law enforcement requests" },
                     { label: "General Support", email: "support@tryrobin.xyz", desc: "Account issues, appeals, policy questions" },
                   ].map((contact) => (
                     <div key={contact.label} className="rounded-xl p-4" style={{ background: "hsl(222 28% 6.5%)", border: "1px solid hsl(217 28% 12%)" }}>

@@ -110,7 +110,6 @@ export function PublicFooter() {
           </ul>
           <div className="mt-4 space-y-1.5 text-sm">
             <a href="mailto:support@tryrobin.xyz" className="block text-muted-foreground transition-all duration-200 hover:text-foreground hover:translate-x-0.5">support@tryrobin.xyz</a>
-            <a href="mailto:trust@tryrobin.xyz" className="block text-muted-foreground transition-all duration-200 hover:text-foreground hover:translate-x-0.5">trust@tryrobin.xyz</a>
             <a href="https://tryrobin.xyz" target="_blank" rel="noreferrer" className="block text-muted-foreground transition-all duration-200 hover:text-foreground hover:translate-x-0.5">tryrobin.xyz</a>
           </div>
         </div>
@@ -131,7 +130,7 @@ export function PublicFooter() {
             <p className="text-sm text-muted-foreground">© 2026 RobinOS. All rights reserved.</p>
             <div className="flex flex-wrap items-center gap-3">
               <a
-                href="mailto:trust@tryrobin.xyz"
+                href="mailto:support@tryrobin.xyz"
                 className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-all hover:opacity-90"
                 style={{ background: "hsl(0 72% 55% / 0.08)", border: "1px solid hsl(0 72% 55% / 0.18)", color: "hsl(0 72% 65%)" }}
               >

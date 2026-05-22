@@ -881,40 +881,217 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
         </motion.div>
       </RevealSection>
 
-      <RevealSection id="affiliates" className="py-18 md:py-24 px-4 sm:px-6 max-w-5xl mx-auto">
-        <motion.div
-          whileHover={{ y: -4, boxShadow: "0 20px 52px hsl(0 0% 0% / 0.35), 0 0 0 1px hsl(217 91% 60% / 0.15)" }}
-          transition={{ type: "spring", stiffness: 300, damping: 22 }}
-          className="group rounded-2xl border border-primary/25 bg-card/45 p-6 sm:p-8 md:p-10 backdrop-blur-md shadow-[0_8px_32px_hsl(0_0%_0%/0.28),0_0_0_1px_hsl(217_91%_60%/0.06)] relative overflow-hidden"
+      <RevealSection id="affiliates" className="py-18 md:py-24 px-4 sm:px-6 max-w-6xl mx-auto">
+        <div
+          className="relative rounded-2xl overflow-hidden"
+          style={{
+            background: "linear-gradient(140deg, hsl(222 28% 8% / 0.97) 0%, hsl(220 32% 9% / 0.97) 60%, hsl(222 26% 7% / 0.97) 100%)",
+            border: "1px solid hsl(217 28% 14%)",
+            boxShadow: "0 24px 80px hsl(0 0% 0% / 0.4), inset 0 1px 0 hsl(0 0% 100% / 0.04)",
+          }}
         >
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/35 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          {/* Glow orb — contained within card bounds */}
-          <div className="absolute bottom-0 right-0 w-48 h-24 rounded-full bg-primary/[0.07] blur-[32px] pointer-events-none" />
+          {/* Top edge shimmer */}
+          <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent 0%, hsl(217 91% 60% / 0.35) 40%, hsl(217 91% 60% / 0.35) 60%, transparent 100%)" }} />
+          {/* Localized ambient — NOT full width neon */}
+          <div className="absolute bottom-0 left-1/4 w-64 h-32 pointer-events-none" style={{ background: "radial-gradient(ellipse at center bottom, hsl(217 91% 60% / 0.06), transparent 70%)", filter: "blur(24px)" }} />
 
-          <p className="text-xs font-mono tracking-[0.24em] uppercase text-primary/85">Affiliates</p>
-          <h2 className="mt-3 text-chrome text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight">Earn recurring commissions with RobinOS</h2>
-          <p className="mt-3 text-sm text-muted-foreground max-w-2xl">Join the affiliate program and unlock monthly recurring commissions with performance rewards for top partners.</p>
+          <div className="relative grid grid-cols-1 gap-10 p-6 sm:p-8 md:p-10 lg:grid-cols-2 lg:gap-12 lg:p-12">
 
-          {/* Commission metrics strip */}
-          <div className="mt-6 grid grid-cols-3 gap-3 max-w-sm">
-            {[
-              { value: "30%", label: "Commission" },
-              { value: "$25", label: "Min Payout" },
-              { value: "Monthly", label: "Recurring" },
-            ].map((m) => (
-              <div key={m.label} className="rounded-lg border border-border/40 bg-secondary/30 px-3 py-2.5 text-center">
-                <p className="text-sm font-semibold text-chrome">{m.value}</p>
-                <p className="text-[10px] font-mono text-muted-foreground/60 mt-0.5">{m.label}</p>
+            {/* ─── LEFT ─── */}
+            <div className="flex flex-col justify-center">
+              {/* Label */}
+              <div className="flex items-center gap-2 mb-5">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary/80 animate-pulse" style={{ animationDuration: "2.5s" }} />
+                <span className="text-[9px] font-mono tracking-[0.28em] uppercase text-primary/70">Affiliate Program</span>
               </div>
-            ))}
-          </div>
 
-          <div className="mt-6">
-            <motion.div whileHover={{ y: -1, boxShadow: "0 6px 24px hsl(217 91% 60% / 0.3)" }} whileTap={{ scale: 0.98 }}>
-              <Link to="/affiliates" className="btn-primary inline-flex items-center justify-center">Explore Affiliate Program</Link>
-            </motion.div>
+              {/* Headline */}
+              <h2
+                className="text-chrome text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight leading-[1.1]"
+                style={{ letterSpacing: "-0.02em" }}
+              >
+                Earn recurring<br />
+                commissions with<br />
+                <span className="text-primary/90">RobinOS.</span>
+              </h2>
+
+              {/* Copy */}
+              <p className="mt-4 text-sm text-muted-foreground leading-relaxed max-w-sm">
+                Join our partner ecosystem and earn 30% monthly recurring commission on every paid referral. Real-time tracking, monthly payouts, and transparent analytics.
+              </p>
+
+              {/* Metric cards */}
+              <div className="mt-7 grid grid-cols-3 gap-2.5 max-w-sm">
+                {[
+                  { value: "30%", label: "Commission", color: "hsl(217 91% 60%)" },
+                  { value: "$25", label: "Min Payout", color: "hsl(142 70% 50%)" },
+                  { value: "Monthly", label: "Recurring", color: "hsl(38 92% 55%)" },
+                ].map((m) => (
+                  <motion.div
+                    key={m.label}
+                    whileHover={{ y: -2 }}
+                    transition={{ duration: 0.18 }}
+                    className="rounded-xl px-3 py-3 text-center"
+                    style={{
+                      background: "hsl(222 28% 5.5%)",
+                      border: `1px solid ${m.color.replace(")", " / 0.16)")}`,
+                      boxShadow: `0 2px 12px ${m.color.replace(")", " / 0.06)")}`,
+                    }}
+                  >
+                    <p className="text-lg font-bold tracking-tight" style={{ fontVariantNumeric: "tabular-nums", color: m.color }}>{m.value}</p>
+                    <p className="text-[9px] font-mono uppercase tracking-[0.14em] text-muted-foreground/45 mt-0.5">{m.label}</p>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* CTA */}
+              <div className="mt-7">
+                <motion.div
+                  whileHover={{ y: -2, boxShadow: "0 8px 28px hsl(217 91% 60% / 0.28)" }}
+                  whileTap={{ scale: 0.97 }}
+                  className="inline-block"
+                >
+                  <Link
+                    to="/affiliates"
+                    className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all"
+                    style={{
+                      background: "linear-gradient(135deg, hsl(217 91% 52%), hsl(217 78% 44%))",
+                      boxShadow: "0 4px 16px hsl(217 91% 60% / 0.2), inset 0 1px 0 hsl(0 0% 100% / 0.12)",
+                    }}
+                  >
+                    Join Affiliate Program
+                    <motion.span
+                      animate={{ x: [0, 3, 0] }}
+                      transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+                    >
+                      →
+                    </motion.span>
+                  </Link>
+                </motion.div>
+                <p className="mt-2.5 text-[10px] font-mono text-muted-foreground/35 tracking-wider">
+                  Paid monthly · Fraud protection · Real-time tracking
+                </p>
+              </div>
+            </div>
+
+            {/* ─── RIGHT — Affiliate Dashboard Preview ─── */}
+            <div className="relative flex items-center justify-center lg:justify-end">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.15 }}
+                animate={{ y: [0, -5, 0] }}
+                // @ts-ignore
+                style={{ animationDuration: "6s", animationTimingFunction: "ease-in-out", animationIterationCount: "infinite" }}
+                className="w-full max-w-sm"
+              >
+                {/* Dashboard shell */}
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{
+                    background: "hsl(222 30% 6%)",
+                    border: "1px solid hsl(217 28% 12%)",
+                    boxShadow: "0 24px 64px hsl(0 0% 0% / 0.5), 0 0 0 1px hsl(217 91% 60% / 0.06)",
+                  }}
+                >
+                  {/* Window chrome */}
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-400/50" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-400/50" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/50" />
+                    </div>
+                    <span className="text-[9px] font-mono text-muted-foreground/30 tracking-wider">AFFILIATE DASHBOARD</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />
+                  </div>
+
+                  <div className="p-4 space-y-3">
+                    {/* Earnings header */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35">Total Earned</p>
+                        <p className="text-2xl font-bold text-foreground/90 mt-0.5" style={{ fontVariantNumeric: "tabular-nums" }}>$1,247.50</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35">Pending</p>
+                        <p className="text-base font-bold mt-0.5" style={{ color: "hsl(142 70% 55%)", fontVariantNumeric: "tabular-nums" }}>$183.20</p>
+                      </div>
+                    </div>
+
+                    {/* Mini commission graph — SVG sparkline */}
+                    <div className="rounded-xl overflow-hidden" style={{ background: "hsl(222 32% 4.5%)", border: "1px solid hsl(217 28% 10%)" }}>
+                      <div className="flex items-center justify-between px-3 pt-2.5 pb-1">
+                        <span className="text-[8.5px] font-mono text-muted-foreground/35 tracking-wider">COMMISSION TREND</span>
+                        <span className="text-[8.5px] font-mono text-emerald-400/70">+28%</span>
+                      </div>
+                      <svg viewBox="0 0 260 56" className="w-full" style={{ height: "56px" }}>
+                        <defs>
+                          <linearGradient id="affGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="hsl(217 91% 60%)" stopOpacity="0.28" />
+                            <stop offset="100%" stopColor="hsl(217 91% 60%)" stopOpacity="0" />
+                          </linearGradient>
+                        </defs>
+                        <path d="M0,48 L30,42 L60,36 L90,38 L120,28 L150,22 L180,18 L210,12 L240,8 L260,6 L260,56 L0,56 Z" fill="url(#affGrad)" />
+                        <path d="M0,48 L30,42 L60,36 L90,38 L120,28 L150,22 L180,18 L210,12 L240,8 L260,6" fill="none" stroke="hsl(217 91% 60%)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        <circle cx="260" cy="6" r="3" fill="hsl(217 91% 60%)" style={{ filter: "drop-shadow(0 0 4px hsl(217 91% 60% / 0.8))" }} />
+                      </svg>
+                    </div>
+
+                    {/* Stats row */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { label: "Referrals", value: "47", color: "hsl(217 91% 62%)" },
+                        { label: "Converted", value: "12", color: "hsl(142 70% 55%)" },
+                        { label: "Clicks", value: "1.2k", color: "hsl(38 92% 58%)" },
+                      ].map((s) => (
+                        <div key={s.label} className="rounded-lg px-2.5 py-2 text-center" style={{ background: "hsl(222 28% 7%)", border: "1px solid hsl(217 28% 12%)" }}>
+                          <p className="text-sm font-bold" style={{ color: s.color, fontVariantNumeric: "tabular-nums" }}>{s.value}</p>
+                          <p className="text-[8px] font-mono text-muted-foreground/35 mt-0.5">{s.label}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Recent payouts */}
+                    <div className="rounded-xl overflow-hidden" style={{ background: "hsl(222 32% 4.5%)", border: "1px solid hsl(217 28% 10%)" }}>
+                      <div className="px-3 pt-2.5 pb-1.5">
+                        <span className="text-[8.5px] font-mono text-muted-foreground/35 tracking-wider">RECENT PAYOUTS</span>
+                      </div>
+                      {[
+                        { month: "May 2026", amount: "$183.20", status: "Pending" },
+                        { month: "Apr 2026", amount: "$241.50", status: "Paid" },
+                        { month: "Mar 2026", amount: "$198.00", status: "Paid" },
+                      ].map((p) => (
+                        <div key={p.month} className="flex items-center justify-between px-3 py-2 border-t border-border/20">
+                          <span className="text-[10px] font-mono text-muted-foreground/50">{p.month}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-mono text-foreground/80">{p.amount}</span>
+                            <span
+                              className="text-[8px] font-mono rounded-full px-1.5 py-0.5"
+                              style={{
+                                background: p.status === "Paid" ? "hsl(142 70% 45% / 0.12)" : "hsl(38 92% 50% / 0.1)",
+                                color: p.status === "Paid" ? "hsl(142 70% 60%)" : "hsl(38 92% 60%)",
+                              }}
+                            >
+                              {p.status}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Active referral count */}
+                    <div className="flex items-center gap-2.5 rounded-xl px-3 py-2.5" style={{ background: "hsl(217 91% 60% / 0.05)", border: "1px solid hsl(217 91% 60% / 0.1)" }}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />
+                      <span className="text-[10px] font-mono text-muted-foreground/55 tracking-wider">12 active referrals generating revenue</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+
           </div>
-        </motion.div>
+        </div>
       </RevealSection>
 
       <RevealSection id="api" className="py-18 md:py-24 px-4 sm:px-6 max-w-5xl mx-auto">

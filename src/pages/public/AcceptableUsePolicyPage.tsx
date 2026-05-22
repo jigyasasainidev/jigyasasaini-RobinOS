@@ -269,7 +269,7 @@ export function AcceptableUsePolicyPage() {
                 If you observe content or behavior that violates this Acceptable Use Policy, we encourage you to report it immediately. RobinOS investigates all reports and takes appropriate action.
               </Para>
               <Para>
-                To report a violation: <a href="mailto:trust@tryrobin.xyz" className="text-primary hover:underline font-mono">trust@tryrobin.xyz</a>
+                To report a violation: <a href="mailto:support@tryrobin.xyz" className="text-primary hover:underline font-mono">support@tryrobin.xyz</a>
               </Para>
               <BulletList items={[
                 "Reports are triaged by severity within 72 business hours",
@@ -281,7 +281,7 @@ export function AcceptableUsePolicyPage() {
 
             <Section id="appeals" title="Appeals Process" icon={Scale}>
               <Para>
-                If you believe an enforcement action taken against your account was in error, you may submit an appeal to <a href="mailto:trust@tryrobin.xyz" className="text-primary hover:underline font-mono">trust@tryrobin.xyz</a> within 14 days of the enforcement action.
+                If you believe an enforcement action taken against your account was in error, you may submit an appeal to <a href="mailto:support@tryrobin.xyz" className="text-primary hover:underline font-mono">support@tryrobin.xyz</a> within 14 days of the enforcement action.
               </Para>
               <BulletList items={[
                 "Appeals are reviewed by a senior trust & safety team member",
@@ -296,7 +296,7 @@ export function AcceptableUsePolicyPage() {
                 RobinOS reserves the right to update this Acceptable Use Policy at any time. Material changes will be communicated to active users via email or in-app notification. Continued use of RobinOS following policy updates constitutes acceptance of the revised terms.
               </Para>
               <Para>
-                For questions about this policy, contact us at <a href="mailto:legal@tryrobin.xyz" className="text-primary hover:underline font-mono">legal@tryrobin.xyz</a>.
+                For questions about this policy, contact us at <a href="mailto:support@tryrobin.xyz" className="text-primary hover:underline font-mono">support@tryrobin.xyz</a>.
               </Para>
               <Para>
                 See also: <Link to="/trust-safety" className="text-primary hover:underline">Trust & Safety Center</Link> · <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link> · <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
