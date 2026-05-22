@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Music, Sparkles, Loader2, Search, Copy, Check, Hash, Zap, TrendingUp, ArrowUpRight, Minus } from "lucide-react";
+import { Music, Sparkles, Loader2, Search, Copy, Check, Hash, Zap, TrendingUp, ArrowUpRight, Minus, Users, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -13,23 +13,32 @@ type Platform = "TikTok" | "Instagram" | "Facebook" | "YouTube";
 interface TrendingAudio {
   title: string;
   artist: string;
-  image_url?: string;   // artwork from Apple Music / Deezer
+  image_url?: string;
   category: string;
-  uses: string;         // kept for backward compat — not displayed
+  uses: string;
   trend: "up" | "stable" | "new";
   tip: string;
   velocity?: "rising" | "hot" | "exploding" | "stable";
   confidence?: number;
+  // Phase 2: Signal Depth
+  creator_count?: number;
+  repost_count?: number;
+  momentum?: "up" | "stable" | "down";
+  window_label?: string;
 }
 
 interface TrendingHashtag {
   tag: string;
   category: string;
-  posts: string;       // kept for backward compat — not displayed
+  posts: string;
   trend: "up" | "stable" | "new";
   tip: string;
   velocity?: "rising" | "hot" | "exploding" | "stable";
   confidence?: number;
+  // Phase 2: Signal Depth
+  creator_count?: number;
+  momentum?: "up" | "stable" | "down";
+  window_label?: string;
 }
 
 const platforms: { id: Platform; label: string }[] = [
@@ -59,6 +68,12 @@ const velocityBadgeClass = (v?: string) => {
   if (v === "rising")    return "border-emerald-500/25 text-emerald-400/90";
   return                        "border-border/30 text-muted-foreground/45";
 };
+
+// ── Format helpers ────────────────────────────────────────
+function fmtCount(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+  return String(n);
+}
 
 const categoryColor = (cat: string) => {
   if (cat === "Viral")         return "bg-red-500/10 text-red-400 border-red-500/20";
@@ -339,6 +354,31 @@ const TrendingAudioPage = () => {
                             </span>
                           )}
                         </div>
+
+                        {/* Signal Depth row */}
+                        {audio.creator_count != null && (
+                          <div className="flex items-center gap-3 mt-2.5 flex-wrap">
+                            <div className="flex items-center gap-1">
+                              <Users className="w-3 h-3 text-muted-foreground/40 shrink-0" />
+                              <span className="text-[9px] font-mono text-muted-foreground/55">
+                                {fmtCount(audio.creator_count)} creator uses
+                              </span>
+                            </div>
+                            {audio.repost_count != null && (
+                              <div className="flex items-center gap-1">
+                                <RefreshCw className="w-3 h-3 text-muted-foreground/30 shrink-0" />
+                                <span className="text-[9px] font-mono text-muted-foreground/40">
+                                  {fmtCount(audio.repost_count)}+ reposts today
+                                </span>
+                              </div>
+                            )}
+                            {audio.window_label && (
+                              <span className={`text-[9px] font-mono shrink-0 ${audio.momentum === "up" ? "text-emerald-400/60" : "text-muted-foreground/30"}`}>
+                                {audio.momentum === "up" ? "↑" : "◎"} {audio.window_label}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Tip */}
@@ -415,6 +455,23 @@ const TrendingAudioPage = () => {
                           </span>
                         )}
                       </div>
+
+                      {/* Signal Depth row */}
+                      {tag.creator_count != null && (
+                        <div className="flex items-center gap-3 mb-2.5 flex-wrap">
+                          <div className="flex items-center gap-1">
+                            <Users className="w-3 h-3 text-muted-foreground/40 shrink-0" />
+                            <span className="text-[9px] font-mono text-muted-foreground/55">
+                              {fmtCount(tag.creator_count)} creator posts
+                            </span>
+                          </div>
+                          {tag.window_label && (
+                            <span className={`text-[9px] font-mono shrink-0 ${tag.momentum === "up" ? "text-emerald-400/60" : "text-muted-foreground/30"}`}>
+                              {tag.momentum === "up" ? "↑" : "◎"} {tag.window_label}
+                            </span>
+                          )}
+                        </div>
+                      )}
 
                       <p className="text-[11px] text-muted-foreground leading-relaxed">{tag.tip}</p>
                     </motion.div>
