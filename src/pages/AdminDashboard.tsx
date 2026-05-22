@@ -280,19 +280,19 @@ const estimateGenerationCost = (provider: string | null, creditsUsed: number) =>
 
 // ── Live badge ──────────────────────────────────────────────
 const LiveBadge = ({ color = "blue" }: { color?: "blue" | "green" | "amber" | "teal" }) => {
-  const palette: Record<string, { bg: string; border: string; text: string }> = {
-    blue:  { bg: "hsl(217 91% 60% / 0.1)",  border: "hsl(217 91% 60% / 0.22)", text: "hsl(217 91% 72%)" },
-    green: { bg: "hsl(142 70% 45% / 0.1)",  border: "hsl(142 70% 45% / 0.22)", text: "hsl(142 70% 65%)" },
-    amber: { bg: "hsl(38 92% 50% / 0.1)",   border: "hsl(38 92% 50% / 0.22)",  text: "hsl(38 92% 68%)" },
-    teal:  { bg: "hsl(172 70% 40% / 0.1)",  border: "hsl(172 70% 40% / 0.22)", text: "hsl(172 70% 62%)" },
+  const palette: Record<string, { bg: string; border: string; text: string; dot: string }> = {
+    blue:  { bg: "hsl(217 91% 60% / 0.08)",  border: "hsl(217 91% 60% / 0.22)", text: "hsl(217 91% 72%)", dot: "hsl(142 70% 50%)" },
+    green: { bg: "hsl(142 70% 45% / 0.08)",  border: "hsl(142 70% 45% / 0.22)", text: "hsl(142 70% 65%)", dot: "hsl(142 70% 50%)" },
+    amber: { bg: "hsl(38 92% 50% / 0.08)",   border: "hsl(38 92% 50% / 0.22)",  text: "hsl(38 92% 68%)", dot: "hsl(38 92% 55%)" },
+    teal:  { bg: "hsl(172 70% 40% / 0.08)",  border: "hsl(172 70% 40% / 0.22)", text: "hsl(172 70% 62%)", dot: "hsl(172 70% 50%)" },
   };
   const c = palette[color];
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded px-1.5 py-0.5 text-[9px] font-mono tracking-widest"
+      className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[8px] font-mono tracking-[0.15em] uppercase"
       style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text }}
     >
-      <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />
+      <span className="w-1 h-1 rounded-full animate-pulse" style={{ background: c.dot, boxShadow: `0 0 5px ${c.dot}` }} />
       LIVE
     </span>
   );
@@ -301,45 +301,49 @@ const LiveBadge = ({ color = "blue" }: { color?: "blue" | "green" | "amber" | "t
 // ── Section card ─────────────────────────────────────────────
 const SectionCard = ({ title, subtitle, right, children }: { title: ReactNode; subtitle?: ReactNode; right?: ReactNode; children: ReactNode }) => (
   <section
-    className="rounded-xl overflow-hidden"
+    className="rounded-2xl overflow-hidden"
     style={{
-      background: "linear-gradient(135deg, hsl(222 28% 8% / 0.96) 0%, hsl(222 22% 6% / 0.96) 100%)",
-      border: "1px solid hsl(217 30% 14% / 0.85)",
-      boxShadow: "0 4px 32px hsl(0 0% 0% / 0.28), inset 0 1px 0 hsl(0 0% 100% / 0.03)",
+      background: "linear-gradient(160deg, hsl(222 28% 8.5% / 0.97) 0%, hsl(222 22% 7% / 0.97) 100%)",
+      border: "1px solid hsl(217 28% 13%)",
+      boxShadow: "0 8px 40px hsl(0 0% 0% / 0.3), inset 0 1px 0 hsl(0 0% 100% / 0.035)",
     }}
   >
+    {/* Top edge glow line */}
+    <div className="h-px w-full" style={{ background: "linear-gradient(90deg, transparent 0%, hsl(217 91% 60% / 0.12) 30%, hsl(217 91% 60% / 0.12) 70%, transparent 100%)" }} />
     <div
-      className="flex flex-wrap items-center justify-between gap-3 px-5 py-4"
-      style={{ borderBottom: "1px solid hsl(217 28% 11% / 0.8)" }}
+      className="flex flex-wrap items-center justify-between gap-3 px-6 py-4"
+      style={{ borderBottom: "1px solid hsl(217 28% 11% / 0.6)" }}
     >
       <div>
-        <div className="text-sm font-semibold tracking-tight text-foreground/90">{title}</div>
-        {subtitle ? <div className="mt-0.5 text-[11px] leading-relaxed" style={{ color: "hsl(var(--muted-foreground) / 0.5)" }}>{subtitle}</div> : null}
+        <div className="text-[13px] font-semibold tracking-tight" style={{ color: "hsl(var(--foreground) / 0.88)" }}>{title}</div>
+        {subtitle ? <div className="mt-0.5 text-[10.5px] leading-relaxed font-mono" style={{ color: "hsl(var(--muted-foreground) / 0.42)" }}>{subtitle}</div> : null}
       </div>
       {right}
     </div>
-    <div className="p-5">{children}</div>
+    <div className="p-6">{children}</div>
   </section>
 );
 
 // ── Empty state ───────────────────────────────────────────────
 const EmptyState = ({ title, description }: { title: string; description: string }) => (
   <div
-    className="grid min-h-[160px] place-items-center rounded-lg p-8 text-center"
+    className="grid min-h-[160px] place-items-center rounded-xl p-8 text-center"
     style={{
-      background: "hsl(222 32% 5% / 0.5)",
-      border: "1px dashed hsl(217 28% 15% / 0.5)",
+      background: "repeating-linear-gradient(0deg, hsl(217 28% 8% / 0.4) 0px, transparent 1px, transparent 24px), hsl(222 28% 5% / 0.6)",
+      border: "1px dashed hsl(217 28% 14% / 0.6)",
     }}
   >
-    <div className="space-y-2.5">
+    <div className="space-y-3">
       <div
-        className="mx-auto w-9 h-9 rounded-xl flex items-center justify-center"
-        style={{ background: "hsl(217 28% 9%)", border: "1px solid hsl(217 28% 16%)" }}
+        className="mx-auto w-10 h-10 rounded-2xl flex items-center justify-center"
+        style={{ background: "hsl(222 28% 8%)", border: "1px solid hsl(217 28% 15%)", boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.04)" }}
       >
-        <Inbox className="h-4 w-4 text-muted-foreground/25" />
+        <Inbox className="h-4 w-4" style={{ color: "hsl(217 91% 60% / 0.3)" }} />
       </div>
-      <p className="text-[9px] font-mono uppercase tracking-[0.18em] text-muted-foreground/35">{title}</p>
-      <p className="text-[10px] text-muted-foreground/22 max-w-[200px] mx-auto leading-relaxed">{description}</p>
+      <div>
+        <p className="text-[8.5px] font-mono uppercase tracking-[0.22em]" style={{ color: "hsl(var(--muted-foreground) / 0.3)" }}>{title}</p>
+        <p className="mt-1 text-[10px] max-w-[200px] mx-auto leading-relaxed" style={{ color: "hsl(var(--muted-foreground) / 0.18)" }}>{description}</p>
+      </div>
     </div>
   </div>
 );
@@ -367,150 +371,129 @@ const MetricCard = ({ label, value, icon: Icon, spark, growth }: { label: string
   const maxSpark = Math.max(...spark.map((p) => p.v), 1);
   const hasPositiveGrowth = typeof growth === "number" && growth > 0;
   const hasNegativeGrowth = typeof growth === "number" && growth < 0;
-
-  // Safe gradient ID from label
   const gradId = `mcg-${label.replace(/[^a-zA-Z0-9]/g, "")}`;
-
-  // Build smooth SVG polyline path
   const CW = 100;
-  const CH = 28;
-  const linePath =
-    spark.length < 2
-      ? ""
-      : spark
-          .map((p, i) => {
-            const x = ((i / (spark.length - 1)) * CW).toFixed(1);
-            const y = (CH - (p.v / maxSpark) * (CH - 3) - 1).toFixed(1);
-            return (i === 0 ? "M" : "L") + `${x},${y}`;
-          })
-          .join(" ");
+  const CH = 26;
+  const linePath = spark.length < 2 ? "" : spark.map((p, i) => {
+    const x = ((i / (spark.length - 1)) * CW).toFixed(1);
+    const y = (CH - (p.v / maxSpark) * (CH - 3) - 1).toFixed(1);
+    return (i === 0 ? "M" : "L") + `${x},${y}`;
+  }).join(" ");
   const areaPath = linePath ? `${linePath} L${CW},${CH} L0,${CH} Z` : "";
 
   return (
-    <div
-      className="relative overflow-hidden rounded-xl group cursor-default transition-shadow duration-300"
+    <motion.div
+      className="relative overflow-hidden rounded-2xl cursor-default"
       style={{
-        background: "linear-gradient(160deg, hsl(222 32% 8%) 0%, hsl(222 26% 6%) 100%)",
+        background: "linear-gradient(145deg, hsl(222 30% 9%) 0%, hsl(220 26% 7%) 60%, hsl(222 30% 8%) 100%)",
         border: "1px solid hsl(217 28% 13%)",
-        boxShadow: "0 2px 10px hsl(0 0% 0% / 0.4), inset 0 1px 0 hsl(0 0% 100% / 0.03)",
+        boxShadow: "0 4px 20px hsl(0 0% 0% / 0.45), inset 0 1px 0 hsl(0 0% 100% / 0.04)",
       }}
+      whileHover={{
+        y: -3,
+        boxShadow: "0 12px 40px hsl(0 0% 0% / 0.6), 0 0 0 1px hsl(217 91% 60% / 0.2), 0 0 32px hsl(217 91% 60% / 0.06)",
+      }}
+      transition={{ duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
       {/* Left accent strip */}
-      <div
-        className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl"
-        style={{
-          background: "linear-gradient(180deg, hsl(217 91% 60% / 0.85) 0%, hsl(217 91% 60% / 0.15) 100%)",
-        }}
+      <div className="absolute left-0 top-0 bottom-0 w-[2px]" style={{ background: "linear-gradient(180deg, hsl(217 91% 60% / 0.9) 0%, hsl(217 91% 60% / 0.08) 100%)" }} />
+
+      {/* Top edge shimmer — appears on hover via group-hover is tricky, use absolute with opacity transition */}
+      <motion.div
+        className="absolute top-0 left-6 right-6 h-px pointer-events-none"
+        style={{ background: "linear-gradient(90deg, transparent, hsl(217 91% 60% / 0.55), transparent)" }}
+        initial={{ opacity: 0 }}
+        whileHover={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
       />
 
+      {/* Corner ambient glow */}
+      <div className="absolute top-0 right-0 w-28 h-28 pointer-events-none" style={{ background: "radial-gradient(circle at 100% 0%, hsl(217 91% 60% / 0.05), transparent 65%)" }} />
+
       {/* Body */}
-      <div className="pl-5 pr-4 pt-4 pb-3">
-        {/* Label row */}
+      <div className="pl-5 pr-4 pt-4 pb-2.5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5">
-            <span
-              className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"
-              style={{ animation: "pulse 3s ease-in-out infinite" }}
-            />
-            <span className="text-[9px] font-mono uppercase tracking-[0.18em] text-muted-foreground/45">
+            <span className="w-1 h-1 rounded-full" style={{ background: "hsl(142 70% 50%)", boxShadow: "0 0 5px hsl(142 70% 45% / 0.7)" }} />
+            <span className="text-[8.5px] font-mono uppercase tracking-[0.22em]" style={{ color: "hsl(var(--muted-foreground) / 0.38)" }}>
               {label}
             </span>
           </div>
-          <Icon className="h-3.5 w-3.5 text-muted-foreground/20 group-hover:text-primary/55 transition-colors duration-300" />
+          <div
+            className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: "hsl(217 91% 60% / 0.07)", border: "1px solid hsl(217 91% 60% / 0.13)" }}
+          >
+            <Icon className="h-3.5 w-3.5 text-primary/60" />
+          </div>
         </div>
 
-        {/* Value */}
-        <p
-          className="text-[2rem] font-bold tracking-tight text-foreground leading-none"
-          style={{ fontVariantNumeric: "tabular-nums" }}
-        >
+        <p className="text-[1.88rem] font-bold tracking-tight leading-none mb-2.5" style={{ fontVariantNumeric: "tabular-nums", color: "hsl(var(--foreground) / 0.9)" }}>
           {value}
         </p>
 
-        {/* Growth badge */}
-        <div className="mt-2 h-[22px] flex items-center">
+        <div className="h-[18px] flex items-center">
           {typeof growth === "number" ? (
-            <span
-              className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-mono border ${
-                hasPositiveGrowth
-                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                  : hasNegativeGrowth
-                    ? "bg-red-500/10 text-red-400 border-red-500/20"
-                    : "text-muted-foreground/30 border-transparent"
-              }`}
-            >
-              {hasPositiveGrowth ? "▲" : hasNegativeGrowth ? "▼" : "—"}{" "}
-              {Math.abs(growth).toFixed(1)}%
+            <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[8.5px] font-mono border ${
+              hasPositiveGrowth ? "text-emerald-400 border-emerald-500/18" : hasNegativeGrowth ? "text-red-400 border-red-500/18" : "text-muted-foreground/25 border-transparent"
+            }`} style={hasPositiveGrowth ? { background: "hsl(142 70% 45% / 0.06)" } : hasNegativeGrowth ? { background: "hsl(0 72% 55% / 0.06)" } : {}}>
+              {hasPositiveGrowth ? "↑" : hasNegativeGrowth ? "↓" : "—"} {Math.abs(growth).toFixed(1)}%
             </span>
           ) : (
-            <span className="text-[9px] font-mono text-muted-foreground/20 tracking-wider">—</span>
+            <span className="text-[8.5px] font-mono" style={{ color: "hsl(var(--muted-foreground) / 0.15)" }}>—</span>
           )}
         </div>
       </div>
 
-      {/* Sparkline curve — full width, flush to bottom */}
-      <svg
-        viewBox={`0 0 ${CW} ${CH}`}
-        width="100%"
-        height="40"
-        preserveAspectRatio="none"
-        className="block"
-      >
+      {/* SVG sparkline */}
+      <svg viewBox={`0 0 ${CW} ${CH}`} width="100%" height="34" preserveAspectRatio="none" className="block">
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="hsl(217 91% 60%)" stopOpacity="0.22" />
+            <stop offset="0%" stopColor="hsl(217 91% 60%)" stopOpacity="0.28" />
             <stop offset="100%" stopColor="hsl(217 91% 60%)" stopOpacity="0" />
           </linearGradient>
+          <filter id={`${gradId}-glow`}>
+            <feGaussianBlur stdDeviation="1.5" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
         </defs>
         {spark.length >= 2 && (
           <>
             <path d={areaPath} fill={`url(#${gradId})`} />
-            <path
-              d={linePath}
-              fill="none"
-              stroke="hsl(217 91% 60%)"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            {/* End-point dot */}
+            <path d={linePath} fill="none" stroke="hsl(217 91% 60%)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" filter={`url(#${gradId}-glow)`} />
             {(() => {
               const last = spark[spark.length - 1];
-              const lx = CW;
+              const lx = parseFloat(((spark.length - 1) / (spark.length - 1) * CW).toFixed(1));
               const ly = CH - (last.v / maxSpark) * (CH - 3) - 1;
               return (
-                <circle
-                  cx={lx}
-                  cy={ly}
-                  r="2"
-                  fill="hsl(217 91% 60%)"
-                  opacity="0.9"
-                />
+                <>
+                  <circle cx={lx} cy={ly} r="3.5" fill="hsl(217 91% 60%)" opacity="0.12" />
+                  <circle cx={lx} cy={ly} r="2" fill="hsl(217 91% 60%)" opacity="0.95" style={{ filter: "drop-shadow(0 0 4px hsl(217 91% 60% / 0.8))" }} />
+                </>
               );
             })()}
           </>
         )}
       </svg>
-    </div>
+    </motion.div>
   );
 };
 
 const DataTable = ({ headers, children, empty, colSpan }: { headers: string[]; children: ReactNode; empty?: boolean; colSpan: number }) => (
-  <div className="overflow-auto rounded-lg" style={{ border: "1px solid hsl(217 28% 11% / 0.8)" }}>
+  <div className="overflow-auto rounded-xl" style={{ border: "1px solid hsl(217 28% 11%)", boxShadow: "0 4px 20px hsl(0 0% 0% / 0.25)" }}>
     <table className="w-full min-w-[760px] text-xs">
-      <thead style={{ background: "hsl(222 28% 5%)", borderBottom: "1px solid hsl(217 28% 11%)" }}>
-        <tr>
+      <thead style={{ background: "hsl(222 30% 5.5%)" }}>
+        <tr style={{ borderBottom: "1px solid hsl(217 28% 11%)" }}>
           {headers.map((h) => (
-            <th key={h} className="px-4 py-3 text-left text-[9px] font-mono uppercase tracking-[0.14em]" style={{ color: "hsl(var(--muted-foreground) / 0.35)" }}>{h}</th>
+            <th key={h} className="px-5 py-3.5 text-left text-[8.5px] font-mono uppercase tracking-[0.18em]" style={{ color: "hsl(var(--muted-foreground) / 0.3)" }}>{h}</th>
           ))}
         </tr>
       </thead>
-      <tbody>
+      <tbody style={{ background: "hsl(222 28% 7% / 0.5)" }}>
         {children}
         {empty ? (
           <tr>
             <td colSpan={colSpan} className="p-0">
-              <EmptyState title="No records detected" description="Live backend data will stream here as activity starts." />
+              <EmptyState title="No operational data detected" description="Records will stream here as activity begins." />
             </td>
           </tr>
         ) : null}
@@ -520,24 +503,24 @@ const DataTable = ({ headers, children, empty, colSpan }: { headers: string[]; c
 );
 
 const PaginationControls = ({ page, totalPages, setPage }: { page: number; totalPages: number; setPage: (page: number) => void }) => (
-  <div className="flex items-center justify-between px-4 py-3 text-xs" style={{ borderTop: "1px solid hsl(217 28% 11% / 0.6)" }}>
-    <span className="text-[9px] font-mono text-muted-foreground/30 tracking-wider">PAGE {page} / {totalPages}</span>
+  <div className="flex items-center justify-between px-5 py-3 text-xs" style={{ borderTop: "1px solid hsl(217 28% 10% / 0.6)", background: "hsl(222 30% 5.5% / 0.5)" }}>
+    <span className="text-[8.5px] font-mono tracking-[0.15em]" style={{ color: "hsl(var(--muted-foreground) / 0.25)" }}>PAGE {page} / {totalPages}</span>
     <div className="flex items-center gap-1.5">
       <button
         onClick={() => setPage(Math.max(page - 1, 1))}
         disabled={page <= 1}
-        className="h-7 rounded-md px-3 text-[10px] font-mono text-muted-foreground transition-all disabled:opacity-25 hover:text-foreground"
-        style={{ border: "1px solid hsl(217 28% 14%)", background: "hsl(222 28% 7%)" }}
+        className="h-7 rounded-lg px-3 text-[9px] font-mono uppercase tracking-wider transition-all disabled:opacity-20 hover:text-foreground/70"
+        style={{ border: "1px solid hsl(217 28% 13%)", background: "hsl(222 28% 7%)", color: "hsl(var(--muted-foreground) / 0.4)" }}
       >
-        ← PREV
+        ← Prev
       </button>
       <button
         onClick={() => setPage(Math.min(page + 1, totalPages))}
         disabled={page >= totalPages}
-        className="h-7 rounded-md px-3 text-[10px] font-mono text-muted-foreground transition-all disabled:opacity-25 hover:text-foreground"
-        style={{ border: "1px solid hsl(217 28% 14%)", background: "hsl(222 28% 7%)" }}
+        className="h-7 rounded-lg px-3 text-[9px] font-mono uppercase tracking-wider transition-all disabled:opacity-20 hover:text-foreground/70"
+        style={{ border: "1px solid hsl(217 28% 13%)", background: "hsl(222 28% 7%)", color: "hsl(var(--muted-foreground) / 0.4)" }}
       >
-        NEXT →
+        Next →
       </button>
     </div>
   </div>
@@ -551,32 +534,51 @@ const TerminalChart = ({
 }) => (
   <div
     className="relative rounded-xl overflow-hidden"
-    style={{ background: "linear-gradient(180deg, hsl(222 32% 4%) 0%, hsl(222 26% 3%) 100%)", border: "1px solid hsl(217 28% 10%)" }}
+    style={{
+      background: "linear-gradient(180deg, hsl(222 32% 4.5%) 0%, hsl(222 28% 3.5%) 100%)",
+      border: "1px solid hsl(217 28% 10%)",
+      boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.02)"
+    }}
   >
-    <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 28% 12% / 0.22) 0px, transparent 1px, transparent 40px)", backgroundSize: "100% 40px" }} />
-    <div style={{ height }} className="px-1 pt-3 pb-1">
+    {/* Grid overlay */}
+    <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "linear-gradient(hsl(217 28% 13% / 0.15) 1px, transparent 1px), linear-gradient(90deg, hsl(217 28% 13% / 0.08) 1px, transparent 1px)", backgroundSize: "100% 36px, 80px 100%" }} />
+    {/* Top ambient glow */}
+    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-12 pointer-events-none" style={{ background: `radial-gradient(ellipse at center top, ${color.replace(")", " / 0.06)")}, transparent 70%)` }} />
+    <div style={{ height }} className="px-1 pt-3 pb-1 relative">
       {(data as Record<string, unknown>[]).length ? (
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 4, right: 8, left: -24, bottom: 0 }}>
+          <AreaChart data={data} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
             <defs>
               <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={color} stopOpacity={0.2} />
-                <stop offset="95%" stopColor={color} stopOpacity={0} />
+                <stop offset="0%" stopColor={color} stopOpacity={0.25} />
+                <stop offset="60%" stopColor={color} stopOpacity={0.06} />
+                <stop offset="100%" stopColor={color} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid vertical={false} stroke="hsl(217 28% 12% / 0)" />
-            <XAxis dataKey="date" tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.3)" }} axisLine={{ stroke: "hsl(217 28% 11%)" }} tickLine={false} />
-            <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.3)" }} axisLine={false} tickLine={false} />
+            <CartesianGrid vertical={false} stroke="hsl(217 28% 13% / 0.0)" />
+            <XAxis dataKey="date" tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.28)" }} axisLine={{ stroke: "hsl(217 28% 11%)" }} tickLine={false} />
+            <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.28)" }} axisLine={false} tickLine={false} />
             <Tooltip
-              contentStyle={{ background: "hsl(222 28% 7% / 0.98)", border: `1px solid ${color.replace(")", " / 0.3)")}`, borderRadius: "8px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 12px 40px hsl(0 0% 0% / 0.6)" }}
-              cursor={{ stroke: `${color.replace(")", " / 0.25)")}`, strokeWidth: 1, strokeDasharray: "4 3" }}
+              contentStyle={{
+                background: "hsl(222 30% 7% / 0.98)",
+                border: `1px solid ${color.replace(")", " / 0.28)")}`,
+                borderRadius: "10px",
+                fontSize: "11px",
+                fontFamily: "monospace",
+                boxShadow: `0 16px 48px hsl(0 0% 0% / 0.65), 0 0 0 1px ${color.replace(")", " / 0.08)")}`,
+                backdropFilter: "blur(12px)",
+              }}
+              cursor={{ stroke: `${color.replace(")", " / 0.3)")}`, strokeWidth: 1, strokeDasharray: "5 4" }}
             />
-            <Area type="monotone" dataKey={dataKey} stroke={color} strokeWidth={1.5} fill={`url(#${id})`} dot={false} activeDot={{ r: 3, fill: color, strokeWidth: 0 }} />
+            <Area type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} fill={`url(#${id})`} dot={false} activeDot={{ r: 4, fill: color, strokeWidth: 0, style: { filter: `drop-shadow(0 0 8px ${color})` } }} />
           </AreaChart>
         </ResponsiveContainer>
       ) : (
-        <div className="h-full flex flex-col items-center justify-center gap-2">
-          <p className="text-[9px] font-mono text-muted-foreground/25 tracking-widest uppercase">{emptyMsg}</p>
+        <div className="h-full flex flex-col items-center justify-center gap-3">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "hsl(217 28% 9%)", border: "1px solid hsl(217 28% 14%)" }}>
+            <Activity className="h-3.5 w-3.5" style={{ color: "hsl(217 91% 60% / 0.3)" }} />
+          </div>
+          <p className="text-[8.5px] font-mono tracking-[0.2em] uppercase" style={{ color: "hsl(var(--muted-foreground) / 0.22)" }}>{emptyMsg}</p>
         </div>
       )}
     </div>
@@ -587,38 +589,42 @@ const TerminalChart = ({
 const MultiAreaChart = ({ id, data, height = 220 }: { id: string; data: Array<{ date: string; creator: number; pro: number; agency: number }>, height?: number }) => (
   <div
     className="relative rounded-xl overflow-hidden"
-    style={{ background: "linear-gradient(180deg, hsl(222 32% 4%) 0%, hsl(222 26% 3%) 100%)", border: "1px solid hsl(217 28% 10%)" }}
+    style={{
+      background: "linear-gradient(180deg, hsl(222 32% 4.5%) 0%, hsl(222 28% 3.5%) 100%)",
+      border: "1px solid hsl(217 28% 10%)",
+      boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.02)"
+    }}
   >
-    <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 28% 12% / 0.22) 0px, transparent 1px, transparent 40px)", backgroundSize: "100% 40px" }} />
-    <div style={{ height }} className="px-1 pt-3 pb-1">
+    <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "linear-gradient(hsl(217 28% 13% / 0.15) 1px, transparent 1px)", backgroundSize: "100% 36px" }} />
+    <div style={{ height }} className="px-1 pt-3 pb-1 relative">
       {data.length > 0 ? (
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 4, right: 8, left: -24, bottom: 0 }}>
+          <AreaChart data={data} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
             <defs>
-              <linearGradient id={`${id}C`} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(217 91% 60%)" stopOpacity={0.18} /><stop offset="95%" stopColor="hsl(217 91% 60%)" stopOpacity={0} /></linearGradient>
-              <linearGradient id={`${id}P`} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(38 92% 50%)" stopOpacity={0.14} /><stop offset="95%" stopColor="hsl(38 92% 50%)" stopOpacity={0} /></linearGradient>
-              <linearGradient id={`${id}A`} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(142 70% 45%)" stopOpacity={0.12} /><stop offset="95%" stopColor="hsl(142 70% 45%)" stopOpacity={0} /></linearGradient>
+              <linearGradient id={`${id}C`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(217 91% 60%)" stopOpacity={0.22} /><stop offset="100%" stopColor="hsl(217 91% 60%)" stopOpacity={0} /></linearGradient>
+              <linearGradient id={`${id}P`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(38 92% 50%)" stopOpacity={0.18} /><stop offset="100%" stopColor="hsl(38 92% 50%)" stopOpacity={0} /></linearGradient>
+              <linearGradient id={`${id}A`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(142 70% 45%)" stopOpacity={0.15} /><stop offset="100%" stopColor="hsl(142 70% 45%)" stopOpacity={0} /></linearGradient>
             </defs>
-            <CartesianGrid vertical={false} stroke="hsl(217 28% 12% / 0)" />
-            <XAxis dataKey="date" tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.3)" }} axisLine={{ stroke: "hsl(217 28% 11%)" }} tickLine={false} />
-            <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.3)" }} axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={{ background: "hsl(222 28% 7% / 0.98)", border: "1px solid hsl(217 28% 16%)", borderRadius: "8px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 12px 40px hsl(0 0% 0% / 0.6)" }} cursor={{ stroke: "hsl(217 91% 60% / 0.2)", strokeWidth: 1, strokeDasharray: "4 3" }} />
-            <Area type="monotone" dataKey="creator" name="Creator" stroke="hsl(217 91% 60%)" strokeWidth={1.5} fill={`url(#${id}C)`} dot={false} activeDot={{ r: 3, fill: "hsl(217 91% 60%)", strokeWidth: 0 }} />
-            <Area type="monotone" dataKey="pro" name="Pro" stroke="hsl(38 92% 50%)" strokeWidth={1.5} fill={`url(#${id}P)`} dot={false} activeDot={{ r: 3, fill: "hsl(38 92% 50%)", strokeWidth: 0 }} />
-            <Area type="monotone" dataKey="agency" name="Agency" stroke="hsl(142 70% 45%)" strokeWidth={1.5} fill={`url(#${id}A)`} dot={false} activeDot={{ r: 3, fill: "hsl(142 70% 45%)", strokeWidth: 0 }} />
+            <CartesianGrid vertical={false} stroke="hsl(217 28% 13% / 0)" />
+            <XAxis dataKey="date" tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.28)" }} axisLine={{ stroke: "hsl(217 28% 11%)" }} tickLine={false} />
+            <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.28)" }} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={{ background: "hsl(222 30% 7% / 0.98)", border: "1px solid hsl(217 28% 16%)", borderRadius: "10px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 16px 48px hsl(0 0% 0% / 0.65)", backdropFilter: "blur(12px)" }} cursor={{ stroke: "hsl(217 91% 60% / 0.22)", strokeWidth: 1, strokeDasharray: "5 4" }} />
+            <Area type="monotone" dataKey="creator" name="Creator" stroke="hsl(217 91% 60%)" strokeWidth={2} fill={`url(#${id}C)`} dot={false} activeDot={{ r: 3.5, fill: "hsl(217 91% 60%)", strokeWidth: 0 }} />
+            <Area type="monotone" dataKey="pro" name="Pro" stroke="hsl(38 92% 50%)" strokeWidth={2} fill={`url(#${id}P)`} dot={false} activeDot={{ r: 3.5, fill: "hsl(38 92% 50%)", strokeWidth: 0 }} />
+            <Area type="monotone" dataKey="agency" name="Agency" stroke="hsl(142 70% 45%)" strokeWidth={2} fill={`url(#${id}A)`} dot={false} activeDot={{ r: 3.5, fill: "hsl(142 70% 45%)", strokeWidth: 0 }} />
           </AreaChart>
         </ResponsiveContainer>
       ) : (
         <div className="h-full flex flex-col items-center justify-center">
-          <p className="text-[9px] font-mono text-muted-foreground/25 tracking-widest uppercase">No subscription data yet.</p>
+          <p className="text-[8.5px] font-mono tracking-[0.2em] uppercase" style={{ color: "hsl(var(--muted-foreground) / 0.22)" }}>No subscription data yet.</p>
         </div>
       )}
     </div>
-    <div className="flex items-center gap-4 px-4 py-2.5" style={{ borderTop: "1px solid hsl(217 28% 10%)" }}>
+    <div className="flex items-center gap-5 px-5 py-3" style={{ borderTop: "1px solid hsl(217 28% 10%)", background: "hsl(222 30% 4.5% / 0.6)" }}>
       {[{ l: "Creator", c: "hsl(217 91% 60%)" }, { l: "Pro", c: "hsl(38 92% 50%)" }, { l: "Agency", c: "hsl(142 70% 45%)" }].map((i) => (
-        <div key={i.l} className="flex items-center gap-1.5">
-          <span className="w-3 h-[1.5px] rounded-full" style={{ background: i.c }} />
-          <span className="text-[9px] font-mono tracking-wider" style={{ color: "hsl(var(--muted-foreground) / 0.35)" }}>{i.l.toUpperCase()}</span>
+        <div key={i.l} className="flex items-center gap-2">
+          <span className="w-3.5 h-[1.5px] rounded-full" style={{ background: i.c, boxShadow: `0 0 6px ${i.c}` }} />
+          <span className="text-[8.5px] font-mono tracking-[0.15em] uppercase" style={{ color: "hsl(var(--muted-foreground) / 0.3)" }}>{i.l}</span>
         </div>
       ))}
     </div>
@@ -627,41 +633,45 @@ const MultiAreaChart = ({ id, data, height = 220 }: { id: string; data: Array<{ 
 
 // ── PlanChip ──────────────────────────────────────────────────
 const PlanChip = ({ plan }: { plan: string }) => {
-  const cfg: Record<string, { label: string; cls: string }> = {
-    creator: { label: "Creator", cls: "bg-blue-500/8 text-blue-400/80 border-blue-500/20" },
-    pro:     { label: "Pro",     cls: "bg-amber-500/8 text-amber-400/80 border-amber-500/20" },
-    agency:  { label: "Agency",  cls: "bg-emerald-500/8 text-emerald-400/80 border-emerald-500/20" },
+  const cfg: Record<string, { label: string; bg: string; border: string; color: string }> = {
+    creator: { label: "Creator", bg: "hsl(217 91% 60% / 0.07)", border: "hsl(217 91% 60% / 0.2)",  color: "hsl(217 91% 68%)" },
+    pro:     { label: "Pro",     bg: "hsl(38 92% 50% / 0.07)",  border: "hsl(38 92% 50% / 0.2)",   color: "hsl(38 92% 62%)" },
+    agency:  { label: "Agency",  bg: "hsl(142 70% 45% / 0.07)", border: "hsl(142 70% 45% / 0.2)",  color: "hsl(142 70% 58%)" },
   };
-  const { label, cls } = cfg[plan] ?? cfg.creator;
-  return <span className={`inline-flex rounded-md border px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider ${cls}`}>{label}</span>;
+  const c = cfg[plan] ?? cfg.creator;
+  return (
+    <span
+      className="inline-flex rounded-lg px-2 py-0.5 text-[8.5px] font-mono uppercase tracking-[0.12em]"
+      style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.color }}
+    >
+      {c.label}
+    </span>
+  );
 };
 
 // ── StatusChip ────────────────────────────────────────────────
 const StatusChip = ({ status }: { status: string }) => {
   const s = (status || "").toLowerCase();
-  const base = "inline-flex rounded-full border px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider";
-  if (s === "active")    return <span className={`${base} bg-emerald-500/10 text-emerald-400 border-emerald-500/25`}>active</span>;
-  if (s === "suspended") return <span className={`${base} bg-red-500/10 text-red-400 border-red-500/25`}>suspended</span>;
-  if (s === "cancelled") return <span className={`${base} bg-secondary/50 text-muted-foreground/50 border-border/40`}>cancelled</span>;
-  if (s === "past_due")  return <span className={`${base} bg-amber-500/10 text-amber-400 border-amber-500/25`}>past due</span>;
-  return <span className={`${base} bg-secondary/40 text-muted-foreground/40 border-border/30`}>{s || "—"}</span>;
+  const base = "inline-flex rounded-full px-2.5 py-0.5 text-[8.5px] font-mono uppercase tracking-[0.1em]";
+  if (s === "active")    return <span className={base} style={{ background: "hsl(142 70% 45% / 0.1)", border: "1px solid hsl(142 70% 45% / 0.25)", color: "hsl(142 70% 60%)" }}>● active</span>;
+  if (s === "suspended") return <span className={base} style={{ background: "hsl(0 72% 55% / 0.1)", border: "1px solid hsl(0 72% 55% / 0.25)", color: "hsl(0 72% 65%)" }}>● suspended</span>;
+  if (s === "cancelled") return <span className={base} style={{ background: "hsl(222 28% 10%)", border: "1px solid hsl(217 28% 14%)", color: "hsl(var(--muted-foreground) / 0.4)" }}>cancelled</span>;
+  if (s === "past_due")  return <span className={base} style={{ background: "hsl(38 92% 50% / 0.1)", border: "1px solid hsl(38 92% 50% / 0.25)", color: "hsl(38 92% 62%)" }}>⚠ past due</span>;
+  return <span className={base} style={{ background: "hsl(222 28% 9%)", border: "1px solid hsl(217 28% 13%)", color: "hsl(var(--muted-foreground) / 0.35)" }}>{s || "—"}</span>;
 };
 
 // ── SourceBadge ───────────────────────────────────────────────
 const SourceBadge = ({ src }: { src: string }) => {
-  const cfg: Record<string, { label: string; cls: string }> = {
-    creem:            { label: "Paid",      cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25" },
-    dodo:             { label: "Paid",      cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25" },
-    stripe:           { label: "Paid",      cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25" },
-    manual_admin:     { label: "Manual",    cls: "bg-amber-500/10 text-amber-400 border-amber-500/25" },
-    promo:            { label: "Promo",     cls: "bg-purple-500/10 text-purple-400 border-purple-500/25" },
-    internal:         { label: "Internal",  cls: "bg-purple-500/10 text-purple-400 border-purple-500/25" },
-    affiliate_reward: { label: "Affiliate", cls: "bg-blue-500/10 text-blue-400 border-blue-500/25" },
-    migration:        { label: "Migration", cls: "bg-secondary/50 text-muted-foreground/50 border-border/40" },
-    trial:            { label: "Trial",     cls: "bg-secondary/50 text-muted-foreground/50 border-border/40" },
-  };
-  const { label, cls } = cfg[(src ?? "manual_admin").toLowerCase()] ?? cfg.manual_admin;
-  return <span className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-mono ${cls}`}>{label}</span>;
+  const s = (src ?? "manual_admin").toLowerCase();
+  const isPaid = ["creem","dodo","stripe"].includes(s);
+  const isManual = s === "manual_admin";
+  const isPromo = ["promo","internal"].includes(s);
+  const isAffiliate = s === "affiliate_reward";
+  if (isPaid)     return <span className="inline-flex rounded-full px-2 py-0.5 text-[8.5px] font-mono" style={{ background: "hsl(142 70% 45% / 0.09)", border: "1px solid hsl(142 70% 45% / 0.22)", color: "hsl(142 70% 58%)" }}>Paid</span>;
+  if (isManual)   return <span className="inline-flex rounded-full px-2 py-0.5 text-[8.5px] font-mono" style={{ background: "hsl(38 92% 50% / 0.08)", border: "1px solid hsl(38 92% 50% / 0.2)", color: "hsl(38 92% 60%)" }}>Manual</span>;
+  if (isPromo)    return <span className="inline-flex rounded-full px-2 py-0.5 text-[8.5px] font-mono" style={{ background: "hsl(280 70% 60% / 0.08)", border: "1px solid hsl(280 70% 60% / 0.2)", color: "hsl(280 70% 68%)" }}>Promo</span>;
+  if (isAffiliate) return <span className="inline-flex rounded-full px-2 py-0.5 text-[8.5px] font-mono" style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.2)", color: "hsl(217 91% 68%)" }}>Affiliate</span>;
+  return <span className="inline-flex rounded-full px-2 py-0.5 text-[8.5px] font-mono" style={{ background: "hsl(222 28% 8%)", border: "1px solid hsl(217 28% 13%)", color: "hsl(var(--muted-foreground) / 0.35)" }}>{s}</span>;
 };
 
 const AdminDashboard = () => {
@@ -1255,40 +1265,48 @@ const AdminDashboard = () => {
 
   const renderDashboardPage = () => (
     <div className="space-y-6">
-      {/* ── Hero ── */}
-      <div
-        className="rounded-2xl p-6 relative overflow-hidden"
+      {/* ── Cinematic Hero ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="relative rounded-3xl overflow-hidden"
         style={{
-          background: "linear-gradient(135deg, hsl(222 32% 8%) 0%, hsl(217 40% 10%) 50%, hsl(222 28% 7%) 100%)",
+          background: "linear-gradient(135deg, hsl(222 32% 9%) 0%, hsl(220 45% 11%) 45%, hsl(222 28% 8%) 100%)",
           border: "1px solid hsl(217 30% 14%)",
-          boxShadow: "0 8px 48px hsl(217 91% 60% / 0.05)",
+          boxShadow: "0 12px 60px hsl(217 91% 60% / 0.06), 0 4px 20px hsl(0 0% 0% / 0.4)",
         }}
       >
-        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 60% 40% at 80% 50%, hsl(217 91% 60% / 0.04), transparent)" }} />
-        <div className="relative flex flex-wrap items-center justify-between gap-4">
+        {/* Background radial glow */}
+        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 60% 50% at 75% 50%, hsl(217 91% 60% / 0.06), transparent), radial-gradient(ellipse 30% 40% at 95% 10%, hsl(217 60% 50% / 0.04), transparent)" }} />
+        {/* Micro grid */}
+        <div className="absolute inset-0 pointer-events-none opacity-40" style={{ backgroundImage: "linear-gradient(hsl(217 28% 16% / 0.3) 1px, transparent 1px), linear-gradient(90deg, hsl(217 28% 16% / 0.3) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
+
+        <div className="relative px-7 py-6 flex flex-wrap items-center justify-between gap-5">
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-[9px] font-mono uppercase tracking-[0.22em]" style={{ color: "hsl(217 91% 60% / 0.6)" }}>ROBINOS COMMAND CENTER</span>
+            <div className="flex items-center gap-2.5 mb-2">
+              <span className="text-[8px] font-mono uppercase tracking-[0.28em]" style={{ color: "hsl(217 91% 60% / 0.5)" }}>ROBINOS COMMAND CENTER</span>
               <LiveBadge />
             </div>
-            <h2 className="text-xl font-bold text-foreground/90 tracking-tight">Executive Dashboard</h2>
-            <p className="mt-1 text-[11px] leading-relaxed" style={{ color: "hsl(var(--muted-foreground) / 0.45)" }}>
-              Platform-wide operational overview — revenue, users, AI activity, withdrawals.
+            <h2 className="text-2xl font-bold tracking-tight" style={{ color: "hsl(var(--foreground) / 0.9)", letterSpacing: "-0.02em" }}>Executive Dashboard</h2>
+            <p className="mt-1.5 text-[11.5px] max-w-sm" style={{ color: "hsl(var(--muted-foreground) / 0.4)", lineHeight: 1.6 }}>
+              Platform-wide operational overview — revenue, users, AI activity, and infrastructure health.
             </p>
           </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="text-right">
-              <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/30">MRR</p>
-              <p className="text-lg font-bold text-foreground/90" style={{ fontVariantNumeric: "tabular-nums" }}>{formatCurrency(mrr)}</p>
-            </div>
-            <div className="w-px h-8" style={{ background: "hsl(217 28% 16%)" }} />
-            <div className="text-right">
-              <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/30">USERS</p>
-              <p className="text-lg font-bold text-foreground/90">{formatNumber(profiles.length)}</p>
-            </div>
+          <div className="flex items-center gap-6 flex-wrap">
+            {[
+              { label: "MRR", val: formatCurrency(mrr), color: "hsl(217 91% 60%)" },
+              { label: "USERS", val: formatNumber(profiles.length), color: "hsl(var(--foreground) / 0.7)" },
+              { label: "ARR", val: formatCurrency(arr), color: "hsl(142 70% 55%)" },
+            ].map(({ label, val, color }) => (
+              <div key={label} className="text-right">
+                <p className="text-[8px] font-mono uppercase tracking-[0.2em] mb-0.5" style={{ color: "hsl(var(--muted-foreground) / 0.28)" }}>{label}</p>
+                <p className="text-xl font-bold" style={{ fontVariantNumeric: "tabular-nums", color }}>{val}</p>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* ── Metric grid ── */}
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -1328,10 +1346,13 @@ const AdminDashboard = () => {
         <SectionCard title="Latest Users" subtitle="Most recently registered accounts">
           <DataTable headers={["email", "plan", "joined"]} colSpan={3} empty={!usersEnriched.length}>
             {usersEnriched.slice(0, 8).map((u) => (
-              <tr key={u.user_id} className="border-t hover:bg-white/[0.015] transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}>
-                <td className="px-4 py-2.5 text-foreground/80">{u.email}</td>
-                <td className="px-4 py-2.5"><PlanChip plan={u.plan} /></td>
-                <td className="px-4 py-2.5 font-mono text-[10px] text-muted-foreground/40">{new Date(u.created_at).toLocaleDateString()}</td>
+              <tr key={u.user_id} className="border-t transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "hsl(217 91% 60% / 0.03)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ""; }}
+              >
+                <td className="px-5 py-3 text-[11px]" style={{ color: "hsl(var(--foreground) / 0.7)" }}>{u.email}</td>
+                <td className="px-5 py-3"><PlanChip plan={u.plan} /></td>
+                <td className="px-5 py-3 font-mono text-[9.5px]" style={{ color: "hsl(var(--muted-foreground) / 0.35)" }}>{new Date(u.created_at).toLocaleDateString()}</td>
               </tr>
             ))}
           </DataTable>
@@ -1339,10 +1360,13 @@ const AdminDashboard = () => {
         <SectionCard title="Recent Subscriptions" subtitle="Latest billing events">
           <DataTable headers={["customer", "amount", "status"]} colSpan={3} empty={!subscriptions.length}>
             {subscriptions.slice(0, 8).map((s) => (
-              <tr key={s.id} className="border-t hover:bg-white/[0.015] transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}>
-                <td className="px-4 py-2.5 text-foreground/80 truncate max-w-[140px]">{profileMap.get(s.user_id)?.email ?? s.user_id.slice(0, 8)}</td>
-                <td className="px-4 py-2.5 font-mono text-foreground/90">{formatCurrency(s.amount)}</td>
-                <td className="px-4 py-2.5"><StatusChip status={s.status} /></td>
+              <tr key={s.id} className="border-t transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "hsl(217 91% 60% / 0.03)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ""; }}
+              >
+                <td className="px-5 py-3 text-[11px] truncate max-w-[160px]" style={{ color: "hsl(var(--foreground) / 0.7)" }}>{profileMap.get(s.user_id)?.email ?? s.user_id.slice(0, 8)}</td>
+                <td className="px-5 py-3 font-mono text-[11px] font-semibold" style={{ color: "hsl(var(--foreground) / 0.82)" }}>{formatCurrency(s.amount)}</td>
+                <td className="px-5 py-3"><StatusChip status={s.status} /></td>
               </tr>
             ))}
           </DataTable>
@@ -1350,10 +1374,13 @@ const AdminDashboard = () => {
         <SectionCard title="Recent Withdrawals" subtitle="Pending payout requests">
           <DataTable headers={["affiliate", "amount", "status"]} colSpan={3} empty={!withdrawals.length}>
             {withdrawals.slice(0, 8).map((w) => (
-              <tr key={w.id} className="border-t hover:bg-white/[0.015] transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}>
-                <td className="px-4 py-2.5 text-foreground/80 truncate max-w-[140px]">{profileMap.get(w.user_id)?.email ?? w.user_id.slice(0, 8)}</td>
-                <td className="px-4 py-2.5 font-mono text-foreground/90">{formatCurrency(w.amount)}</td>
-                <td className="px-4 py-2.5"><span className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-mono uppercase ${statusClass[asWithdrawStatus(w.status)]}`}>{asWithdrawStatus(w.status)}</span></td>
+              <tr key={w.id} className="border-t transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "hsl(217 91% 60% / 0.03)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ""; }}
+              >
+                <td className="px-5 py-3 text-[11px] truncate max-w-[160px]" style={{ color: "hsl(var(--foreground) / 0.7)" }}>{profileMap.get(w.user_id)?.email ?? w.user_id.slice(0, 8)}</td>
+                <td className="px-5 py-3 font-mono text-[11px] font-semibold" style={{ color: "hsl(var(--foreground) / 0.82)" }}>{formatCurrency(w.amount)}</td>
+                <td className="px-5 py-3"><span className={`inline-flex rounded-full border px-2 py-0.5 text-[8.5px] font-mono uppercase tracking-wider ${statusClass[asWithdrawStatus(w.status)]}`}>{asWithdrawStatus(w.status)}</span></td>
               </tr>
             ))}
           </DataTable>
@@ -1365,39 +1392,35 @@ const AdminDashboard = () => {
   const renderAnalyticsPage = () => (
     <div className="space-y-6">
       {/* ── Hero ── */}
-      <div
-        className="rounded-2xl p-6 relative overflow-hidden"
-        style={{
-          background: "linear-gradient(135deg, hsl(222 32% 8%) 0%, hsl(228 40% 10%) 50%, hsl(222 28% 7%) 100%)",
-          border: "1px solid hsl(217 30% 14%)",
-          boxShadow: "0 8px 48px hsl(217 91% 60% / 0.04)",
-        }}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+        className="relative rounded-3xl overflow-hidden"
+        style={{ background: "linear-gradient(135deg, hsl(222 32% 9%) 0%, hsl(228 42% 12%) 45%, hsl(222 28% 8%) 100%)", border: "1px solid hsl(217 30% 14%)", boxShadow: "0 12px 60px hsl(217 91% 60% / 0.06), 0 4px 20px hsl(0 0% 0% / 0.4)" }}
       >
-        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 50% 60% at 90% 50%, hsl(217 91% 60% / 0.05), transparent)" }} />
-        <div className="relative">
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[9px] font-mono uppercase tracking-[0.22em]" style={{ color: "hsl(217 91% 60% / 0.55)" }}>INTELLIGENCE CENTER</span>
+        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 50% 60% at 90% 50%, hsl(217 91% 60% / 0.06), transparent), radial-gradient(ellipse 25% 40% at 5% 90%, hsl(217 60% 40% / 0.04), transparent)" }} />
+        <div className="absolute inset-0 pointer-events-none opacity-30" style={{ backgroundImage: "linear-gradient(hsl(217 28% 16% / 0.25) 1px, transparent 1px), linear-gradient(90deg, hsl(217 28% 16% / 0.25) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
+        <div className="relative px-7 py-6">
+          <div className="flex items-center gap-2.5 mb-2">
+            <span className="text-[8px] font-mono uppercase tracking-[0.28em]" style={{ color: "hsl(217 91% 60% / 0.5)" }}>INTELLIGENCE CENTER</span>
             <LiveBadge />
           </div>
-          <h2 className="text-xl font-bold text-foreground/90 tracking-tight">Platform Analytics</h2>
-          <p className="mt-1 text-[11px]" style={{ color: "hsl(var(--muted-foreground) / 0.4)" }}>
-            Realtime infrastructure, growth, and AI usage telemetry.
-          </p>
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-xl">
+          <h2 className="text-2xl font-bold tracking-tight mb-1.5" style={{ color: "hsl(var(--foreground) / 0.9)", letterSpacing: "-0.02em" }}>Platform Analytics</h2>
+          <p className="text-[11.5px] max-w-sm mb-5" style={{ color: "hsl(var(--muted-foreground) / 0.4)", lineHeight: 1.6 }}>Realtime infrastructure, growth, and AI usage telemetry.</p>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 max-w-lg">
             {[
-              { label: "MRR", val: formatCurrency(mrr) },
-              { label: "ARR", val: formatCurrency(arr) },
-              { label: "Growth", val: `${growthPercent.toFixed(1)}%` },
-              { label: "Churn", val: `${churnRate.toFixed(2)}%` },
-            ].map(({ label, val }) => (
-              <div key={label} className="rounded-xl px-3 py-2.5" style={{ background: "hsl(222 28% 5% / 0.7)", border: "1px solid hsl(217 28% 12%)" }}>
-                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/30">{label}</p>
-                <p className="mt-0.5 text-sm font-bold text-foreground/85" style={{ fontVariantNumeric: "tabular-nums" }}>{val}</p>
+              { label: "MRR",    val: formatCurrency(mrr),              color: "hsl(217 91% 62%)" },
+              { label: "ARR",    val: formatCurrency(arr),              color: "hsl(var(--foreground) / 0.7)" },
+              { label: "Growth", val: `${growthPercent.toFixed(1)}%`,   color: growthPercent > 0 ? "hsl(142 70% 55%)" : "hsl(0 72% 58%)" },
+              { label: "Churn",  val: `${churnRate.toFixed(2)}%`,       color: "hsl(38 92% 60%)" },
+            ].map(({ label, val, color }) => (
+              <div key={label} className="rounded-xl px-4 py-3" style={{ background: "hsl(222 28% 5.5% / 0.8)", border: "1px solid hsl(217 28% 12%)" }}>
+                <p className="text-[8px] font-mono uppercase tracking-[0.2em] mb-0.5" style={{ color: "hsl(var(--muted-foreground) / 0.26)" }}>{label}</p>
+                <p className="text-sm font-bold" style={{ fontVariantNumeric: "tabular-nums", color }}>{val}</p>
               </div>
             ))}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* ── Revenue + Signups charts ── */}
       <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
@@ -1523,26 +1546,33 @@ const AdminDashboard = () => {
   const renderSettingsPage = () => (
     <div className="space-y-6">
       {/* ── Hero ── */}
-      <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, hsl(222 32% 8%) 0%, hsl(222 28% 9%) 100%)", border: "1px solid hsl(217 30% 14%)" }}>
-        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 40% 60% at 95% 50%, hsl(38 92% 50% / 0.04), transparent)" }} />
-        <div className="relative flex flex-wrap items-center justify-between gap-4">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+        className="relative rounded-3xl overflow-hidden"
+        style={{ background: "linear-gradient(135deg, hsl(222 32% 9%) 0%, hsl(220 36% 11%) 60%, hsl(222 28% 8%) 100%)", border: "1px solid hsl(217 30% 14%)", boxShadow: "0 12px 60px hsl(38 92% 50% / 0.04), 0 4px 20px hsl(0 0% 0% / 0.4)" }}
+      >
+        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 40% 60% at 92% 50%, hsl(38 92% 50% / 0.05), transparent)" }} />
+        <div className="absolute inset-0 pointer-events-none opacity-25" style={{ backgroundImage: "linear-gradient(hsl(217 28% 16% / 0.25) 1px, transparent 1px), linear-gradient(90deg, hsl(217 28% 16% / 0.25) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
+        <div className="relative px-7 py-6 flex flex-wrap items-center justify-between gap-5">
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-[9px] font-mono uppercase tracking-[0.22em]" style={{ color: "hsl(38 92% 50% / 0.55)" }}>INFRASTRUCTURE CONTROL</span>
+            <div className="flex items-center gap-2.5 mb-2">
+              <span className="text-[8px] font-mono uppercase tracking-[0.28em]" style={{ color: "hsl(38 92% 55% / 0.5)" }}>INFRASTRUCTURE CONTROL</span>
             </div>
-            <h2 className="text-xl font-bold text-foreground/90 tracking-tight">Platform Settings</h2>
-            <p className="mt-1 text-[11px]" style={{ color: "hsl(var(--muted-foreground) / 0.4)" }}>Changes propagate globally and affect all users immediately.</p>
+            <h2 className="text-2xl font-bold tracking-tight mb-1.5" style={{ color: "hsl(var(--foreground) / 0.9)", letterSpacing: "-0.02em" }}>Platform Settings</h2>
+            <p className="text-[11.5px] max-w-sm" style={{ color: "hsl(var(--muted-foreground) / 0.4)", lineHeight: 1.6 }}>Configuration changes propagate globally and affect all users immediately.</p>
           </div>
-          <button
+          <motion.button
             onClick={() => saveSettingsMutation.mutate()}
             disabled={saveSettingsMutation.isPending}
-            className="h-9 rounded-xl px-5 text-xs font-semibold text-white transition-all disabled:opacity-50"
-            style={{ background: "linear-gradient(135deg, hsl(217 91% 50%) 0%, hsl(217 80% 42%) 100%)", boxShadow: "0 4px 16px hsl(217 91% 60% / 0.2)" }}
+            className="relative h-10 rounded-xl px-6 text-sm font-semibold text-white transition-all disabled:opacity-50 overflow-hidden"
+            style={{ background: "linear-gradient(135deg, hsl(217 91% 52%), hsl(217 80% 44%))", boxShadow: "0 4px 20px hsl(217 91% 60% / 0.25), inset 0 1px 0 hsl(0 0% 100% / 0.1)" }}
+            whileHover={{ y: -1, boxShadow: "0 6px 28px hsl(217 91% 60% / 0.35)" }}
+            whileTap={{ y: 0 }}
           >
-            {saveSettingsMutation.isPending ? "Propagating…" : "Deploy Changes"}
-          </button>
+            <span className="relative z-10">{saveSettingsMutation.isPending ? "Deploying…" : "Deploy Changes"}</span>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         {/* LEFT */}
@@ -1659,34 +1689,37 @@ const AdminDashboard = () => {
   const renderUsersPage = () => (
     <div className="space-y-6">
       {/* ── Hero ── */}
-      <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, hsl(222 32% 8%) 0%, hsl(222 28% 7%) 100%)", border: "1px solid hsl(217 30% 14%)" }}>
-        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 50% 80% at 85% 50%, hsl(142 70% 45% / 0.04), transparent)" }} />
-        <div className="relative flex flex-wrap items-center justify-between gap-4">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+        className="relative rounded-3xl overflow-hidden"
+        style={{ background: "linear-gradient(135deg, hsl(222 32% 9%) 0%, hsl(222 28% 8%) 100%)", border: "1px solid hsl(217 30% 14%)", boxShadow: "0 12px 60px hsl(142 70% 45% / 0.04), 0 4px 20px hsl(0 0% 0% / 0.4)" }}
+      >
+        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 50% 80% at 88% 50%, hsl(142 70% 45% / 0.05), transparent)" }} />
+        <div className="absolute inset-0 pointer-events-none opacity-25" style={{ backgroundImage: "linear-gradient(hsl(217 28% 16% / 0.25) 1px, transparent 1px), linear-gradient(90deg, hsl(217 28% 16% / 0.25) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
+        <div className="relative px-7 py-6 flex flex-wrap items-center justify-between gap-5">
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-[9px] font-mono uppercase tracking-[0.22em]" style={{ color: "hsl(142 70% 45% / 0.55)" }}>OPERATIONS CONSOLE</span>
+            <div className="flex items-center gap-2.5 mb-2">
+              <span className="text-[8px] font-mono uppercase tracking-[0.28em]" style={{ color: "hsl(142 70% 50% / 0.5)" }}>OPERATIONS CONSOLE</span>
               <LiveBadge color="green" />
             </div>
-            <h2 className="text-xl font-bold text-foreground/90 tracking-tight">User Management</h2>
-            <p className="mt-1 text-[11px]" style={{ color: "hsl(var(--muted-foreground) / 0.4)" }}>
-              Manage user lifecycle, plan assignments, suspensions, and access control.
-            </p>
+            <h2 className="text-2xl font-bold tracking-tight mb-1.5" style={{ color: "hsl(var(--foreground) / 0.9)", letterSpacing: "-0.02em" }}>User Management</h2>
+            <p className="text-[11.5px] max-w-sm" style={{ color: "hsl(var(--muted-foreground) / 0.4)", lineHeight: 1.6 }}>Manage user lifecycle, plan assignments, suspensions, and access control.</p>
           </div>
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-6 flex-wrap">
             {[
-              { label: "Total", val: formatNumber(usersEnriched.length) },
-              { label: "Active", val: formatNumber(activeSubscribers) },
-              { label: "Paid", val: formatNumber(paidUsers) },
-              { label: "Free", val: formatNumber(freeUsers) },
-            ].map(({ label, val }) => (
+              { label: "Total",  val: formatNumber(usersEnriched.length),  color: "hsl(var(--foreground) / 0.7)" },
+              { label: "Active", val: formatNumber(activeSubscribers),      color: "hsl(217 91% 62%)" },
+              { label: "Paid",   val: formatNumber(paidUsers),              color: "hsl(142 70% 55%)" },
+              { label: "Free",   val: formatNumber(freeUsers),              color: "hsl(38 92% 58%)" },
+            ].map(({ label, val, color }) => (
               <div key={label} className="text-right">
-                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/30">{label}</p>
-                <p className="text-base font-bold text-foreground/85">{val}</p>
+                <p className="text-[8px] font-mono uppercase tracking-[0.2em] mb-0.5" style={{ color: "hsl(var(--muted-foreground) / 0.26)" }}>{label}</p>
+                <p className="text-xl font-bold" style={{ fontVariantNumeric: "tabular-nums", color }}>{val}</p>
               </div>
             ))}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Total Users"    value={formatNumber(usersEnriched.length)}  icon={Users}     spark={sparkFrom(dailySeries.map((d) => d.users))} />
@@ -1824,32 +1857,35 @@ const AdminDashboard = () => {
   const renderSubscriptionsPage = () => (
     <div className="space-y-6">
       {/* ── Hero ── */}
-      <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, hsl(222 32% 8%) 0%, hsl(220 36% 10%) 50%, hsl(222 28% 7%) 100%)", border: "1px solid hsl(217 30% 14%)" }}>
-        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 60% 50% at 80% 50%, hsl(142 70% 45% / 0.04), transparent)" }} />
-        <div className="relative">
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[9px] font-mono uppercase tracking-[0.22em]" style={{ color: "hsl(142 70% 45% / 0.5)" }}>BILLING OPERATIONS</span>
+      <motion.div
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+        className="relative rounded-3xl overflow-hidden"
+        style={{ background: "linear-gradient(135deg, hsl(222 32% 9%) 0%, hsl(220 38% 11%) 50%, hsl(222 28% 8%) 100%)", border: "1px solid hsl(217 30% 14%)", boxShadow: "0 12px 60px hsl(142 70% 45% / 0.04), 0 4px 20px hsl(0 0% 0% / 0.4)" }}
+      >
+        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 60% 50% at 82% 50%, hsl(142 70% 45% / 0.05), transparent)" }} />
+        <div className="absolute inset-0 pointer-events-none opacity-25" style={{ backgroundImage: "linear-gradient(hsl(217 28% 16% / 0.25) 1px, transparent 1px), linear-gradient(90deg, hsl(217 28% 16% / 0.25) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
+        <div className="relative px-7 py-6">
+          <div className="flex items-center gap-2.5 mb-2">
+            <span className="text-[8px] font-mono uppercase tracking-[0.28em]" style={{ color: "hsl(142 70% 50% / 0.5)" }}>BILLING OPERATIONS</span>
             <LiveBadge color="green" />
           </div>
-          <h2 className="text-xl font-bold text-foreground/90 tracking-tight">Subscription Management</h2>
-          <p className="mt-1 text-[11px]" style={{ color: "hsl(var(--muted-foreground) / 0.4)" }}>
-            Monitor recurring revenue systems and subscription lifecycle integrity.
-          </p>
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-xl">
+          <h2 className="text-2xl font-bold tracking-tight mb-1.5" style={{ color: "hsl(var(--foreground) / 0.9)", letterSpacing: "-0.02em" }}>Subscription Management</h2>
+          <p className="text-[11.5px] max-w-sm mb-5" style={{ color: "hsl(var(--muted-foreground) / 0.4)", lineHeight: 1.6 }}>Monitor recurring revenue systems and subscription lifecycle integrity.</p>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 max-w-lg">
             {[
-              { label: "MRR",         val: formatCurrency(mrr) },
-              { label: "ARR",         val: formatCurrency(arr) },
-              { label: "Churn",       val: `${churnRate.toFixed(2)}%` },
-              { label: "At-Risk",     val: formatNumber(atRiskSubscriptions.length) },
-            ].map(({ label, val }) => (
-              <div key={label} className="rounded-xl px-3 py-2.5" style={{ background: "hsl(222 28% 5% / 0.7)", border: "1px solid hsl(217 28% 12%)" }}>
-                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/30">{label}</p>
-                <p className="mt-0.5 text-sm font-bold text-foreground/85">{val}</p>
+              { label: "MRR",     val: formatCurrency(mrr),                         color: "hsl(217 91% 62%)" },
+              { label: "ARR",     val: formatCurrency(arr),                         color: "hsl(var(--foreground) / 0.7)" },
+              { label: "Churn",   val: `${churnRate.toFixed(2)}%`,                  color: "hsl(38 92% 58%)" },
+              { label: "At-Risk", val: formatNumber(atRiskSubscriptions.length),    color: "hsl(0 72% 58%)" },
+            ].map(({ label, val, color }) => (
+              <div key={label} className="rounded-xl px-4 py-3" style={{ background: "hsl(222 28% 5.5% / 0.8)", border: "1px solid hsl(217 28% 12%)" }}>
+                <p className="text-[8px] font-mono uppercase tracking-[0.2em] mb-0.5" style={{ color: "hsl(var(--muted-foreground) / 0.26)" }}>{label}</p>
+                <p className="text-sm font-bold" style={{ fontVariantNumeric: "tabular-nums", color }}>{val}</p>
               </div>
             ))}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Active Plan Value"   value={formatCurrency(monthlyRevenue)}           icon={Wallet}       spark={sparkFrom(dailySeries.map((d) => d.revenue))}              growth={growthPercent} />
@@ -1924,33 +1960,36 @@ const AdminDashboard = () => {
   const renderAffiliatesPage = () => (
     <div className="space-y-6">
       {/* ── Hero ── */}
-      <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, hsl(222 32% 8%) 0%, hsl(225 36% 10%) 100%)", border: "1px solid hsl(217 30% 14%)" }}>
-        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 60% 50% at 80% 50%, hsl(38 92% 50% / 0.04), transparent)" }} />
-        <div className="relative flex flex-wrap items-center justify-between gap-4">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+        className="relative rounded-3xl overflow-hidden"
+        style={{ background: "linear-gradient(135deg, hsl(222 32% 9%) 0%, hsl(225 38% 11%) 100%)", border: "1px solid hsl(217 30% 14%)", boxShadow: "0 12px 60px hsl(38 92% 50% / 0.04), 0 4px 20px hsl(0 0% 0% / 0.4)" }}
+      >
+        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 60% 50% at 82% 50%, hsl(38 92% 50% / 0.05), transparent)" }} />
+        <div className="absolute inset-0 pointer-events-none opacity-25" style={{ backgroundImage: "linear-gradient(hsl(217 28% 16% / 0.25) 1px, transparent 1px), linear-gradient(90deg, hsl(217 28% 16% / 0.25) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
+        <div className="relative px-7 py-6 flex flex-wrap items-center justify-between gap-5">
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-[9px] font-mono uppercase tracking-[0.22em]" style={{ color: "hsl(38 92% 50% / 0.5)" }}>GROWTH INTELLIGENCE</span>
+            <div className="flex items-center gap-2.5 mb-2">
+              <span className="text-[8px] font-mono uppercase tracking-[0.28em]" style={{ color: "hsl(38 92% 55% / 0.5)" }}>GROWTH INTELLIGENCE</span>
               <LiveBadge color="amber" />
             </div>
-            <h2 className="text-xl font-bold text-foreground/90 tracking-tight">Affiliate Operations</h2>
-            <p className="mt-1 text-[11px]" style={{ color: "hsl(var(--muted-foreground) / 0.4)" }}>
-              Conversion performance, commission health, and payout lifecycle.
-            </p>
+            <h2 className="text-2xl font-bold tracking-tight mb-1.5" style={{ color: "hsl(var(--foreground) / 0.9)", letterSpacing: "-0.02em" }}>Affiliate Operations</h2>
+            <p className="text-[11.5px] max-w-sm" style={{ color: "hsl(var(--muted-foreground) / 0.4)", lineHeight: 1.6 }}>Conversion performance, commission health, and payout lifecycle.</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-6 flex-wrap">
             {[
-              { label: "Affiliates", val: formatNumber(affiliateProfiles.length) },
-              { label: "Pending",    val: formatCurrency(pendingAffiliateCommissions) },
-              { label: "Paid Out",   val: formatCurrency(paidAffiliateCommissions) },
-            ].map(({ label, val }) => (
+              { label: "Affiliates", val: formatNumber(affiliateProfiles.length),      color: "hsl(var(--foreground) / 0.7)" },
+              { label: "Pending",    val: formatCurrency(pendingAffiliateCommissions),  color: "hsl(38 92% 60%)" },
+              { label: "Paid Out",   val: formatCurrency(paidAffiliateCommissions),    color: "hsl(142 70% 55%)" },
+            ].map(({ label, val, color }) => (
               <div key={label} className="text-right">
-                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/30">{label}</p>
-                <p className="text-base font-bold text-foreground/85">{val}</p>
+                <p className="text-[8px] font-mono uppercase tracking-[0.2em] mb-0.5" style={{ color: "hsl(var(--muted-foreground) / 0.26)" }}>{label}</p>
+                <p className="text-xl font-bold" style={{ fontVariantNumeric: "tabular-nums", color }}>{val}</p>
               </div>
             ))}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Total Affiliates"    value={formatNumber(affiliateProfiles.length)}    icon={Users}        spark={sparkFrom(affiliateProfiles.map((a) => Number(a.total_clicks || 0)))} />
@@ -2042,32 +2081,35 @@ const AdminDashboard = () => {
     return (
       <div className="space-y-6">
         {/* ── Hero ── */}
-        <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, hsl(222 32% 8%) 0%, hsl(218 36% 10%) 100%)", border: "1px solid hsl(217 30% 14%)" }}>
-          <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 50% 60% at 85% 50%, hsl(280 70% 60% / 0.04), transparent)" }} />
-          <div className="relative flex flex-wrap items-center justify-between gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+          className="relative rounded-3xl overflow-hidden"
+          style={{ background: "linear-gradient(135deg, hsl(222 32% 9%) 0%, hsl(218 38% 11%) 100%)", border: "1px solid hsl(217 30% 14%)", boxShadow: "0 12px 60px hsl(280 70% 60% / 0.04), 0 4px 20px hsl(0 0% 0% / 0.4)" }}
+        >
+          <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 50% 60% at 87% 50%, hsl(280 70% 60% / 0.05), transparent)" }} />
+          <div className="absolute inset-0 pointer-events-none opacity-25" style={{ backgroundImage: "linear-gradient(hsl(217 28% 16% / 0.25) 1px, transparent 1px), linear-gradient(90deg, hsl(217 28% 16% / 0.25) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
+          <div className="relative px-7 py-6 flex flex-wrap items-center justify-between gap-5">
             <div>
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-[9px] font-mono uppercase tracking-[0.22em]" style={{ color: "hsl(280 70% 60% / 0.5)" }}>TREASURY OPERATIONS</span>
+              <div className="flex items-center gap-2.5 mb-2">
+                <span className="text-[8px] font-mono uppercase tracking-[0.28em]" style={{ color: "hsl(280 70% 65% / 0.5)" }}>TREASURY OPERATIONS</span>
               </div>
-              <h2 className="text-xl font-bold text-foreground/90 tracking-tight">Withdrawal Operations</h2>
-              <p className="mt-1 text-[11px]" style={{ color: "hsl(var(--muted-foreground) / 0.4)" }}>
-                Audit-safe payout queue. Approve, process, or reject affiliate payouts.
-              </p>
+              <h2 className="text-2xl font-bold tracking-tight mb-1.5" style={{ color: "hsl(var(--foreground) / 0.9)", letterSpacing: "-0.02em" }}>Withdrawal Operations</h2>
+              <p className="text-[11.5px] max-w-sm" style={{ color: "hsl(var(--muted-foreground) / 0.4)", lineHeight: 1.6 }}>Audit-safe payout queue. Approve, process, or reject affiliate payouts.</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-6 flex-wrap">
               {[
-                { label: "Pending",  val: formatNumber(pendingWithdrawals.length) },
-                { label: "Volume",   val: formatCurrency(totalWithdrawalVolume) },
-                { label: "Rejected", val: formatNumber(failedWithdrawals) },
-              ].map(({ label, val }) => (
+                { label: "Pending",  val: formatNumber(pendingWithdrawals.length),   color: "hsl(38 92% 58%)" },
+                { label: "Volume",   val: formatCurrency(totalWithdrawalVolume),      color: "hsl(var(--foreground) / 0.7)" },
+                { label: "Rejected", val: formatNumber(failedWithdrawals),            color: "hsl(0 72% 58%)" },
+              ].map(({ label, val, color }) => (
                 <div key={label} className="text-right">
-                  <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/30">{label}</p>
-                  <p className="text-base font-bold text-foreground/85">{val}</p>
+                  <p className="text-[8px] font-mono uppercase tracking-[0.2em] mb-0.5" style={{ color: "hsl(var(--muted-foreground) / 0.26)" }}>{label}</p>
+                  <p className="text-xl font-bold" style={{ fontVariantNumeric: "tabular-nums", color }}>{val}</p>
                 </div>
               ))}
             </div>
           </div>
-        </div>
+        </motion.div>
 
         <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
           <MetricCard label="Pending Withdrawals"       value={formatNumber(pendingWithdrawals.length)}                                      icon={Clock3}       spark={sparkFrom(pendingWithdrawals.map((w) => Number(w.amount || 0)))} />
@@ -2203,52 +2245,64 @@ const AdminDashboard = () => {
     <SidebarProvider defaultOpen>
       <div
         className="flex min-h-screen w-full overflow-hidden"
-        style={{ background: "hsl(222 30% 4%)" }}
+        style={{
+          background: "radial-gradient(ellipse 80% 60% at 50% -10%, hsl(217 60% 12% / 0.4), transparent), radial-gradient(ellipse 40% 50% at 90% 80%, hsl(217 40% 8% / 0.25), transparent), hsl(222 32% 4%)",
+        }}
       >
         {/* ── Sidebar ── */}
         <Sidebar
           collapsible="icon"
           className="backdrop-blur-2xl"
           style={{
-            background: "linear-gradient(180deg, hsl(222 32% 6%) 0%, hsl(222 28% 5%) 100%)",
+            background: "linear-gradient(180deg, hsl(222 30% 6% / 0.99) 0%, hsl(222 28% 5.5% / 0.99) 100%)",
             borderRight: "1px solid hsl(217 28% 10%)",
+            boxShadow: "4px 0 28px hsl(0 0% 0% / 0.4), inset -1px 0 0 hsl(217 91% 60% / 0.04)",
           }}
         >
-          <SidebarContent>
+          <SidebarContent className="flex flex-col h-full">
             {/* Brand */}
             <div
-              className="flex h-14 items-center px-4"
+              className="flex h-[58px] items-center px-4 shrink-0"
               style={{ borderBottom: "1px solid hsl(217 28% 10%)" }}
             >
               <BrandMark
                 size={18}
                 withWordmark
-                className="drop-shadow-[0_0_14px_hsl(217_91%_60%/0.25)] group-data-[collapsible=icon]:opacity-0"
+                className="group-data-[collapsible=icon]:opacity-0 transition-opacity duration-200 drop-shadow-[0_0_18px_hsl(217_91%_60%/0.28)]"
               />
             </div>
 
-            {/* System status strip */}
+            {/* AI System status */}
             <div
-              className="mx-3 mt-3 flex items-center gap-2 rounded-lg px-3 py-2 group-data-[collapsible=icon]:hidden"
-              style={{ background: "hsl(217 91% 60% / 0.05)", border: "1px solid hsl(217 91% 60% / 0.1)" }}
+              className="mx-3 mt-3 mb-1 px-3 py-2.5 rounded-xl group-data-[collapsible=icon]:hidden"
+              style={{ background: "hsl(217 91% 60% / 0.04)", border: "1px solid hsl(217 91% 60% / 0.09)" }}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2.5s" }} />
-              <span className="text-[9px] font-mono uppercase tracking-wider" style={{ color: "hsl(217 91% 60% / 0.55)" }}>
-                PRODUCTION · LIVE
-              </span>
+              <div className="flex items-center gap-2">
+                <span
+                  className="w-1.5 h-1.5 rounded-full animate-pulse"
+                  style={{ background: "hsl(142 70% 50%)", boxShadow: "0 0 6px hsl(142 70% 45% / 0.8)", animationDuration: "2.5s" }}
+                />
+                <span className="text-[8px] font-mono uppercase tracking-[0.2em]" style={{ color: "hsl(217 91% 62% / 0.55)" }}>
+                  ROBINOS · PRODUCTION
+                </span>
+              </div>
+              <p className="mt-0.5 text-[9px] font-mono" style={{ color: "hsl(var(--muted-foreground) / 0.2)" }}>All systems operational</p>
             </div>
 
             {/* Nav */}
-            <div className="px-2 pt-3 pb-2 space-y-1">
+            <div className="flex-1 px-2 pt-2 pb-2 space-y-0.5 overflow-y-auto">
               {navGroups.map((group) => {
                 const isGroupActive = group.items.some((item) => currentPath === item.path);
                 return (
-                  <SidebarGroup key={group.title} className={isGroupActive ? "rounded-xl" : ""} style={isGroupActive ? { background: "hsl(217 91% 60% / 0.04)" } : {}}>
-                    <SidebarGroupLabel className="text-[9px] font-mono uppercase tracking-[0.18em] px-3 pb-1 pt-2" style={{ color: "hsl(var(--muted-foreground) / 0.25)" }}>
+                  <SidebarGroup key={group.title}>
+                    <SidebarGroupLabel
+                      className="px-3 pt-4 pb-1.5 text-[7.5px] font-mono uppercase tracking-[0.28em] group-data-[collapsible=icon]:hidden"
+                      style={{ color: "hsl(var(--muted-foreground) / 0.18)" }}
+                    >
                       {group.title}
                     </SidebarGroupLabel>
                     <SidebarGroupContent>
-                      <SidebarMenu>
+                      <SidebarMenu className="space-y-0.5">
                         {group.items.map((item) => {
                           const isActive = currentPath === item.path;
                           return (
@@ -2256,19 +2310,25 @@ const AdminDashboard = () => {
                               <SidebarMenuButton asChild isActive={isActive}>
                                 <NavLink
                                   to={item.path}
-                                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs transition-all"
+                                  className="relative flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[11px] font-medium transition-all duration-200 overflow-hidden"
                                   style={isActive ? {
-                                    background: "hsl(217 91% 60% / 0.1)",
-                                    color: "hsl(217 91% 70%)",
-                                    border: "1px solid hsl(217 91% 60% / 0.18)",
+                                    background: "linear-gradient(135deg, hsl(217 91% 60% / 0.13), hsl(217 60% 30% / 0.05))",
+                                    border: "1px solid hsl(217 91% 60% / 0.22)",
+                                    color: "hsl(217 91% 72%)",
+                                    boxShadow: "0 2px 16px hsl(217 91% 60% / 0.08)",
                                   } : {
-                                    color: "hsl(var(--muted-foreground) / 0.5)",
                                     border: "1px solid transparent",
+                                    color: "hsl(var(--muted-foreground) / 0.42)",
                                   }}
                                 >
-                                  <item.icon className="h-3.5 w-3.5 shrink-0" />
-                                  <span className="font-medium tracking-wide">{item.label}</span>
-                                  {isActive && <span className="ml-auto w-1 h-1 rounded-full" style={{ background: "hsl(217 91% 60%)" }} />}
+                                  {isActive && (
+                                    <span
+                                      className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 rounded-r-full"
+                                      style={{ background: "linear-gradient(180deg, hsl(217 91% 65%), hsl(217 91% 60% / 0.25))", boxShadow: "2px 0 10px hsl(217 91% 60% / 0.55)" }}
+                                    />
+                                  )}
+                                  <item.icon className="h-[14px] w-[14px] shrink-0" />
+                                  <span className="tracking-wide group-data-[collapsible=icon]:hidden">{item.label}</span>
                                 </NavLink>
                               </SidebarMenuButton>
                             </SidebarMenuItem>
@@ -2281,45 +2341,53 @@ const AdminDashboard = () => {
               })}
             </div>
 
-            {/* Admin identity footer */}
+            {/* Bottom admin identity */}
             <div
-              className="mx-3 mt-auto mb-3 rounded-xl px-3 py-2.5 group-data-[collapsible=icon]:hidden"
-              style={{ background: "hsl(222 28% 6%)", border: "1px solid hsl(217 28% 11%)" }}
+              className="mx-3 mb-3 px-3 py-2.5 rounded-xl shrink-0 group-data-[collapsible=icon]:hidden"
+              style={{ background: "hsl(222 28% 6%)", border: "1px solid hsl(217 28% 10%)" }}
             >
-              <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/20 mb-0.5">Admin</p>
-              <p className="text-[10px] font-mono text-muted-foreground/40 truncate">{user?.email ?? "—"}</p>
+              <p className="text-[7.5px] font-mono uppercase tracking-[0.22em] mb-0.5" style={{ color: "hsl(var(--muted-foreground) / 0.18)" }}>Admin Session</p>
+              <p className="text-[9.5px] font-mono truncate" style={{ color: "hsl(var(--muted-foreground) / 0.35)" }}>{user?.email ?? "—"}</p>
             </div>
           </SidebarContent>
         </Sidebar>
 
         {/* ── Main ── */}
         <div className="min-w-0 flex-1 flex flex-col">
-          {/* Topbar */}
+          {/* Mission Control Topbar */}
           <header
-            className="sticky top-0 z-20 flex h-14 items-center justify-between px-4 sm:px-6 backdrop-blur-xl"
+            className="sticky top-0 z-20 flex h-[58px] items-center justify-between px-4 sm:px-6"
             style={{
-              background: "hsl(222 30% 5% / 0.92)",
+              background: "hsl(222 30% 5% / 0.94)",
               borderBottom: "1px solid hsl(217 28% 10%)",
+              backdropFilter: "blur(20px)",
+              boxShadow: "0 1px 0 hsl(217 91% 60% / 0.04), 0 4px 20px hsl(0 0% 0% / 0.2)",
             }}
           >
             <div className="flex items-center gap-3">
-              <SidebarTrigger className="text-muted-foreground/30 hover:text-foreground/60 transition-colors" />
-              <div className="w-px h-4 shrink-0" style={{ background: "hsl(217 28% 12%)" }} />
+              <SidebarTrigger
+                className="transition-all hover:scale-105 text-muted-foreground/28 hover:text-foreground/60"
+              />
+              <div className="w-px h-4 shrink-0" style={{ background: "hsl(217 28% 11%)" }} />
               <div className="flex items-center gap-1.5">
-                <Shield className="h-3.5 w-3.5" style={{ color: "hsl(217 91% 60% / 0.6)" }} />
-                <span
-                  className="text-[9px] uppercase tracking-[0.18em] font-mono hidden sm:block"
-                  style={{ color: "hsl(var(--muted-foreground) / 0.3)" }}
-                >
-                  {meta.title}
-                </span>
+                <span className="text-[8.5px] font-mono uppercase tracking-[0.2em]" style={{ color: "hsl(217 91% 60% / 0.38)" }}>Admin</span>
+                <span className="text-[8.5px] font-mono" style={{ color: "hsl(var(--muted-foreground) / 0.15)" }}>/</span>
+                <span className="text-[8.5px] font-mono uppercase tracking-[0.15em]" style={{ color: "hsl(var(--muted-foreground) / 0.4)" }}>{meta.title}</span>
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <div
+                className="hidden sm:flex items-center gap-1.5 h-7 px-3 rounded-lg"
+                style={{ background: "hsl(142 70% 45% / 0.05)", border: "1px solid hsl(142 70% 45% / 0.1)" }}
+              >
+                <span className="w-1 h-1 rounded-full animate-pulse" style={{ background: "hsl(142 70% 50%)", boxShadow: "0 0 5px hsl(142 70% 45% / 0.7)", animationDuration: "2s" }} />
+                <span className="text-[7.5px] font-mono tracking-[0.2em] uppercase" style={{ color: "hsl(142 70% 55% / 0.55)" }}>LIVE</span>
+              </div>
+              <div className="w-px h-4 shrink-0" style={{ background: "hsl(217 28% 11%)" }} />
               <button
                 onClick={refreshAll}
-                className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground/30 hover:text-foreground/60 transition-colors"
-                style={{ border: "1px solid hsl(217 28% 12%)" }}
+                className="h-7 w-7 rounded-lg flex items-center justify-center transition-all hover:scale-105"
+                style={{ border: "1px solid hsl(217 28% 12%)", background: "hsl(222 28% 7% / 0.7)", color: "hsl(var(--muted-foreground) / 0.32)" }}
               >
                 <RefreshCw className="h-3.5 w-3.5" />
               </button>
@@ -2329,8 +2397,8 @@ const AdminDashboard = () => {
                   await signOut();
                   navigate("/adminsh/auth");
                 }}
-                className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground/30 hover:text-red-400/60 transition-colors"
-                style={{ border: "1px solid hsl(217 28% 12%)" }}
+                className="h-7 w-7 rounded-lg flex items-center justify-center transition-all hover:scale-105"
+                style={{ border: "1px solid hsl(0 72% 55% / 0.16)", background: "hsl(0 72% 55% / 0.05)", color: "hsl(0 72% 60% / 0.45)" }}
               >
                 <LogOut className="h-3.5 w-3.5" />
               </button>
@@ -2339,27 +2407,28 @@ const AdminDashboard = () => {
 
           {/* Page content */}
           <main
-            className="flex-1 overflow-auto mx-auto w-full max-w-[1600px] p-4 md:p-6 space-y-6"
+            className="flex-1 overflow-auto mx-auto w-full max-w-[1640px] p-5 md:p-7 space-y-6"
           >
             {queryErrors.length ? (
               <div
-                className="rounded-xl p-3 text-xs font-mono flex items-center gap-2"
-                style={{ background: "hsl(0 72% 55% / 0.08)", border: "1px solid hsl(0 72% 55% / 0.2)", color: "hsl(0 72% 65%)" }}
+                className="flex items-center gap-3 rounded-xl px-5 py-3 text-xs font-mono"
+                style={{ background: "hsl(0 72% 55% / 0.07)", border: "1px solid hsl(0 72% 55% / 0.18)", color: "hsl(0 72% 65%)" }}
               >
-                <span>⚠ Some backend queries failed.</span>
-                <button onClick={refreshAll} className="underline underline-offset-2">Retry</button>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: "hsl(0 72% 60%)" }} />
+                Backend query failure detected.
+                <button onClick={refreshAll} className="ml-1 underline underline-offset-2 opacity-60 hover:opacity-100 transition-opacity">Retry</button>
               </div>
             ) : null}
 
             {isBootLoading ? (
-              <div className="space-y-5">
+              <div className="space-y-6">
+                <div className="h-36 rounded-2xl" style={{ background: "linear-gradient(135deg, hsl(222 28% 8%), hsl(222 26% 7%))", border: "1px solid hsl(217 28% 12%)", animation: "pulse 2s ease-in-out infinite" }} />
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
                   {Array.from({ length: 8 }).map((_, i) => (
-                    <Skeleton key={i} className="h-36 rounded-xl" style={{ background: "hsl(222 28% 7%)" }} />
+                    <div key={i} className="h-36 rounded-2xl" style={{ background: "hsl(222 28% 8%)", border: "1px solid hsl(217 28% 11%)", animation: `pulse 2s ease-in-out ${i * 0.1}s infinite` }} />
                   ))}
                 </div>
-                <Skeleton className="h-64 rounded-xl" style={{ background: "hsl(222 28% 7%)" }} />
-                <Skeleton className="h-64 rounded-xl" style={{ background: "hsl(222 28% 7%)" }} />
+                <div className="h-80 rounded-2xl" style={{ background: "hsl(222 28% 8%)", border: "1px solid hsl(217 28% 11%)", animation: "pulse 2s ease-in-out infinite" }} />
               </div>
             ) : (
               <AnimatePresence mode="wait">
