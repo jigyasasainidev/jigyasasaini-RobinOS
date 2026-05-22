@@ -114,37 +114,76 @@ export function ReportAbusePage() {
     setSubmitState("sending");
     setServerError("");
 
-    try {
-      const { error } = await supabase.functions.invoke("submit-abuse-report", {
-        body: {
-          reporterName:  data.reporterName,
-          reporterEmail: data.reporterEmail,
-          category:      data.category,
-          details:       data.details,
-          evidence:      data.evidence ?? "",
-          confirmed:     data.confirmed,
-        },
-      });
+    // Helper: attempt one invocation, return { ok, code, message }
+    const attempt = async () => {
+      try {
+        const { data: resData, error } = await supabase.functions.invoke("safety-intake", {
+          body: {
+            reporterName:  data.reporterName,
+            reporterEmail: data.reporterEmail,
+            category:      data.category,
+            details:       data.details,
+            evidence:      data.evidence ?? "",
+            confirmed:     data.confirmed,
+          },
+        });
 
-      if (error) {
-        let msg = "Submission failed. Please try again or contact support@tryrobin.xyz directly.";
-        try {
-          const raw = (error as any)?.context?.responseText ?? (error as any)?.message ?? "";
-          const parsed = typeof raw === "string" && raw.startsWith("{") ? JSON.parse(raw) : {};
-          if (parsed.code === "RATE_LIMITED") msg = parsed.message ?? msg;
-          if (parsed.code === "VALIDATION_ERROR") msg = parsed.message ?? msg;
-        } catch { /* keep default */ }
-        setServerError(msg);
-        setSubmitState("error");
-        return;
+        if (error) {
+          // Parse structured error from edge function
+          let code = "UNKNOWN";
+          let message = "";
+          try {
+            const raw = (error as any)?.context?.responseText ?? (error as any)?.message ?? "";
+            const parsed = typeof raw === "string" && raw.startsWith("{") ? JSON.parse(raw) : {};
+            code = parsed.code ?? code;
+            message = parsed.message ?? "";
+          } catch { /* keep defaults */ }
+          return { ok: false, code, message };
+        }
+
+        return { ok: true, code: "SUBMITTED", message: "" };
+      } catch (e: unknown) {
+        // Network-level error (ERR_FAILED, timeout, ad blocker, etc.)
+        const isNetworkErr =
+          e instanceof TypeError ||
+          String(e).includes("Failed to fetch") ||
+          String(e).includes("NetworkError");
+        return {
+          ok: false,
+          code: isNetworkErr ? "NETWORK_ERROR" : "UNKNOWN",
+          message: "",
+        };
       }
+    };
 
-      setSubmitState("success");
-      reset();
-    } catch {
-      setServerError("Network error. Please try again or email support@tryrobin.xyz directly.");
-      setSubmitState("error");
+    let result = await attempt();
+
+    // Single automatic retry on transient network errors
+    if (!result.ok && result.code === "NETWORK_ERROR") {
+      await new Promise((r) => setTimeout(r, 1500));
+      result = await attempt();
     }
+
+    if (!result.ok) {
+      const msgMap: Record<string, string> = {
+        RATE_LIMITED:
+          "Too many reports submitted recently. Please wait 10 minutes before submitting again.",
+        NETWORK_ERROR:
+          "Unable to connect to the reporting service. Please check your connection and try again, or email support@tryrobin.xyz directly.",
+        VALIDATION_ERROR: result.message || "Please check your form entries.",
+        METHOD_NOT_ALLOWED: "Unexpected request error. Please refresh and try again.",
+      };
+      setServerError(
+        msgMap[result.code] ??
+        result.message ??
+        "Submission failed. Please try again or email support@tryrobin.xyz directly."
+      );
+      setSubmitState("error");
+      return;
+    }
+
+    setSubmitState("success");
+    reset();
   });
 
   return (
