@@ -278,7 +278,7 @@ const estimateGenerationCost = (provider: string | null, creditsUsed: number) =>
   return Number(creditsUsed || 0) * perCredit;
 };
 
-const SectionCard = ({ title, subtitle, right, children }: { title: string; subtitle?: string; right?: ReactNode; children: ReactNode }) => (
+const SectionCard = ({ title, subtitle, right, children }: { title: ReactNode; subtitle?: ReactNode; right?: ReactNode; children: ReactNode }) => (
   <section className="rounded-lg border border-border/60 bg-card/45 p-4 backdrop-blur-md">
     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
       <div>
@@ -1410,12 +1410,139 @@ const AdminDashboard = () => {
 
   const renderSubscriptionsPage = () => (
     <div className="space-y-4">
-      <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Active Plan Value" value={formatCurrency(monthlyRevenue)} icon={Wallet} spark={sparkFrom(dailySeries.map((d) => d.revenue))} />
-        <MetricCard label="Active Subscribers" value={formatNumber(activeSubscribers)} icon={UserCheck} spark={sparkFrom(dailySeries.map((d) => d.subscriptions))} />
-        <MetricCard label="Churn Rate" value={`${churnRate.toFixed(2)}%`} icon={ArrowDownRight} spark={sparkFrom(cancelledSubs.map((s) => Number(s.amount || 0)))} />
-        <MetricCard label="At-Risk Subs" value={formatNumber(atRiskSubscriptions.length)} icon={Clock3} spark={sparkFrom(atRiskSubscriptions.map((s) => Number(s.amount || 0)))} />
-      </section>
+      {/* ── Premium Subscription Header ─────────────────────────── */}
+      <div
+        className="relative rounded-xl overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, hsl(222 32% 6%) 0%, hsl(222 26% 5%) 100%)",
+          border: "1px solid hsl(217 30% 12%)",
+          boxShadow: "0 1px 0 hsl(0 0% 100% / 0.04) inset, 0 24px 64px hsl(0 0% 0% / 0.4)",
+        }}
+      >
+        {/* Ambient glow */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 40% at 50% -10%, hsl(217 91% 60% / 0.07), transparent)" }} />
+
+        {/* Page title bar */}
+        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "hsl(217 30% 11%)" }}>
+          <div>
+            <div className="flex items-center gap-2.5 mb-0.5">
+              <span className="text-base font-semibold text-foreground tracking-tight">Subscription Management</span>
+              <span
+                className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-mono tracking-widest"
+                style={{ background: "hsl(217 91% 60% / 0.1)", border: "1px solid hsl(217 91% 60% / 0.22)", color: "hsl(217 95% 72%)" }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2.5s" }} />
+                LIVE
+              </span>
+            </div>
+            <p className="text-[11px] text-muted-foreground/55 font-mono">Track active subscriptions, churn, failures, and recurring value.</p>
+          </div>
+          <div className="hidden sm:flex items-center gap-1.5 text-[9px] font-mono text-muted-foreground/30">
+            <span>ROBINOS:SUB</span>
+            <span className="w-1 h-1 rounded-full bg-muted-foreground/20" />
+            <span>{new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+          </div>
+        </div>
+
+        {/* 4 metric tiles */}
+        <div className="grid grid-cols-2 xl:grid-cols-4 divide-x divide-y xl:divide-y-0" style={{ borderColor: "hsl(217 30% 10%)" }}>
+          {/* Active Plan Value */}
+          <div className="group relative px-5 py-4 hover:bg-white/[0.015] transition-colors">
+            <div className="flex items-start justify-between mb-3">
+              <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/50">Active Plan Value</span>
+              <div
+                className="w-6 h-6 rounded-md flex items-center justify-center"
+                style={{ background: "hsl(217 91% 60% / 0.1)", border: "1px solid hsl(217 91% 60% / 0.18)" }}
+              >
+                <Wallet className="w-3 h-3" style={{ color: "hsl(217 91% 60%)" }} />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-foreground tracking-tight mb-1">{formatCurrency(monthlyRevenue)}</p>
+            <div className="flex items-center gap-2">
+              <div className="flex gap-px items-end h-5">
+                {sparkFrom(dailySeries.map((d) => d.revenue)).map((p, i) => (
+                  <div key={i} className="w-1 rounded-sm" style={{ height: `${Math.max(2, (p.v / (Math.max(...sparkFrom(dailySeries.map((d) => d.revenue)).map((x) => x.v)) || 1)) * 20)}px`, background: "hsl(217 91% 60% / 0.5)" }} />
+                ))}
+              </div>
+              <span className="text-[9px] font-mono text-muted-foreground/40">Live backend snapshot</span>
+            </div>
+          </div>
+
+          {/* Active Subscribers */}
+          <div className="group relative px-5 py-4 hover:bg-white/[0.015] transition-colors">
+            <div className="flex items-start justify-between mb-3">
+              <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/50">Active Subscribers</span>
+              <div
+                className="w-6 h-6 rounded-md flex items-center justify-center"
+                style={{ background: "hsl(142 70% 45% / 0.1)", border: "1px solid hsl(142 70% 45% / 0.18)" }}
+              >
+                <UserCheck className="w-3 h-3" style={{ color: "hsl(142 70% 55%)" }} />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-foreground tracking-tight mb-1">{formatNumber(activeSubscribers)}</p>
+            <div className="flex items-center gap-2">
+              <div className="flex gap-px items-end h-5">
+                {sparkFrom(dailySeries.map((d) => d.subscriptions)).map((p, i) => (
+                  <div key={i} className="w-1 rounded-sm" style={{ height: `${Math.max(2, (p.v / (Math.max(...sparkFrom(dailySeries.map((d) => d.subscriptions)).map((x) => x.v)) || 1)) * 20)}px`, background: "hsl(142 70% 45% / 0.5)" }} />
+                ))}
+              </div>
+              <span className="text-[9px] font-mono text-muted-foreground/40">Live backend snapshot</span>
+            </div>
+          </div>
+
+          {/* Churn Rate */}
+          <div className="group relative px-5 py-4 hover:bg-white/[0.015] transition-colors">
+            <div className="flex items-start justify-between mb-3">
+              <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/50">Churn Rate</span>
+              <div
+                className="w-6 h-6 rounded-md flex items-center justify-center"
+                style={{ background: "hsl(0 72% 51% / 0.1)", border: "1px solid hsl(0 72% 51% / 0.18)" }}
+              >
+                <ArrowDownRight className="w-3 h-3" style={{ color: "hsl(0 72% 64%)" }} />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-1.5 mb-1">
+              <p className="text-2xl font-bold tracking-tight" style={{ color: churnRate > 0 ? "hsl(0 72% 64%)" : "hsl(var(--foreground))" }}>{churnRate.toFixed(2)}</p>
+              <span className="text-sm font-mono text-muted-foreground/60">%</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex gap-px items-end h-5">
+                {sparkFrom(cancelledSubs.map((s) => Number(s.amount || 0))).map((p, i) => (
+                  <div key={i} className="w-1 rounded-sm" style={{ height: `${Math.max(2, (p.v / (Math.max(...sparkFrom(cancelledSubs.map((s) => Number(s.amount || 0))).map((x) => x.v)) || 1)) * 20)}px`, background: "hsl(0 72% 51% / 0.45)" }} />
+                ))}
+              </div>
+              <span className="text-[9px] font-mono text-muted-foreground/40">Live backend snapshot</span>
+            </div>
+          </div>
+
+          {/* At-Risk Subs */}
+          <div className="group relative px-5 py-4 hover:bg-white/[0.015] transition-colors">
+            <div className="flex items-start justify-between mb-3">
+              <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/50">At-Risk Subs</span>
+              <div
+                className="w-6 h-6 rounded-md flex items-center justify-center"
+                style={{ background: "hsl(38 92% 50% / 0.1)", border: "1px solid hsl(38 92% 50% / 0.18)" }}
+              >
+                <Clock3 className="w-3 h-3" style={{ color: "hsl(38 92% 62%)" }} />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-1.5 mb-1">
+              <p className="text-2xl font-bold tracking-tight" style={{ color: atRiskSubscriptions.length > 0 ? "hsl(38 92% 62%)" : "hsl(var(--foreground))" }}>{formatNumber(atRiskSubscriptions.length)}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex gap-px items-end h-5">
+                {sparkFrom(atRiskSubscriptions.map((s) => Number(s.amount || 0))).map((p, i) => (
+                  <div key={i} className="w-1 rounded-sm" style={{ height: `${Math.max(2, (p.v / (Math.max(...sparkFrom(atRiskSubscriptions.map((s) => Number(s.amount || 0))).map((x) => x.v)) || 1)) * 20)}px`, background: "hsl(38 92% 50% / 0.45)" }} />
+                ))}
+              </div>
+              <span className="text-[9px] font-mono text-muted-foreground/40">Live backend snapshot</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom border glow */}
+        <div className="h-px w-full" style={{ background: "linear-gradient(90deg, transparent, hsl(217 91% 60% / 0.18), transparent)" }} />
+      </div>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <SectionCard
