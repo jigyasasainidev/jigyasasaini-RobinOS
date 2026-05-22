@@ -31,7 +31,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -948,47 +947,77 @@ const AdminDashboard = () => {
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">{dashboardMetrics.map((card) => <MetricCard key={card.label} label={card.label} value={card.value} growth={card.growth} icon={card.icon} spark={card.spark} />)}</section>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <SectionCard title="Revenue Overview Chart" subtitle="Live movement from active subscription value">
-          {dailySeries.length ? (
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={dailySeries}>
-                  <CartesianGrid stroke="hsl(var(--border) / 0.35)" strokeDasharray="3 3" />
-                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
-                  <Tooltip contentStyle={{ background: "hsl(var(--background) / 0.95)", border: "1px solid hsl(var(--border) / 0.6)", borderRadius: "8px" }} />
-                  <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.2)" strokeWidth={2} />
-                </AreaChart>
-              </ResponsiveContainer>
+        {/* ── Revenue Overview — trading terminal ── */}
+        <SectionCard
+          title={<div className="flex items-center gap-2"><span className="text-sm font-semibold text-foreground">Revenue Overview</span><span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-mono tracking-widest" style={{ background: "hsl(217 91% 60% / 0.12)", border: "1px solid hsl(217 91% 60% / 0.25)", color: "hsl(217 95% 72%)" }}><span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />LIVE</span></div>}
+          subtitle={<span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:REV · Active subscription value</span>}
+        >
+          <div className="relative rounded-lg overflow-hidden" style={{ background: "linear-gradient(180deg, hsl(222 28% 4%) 0%, hsl(222 24% 3%) 100%)", border: "1px solid hsl(217 30% 11%)" }}>
+            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 30% 13% / 0.35) 0px, transparent 1px, transparent 36px, hsl(217 30% 13% / 0.35) 37px)", backgroundSize: "100% 37px" }} />
+            <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "hsl(217 30% 11%)" }}>
+              <div className="flex items-center gap-3"><span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:REV</span><span className="text-[10px] font-mono" style={{ color: "hsl(217 91% 60%)" }}>{formatCurrency(monthlyRevenue)}</span></div>
+              <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground/40"><span>1D</span><span className="text-primary/80">7D</span><span>30D</span></div>
             </div>
-          ) : <EmptyState title="No value data yet" description="Chart fills automatically when active subscription records are available." />}
-        </SectionCard>
-
-        <SectionCard title="Plan Distribution" subtitle="Live subscriptions split by plans">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-[1.2fr_1fr]">
-            <div className="h-72">
-              {planDistributionTrend.length > 0 ? (
+            <div className="h-64 px-1 pt-2 pb-1">
+              {dailySeries.length ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={planDistributionTrend}>
-                    <CartesianGrid stroke="hsl(var(--border) / 0.35)" strokeDasharray="3 3" />
-                    <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
-                    <Tooltip contentStyle={{ background: "hsl(var(--background) / 0.95)", border: "1px solid hsl(var(--border) / 0.6)", borderRadius: "8px" }} />
-                    <Legend />
-                    <Area type="monotone" dataKey="creator" name="Creator" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.2)" strokeWidth={2} />
-                    <Area type="monotone" dataKey="pro" name="Pro" stroke="hsl(var(--primary) / 0.72)" fill="hsl(var(--primary) / 0.12)" strokeWidth={2} />
-                    <Area type="monotone" dataKey="agency" name="Agency" stroke="hsl(var(--primary) / 0.48)" fill="hsl(var(--primary) / 0.08)" strokeWidth={2} />
+                  <AreaChart data={dailySeries} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                    <defs><linearGradient id="gradRev" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(217 91% 60%)" stopOpacity={0.22} /><stop offset="95%" stopColor="hsl(217 91% 60%)" stopOpacity={0} /></linearGradient></defs>
+                    <CartesianGrid vertical={false} stroke="hsl(217 30% 13% / 0)" />
+                    <XAxis dataKey="date" tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={{ stroke: "hsl(217 30% 13%)" }} tickLine={false} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ background: "hsl(222 28% 6% / 0.97)", border: "1px solid hsl(217 30% 16%)", borderRadius: "6px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 8px 24px hsl(0 0% 0% / 0.5)" }} cursor={{ stroke: "hsl(217 91% 60% / 0.3)", strokeWidth: 1, strokeDasharray: "4 4" }} />
+                    <Area type="monotone" dataKey="revenue" name="Revenue" stroke="hsl(217 91% 60%)" strokeWidth={1.5} fill="url(#gradRev)" dot={false} activeDot={{ r: 3, fill: "hsl(217 91% 60%)", strokeWidth: 0 }} />
                   </AreaChart>
                 </ResponsiveContainer>
-              ) : <EmptyState title="No subscriptions yet" description="Plan distribution will appear after first subscription records." />}
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center gap-2"><p className="text-[10px] font-mono text-muted-foreground/40 tracking-widest uppercase">Awaiting market data</p><p className="text-[9px] font-mono text-muted-foreground/25">Chart populates after subscription records are available</p></div>
+              )}
             </div>
-            <div className="space-y-2">
-              {planDistribution.map((p) => (
-                <div key={p.name} className="rounded-md border border-border/50 bg-secondary/30 p-3">
-                  <p className="text-[11px] text-muted-foreground">{p.name}</p>
-                  <p className="mt-1 text-lg font-semibold text-foreground">{formatNumber(p.value)}</p>
-                </div>
-              ))}
+            <div className="flex items-center gap-3 px-4 py-2 border-t" style={{ borderColor: "hsl(217 30% 11%)" }}>
+              <span className="w-4 h-[2px] rounded-full" style={{ background: "hsl(217 91% 60%)" }} />
+              <span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-wider">Revenue</span>
+              <span className="ml-auto text-[9px] font-mono text-muted-foreground/25">RobinOS Analytics v1</span>
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* ── Plan Distribution (Dashboard) — trading terminal ── */}
+        <SectionCard
+          title={<div className="flex items-center gap-2"><span className="text-sm font-semibold text-foreground">Plan Distribution</span><span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-mono tracking-widest" style={{ background: "hsl(217 91% 60% / 0.12)", border: "1px solid hsl(217 91% 60% / 0.25)", color: "hsl(217 95% 72%)" }}><span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />LIVE</span></div>}
+          subtitle={<div className="flex items-center gap-3 mt-0.5"><span className="text-[10px] font-mono text-muted-foreground/60">PLAN / TOTAL ·</span>{planDistribution.map((p) => <span key={p.name} className="text-[10px] font-mono" style={{ color: p.fill }}>{p.name.toUpperCase()} {p.value > 0 ? `+${p.value}` : "—"}</span>)}</div>}
+        >
+          <div className="relative rounded-lg overflow-hidden" style={{ background: "linear-gradient(180deg, hsl(222 28% 4%) 0%, hsl(222 24% 3%) 100%)", border: "1px solid hsl(217 30% 11%)" }}>
+            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 30% 13% / 0.35) 0px, transparent 1px, transparent 36px, hsl(217 30% 13% / 0.35) 37px)", backgroundSize: "100% 37px" }} />
+            <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "hsl(217 30% 11%)" }}>
+              <span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:PLANS</span>
+              <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground/40"><span>1D</span><span className="text-primary/80">7D</span><span>30D</span></div>
+            </div>
+            <div className="h-56 px-1 pt-2 pb-1">
+              {planDistributionTrend.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={planDistributionTrend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="dashGradC" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(217 91% 60%)" stopOpacity={0.18} /><stop offset="95%" stopColor="hsl(217 91% 60%)" stopOpacity={0} /></linearGradient>
+                      <linearGradient id="dashGradP" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(38 92% 50%)" stopOpacity={0.15} /><stop offset="95%" stopColor="hsl(38 92% 50%)" stopOpacity={0} /></linearGradient>
+                      <linearGradient id="dashGradA" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(142 70% 45%)" stopOpacity={0.12} /><stop offset="95%" stopColor="hsl(142 70% 45%)" stopOpacity={0} /></linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} stroke="hsl(217 30% 13% / 0)" />
+                    <XAxis dataKey="date" tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={{ stroke: "hsl(217 30% 13%)" }} tickLine={false} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ background: "hsl(222 28% 6% / 0.97)", border: "1px solid hsl(217 30% 16%)", borderRadius: "6px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 8px 24px hsl(0 0% 0% / 0.5)" }} cursor={{ stroke: "hsl(217 91% 60% / 0.3)", strokeWidth: 1, strokeDasharray: "4 4" }} />
+                    <Area type="monotone" dataKey="creator" name="Creator" stroke="hsl(217 91% 60%)" strokeWidth={1.5} fill="url(#dashGradC)" dot={false} activeDot={{ r: 3, fill: "hsl(217 91% 60%)", strokeWidth: 0 }} />
+                    <Area type="monotone" dataKey="pro" name="Pro" stroke="hsl(38 92% 50%)" strokeWidth={1.5} fill="url(#dashGradP)" dot={false} activeDot={{ r: 3, fill: "hsl(38 92% 50%)", strokeWidth: 0 }} />
+                    <Area type="monotone" dataKey="agency" name="Agency" stroke="hsl(142 70% 45%)" strokeWidth={1.5} fill="url(#dashGradA)" dot={false} activeDot={{ r: 3, fill: "hsl(142 70% 45%)", strokeWidth: 0 }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center gap-2"><p className="text-[10px] font-mono text-muted-foreground/40 tracking-widest uppercase">Awaiting market data</p></div>
+              )}
+            </div>
+            <div className="flex items-center gap-4 px-4 py-2 border-t" style={{ borderColor: "hsl(217 30% 11%)" }}>
+              {[{ l: "Creator", c: "hsl(217 91% 60%)", v: planDistribution.find((p) => p.name === "Creator")?.value ?? 0 }, { l: "Pro", c: "hsl(38 92% 50%)", v: planDistribution.find((p) => p.name === "Pro")?.value ?? 0 }, { l: "Agency", c: "hsl(142 70% 45%)", v: planDistribution.find((p) => p.name === "Agency")?.value ?? 0 }].map((i) => (<div key={i.l} className="flex items-center gap-1.5"><span className="w-4 h-[2px] rounded-full" style={{ background: i.c }} /><span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-wider">{i.l}</span><span className="text-[10px] font-mono" style={{ color: i.c }}>{i.v}</span></div>))}
+              <span className="ml-auto text-[9px] font-mono text-muted-foreground/25">RobinOS Analytics v1</span>
             </div>
           </div>
         </SectionCard>
@@ -1005,22 +1034,76 @@ const AdminDashboard = () => {
   const renderAnalyticsPage = () => (
     <div className="space-y-4">
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <SectionCard title="Revenue Analytics" subtitle="MRR, ARR and monthly revenue trends">
+        {/* ── Revenue Analytics — trading terminal ── */}
+        <SectionCard
+          title={<div className="flex items-center gap-2"><span className="text-sm font-semibold text-foreground">Revenue Analytics</span><span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-mono tracking-widest" style={{ background: "hsl(217 91% 60% / 0.12)", border: "1px solid hsl(217 91% 60% / 0.25)", color: "hsl(217 95% 72%)" }}><span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />LIVE</span></div>}
+          subtitle={<span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:MRR · Monthly recurring revenue</span>}
+        >
           <div className="mb-3 grid grid-cols-3 gap-2">
             <div className="rounded-md border border-border/50 bg-secondary/30 p-3"><p className="text-[11px] text-muted-foreground">MRR</p><p className="mt-1 font-semibold text-foreground">{formatCurrency(mrr)}</p></div>
             <div className="rounded-md border border-border/50 bg-secondary/30 p-3"><p className="text-[11px] text-muted-foreground">ARR</p><p className="mt-1 font-semibold text-foreground">{formatCurrency(arr)}</p></div>
             <div className="rounded-md border border-border/50 bg-secondary/30 p-3"><p className="text-[11px] text-muted-foreground">Growth</p><p className="mt-1 font-semibold text-foreground">{growthPercent.toFixed(1)}%</p></div>
           </div>
-          <div className="h-64"><ResponsiveContainer width="100%" height="100%"><AreaChart data={dailySeries}><CartesianGrid stroke="hsl(var(--border) / 0.35)" strokeDasharray="3 3" /><XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} /><YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} /><Tooltip contentStyle={{ background: "hsl(var(--background) / 0.95)", border: "1px solid hsl(var(--border) / 0.6)", borderRadius: "8px" }} /><Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.2)" strokeWidth={2} /></AreaChart></ResponsiveContainer></div>
+          <div className="relative rounded-lg overflow-hidden" style={{ background: "linear-gradient(180deg, hsl(222 28% 4%) 0%, hsl(222 24% 3%) 100%)", border: "1px solid hsl(217 30% 11%)" }}>
+            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 30% 13% / 0.35) 0px, transparent 1px, transparent 36px, hsl(217 30% 13% / 0.35) 37px)", backgroundSize: "100% 37px" }} />
+            <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "hsl(217 30% 11%)" }}>
+              <span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:MRR</span>
+              <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground/40"><span>1D</span><span className="text-primary/80">7D</span><span>30D</span></div>
+            </div>
+            <div className="h-56 px-1 pt-2 pb-1">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={dailySeries} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <defs><linearGradient id="gradRevA" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(217 91% 60%)" stopOpacity={0.22} /><stop offset="95%" stopColor="hsl(217 91% 60%)" stopOpacity={0} /></linearGradient></defs>
+                  <CartesianGrid vertical={false} stroke="hsl(217 30% 13% / 0)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={{ stroke: "hsl(217 30% 13%)" }} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ background: "hsl(222 28% 6% / 0.97)", border: "1px solid hsl(217 30% 16%)", borderRadius: "6px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 8px 24px hsl(0 0% 0% / 0.5)" }} cursor={{ stroke: "hsl(217 91% 60% / 0.3)", strokeWidth: 1, strokeDasharray: "4 4" }} />
+                  <Area type="monotone" dataKey="revenue" name="Revenue" stroke="hsl(217 91% 60%)" strokeWidth={1.5} fill="url(#gradRevA)" dot={false} activeDot={{ r: 3, fill: "hsl(217 91% 60%)", strokeWidth: 0 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex items-center gap-3 px-4 py-2 border-t" style={{ borderColor: "hsl(217 30% 11%)" }}>
+              <span className="w-4 h-[2px] rounded-full" style={{ background: "hsl(217 91% 60%)" }} />
+              <span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-wider">Revenue</span>
+              <span className="ml-auto text-[9px] font-mono text-muted-foreground/25">RobinOS Analytics v1</span>
+            </div>
+          </div>
         </SectionCard>
 
-        <SectionCard title="User Growth" subtitle="Signups and churn from real profiles/subscriptions">
+        {/* ── User Growth — trading terminal ── */}
+        <SectionCard
+          title={<div className="flex items-center gap-2"><span className="text-sm font-semibold text-foreground">User Growth</span><span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-mono tracking-widest" style={{ background: "hsl(38 92% 50% / 0.12)", border: "1px solid hsl(38 92% 50% / 0.25)", color: "hsl(38 92% 70%)" }}><span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />LIVE</span></div>}
+          subtitle={<span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:USR · Daily signups from profiles</span>}
+        >
           <div className="mb-3 grid grid-cols-3 gap-2">
             <div className="rounded-md border border-border/50 bg-secondary/30 p-3"><p className="text-[11px] text-muted-foreground">Daily Signups</p><p className="mt-1 font-semibold text-foreground">{formatNumber(dailySeries.at(-1)?.signups ?? 0)}</p></div>
             <div className="rounded-md border border-border/50 bg-secondary/30 p-3"><p className="text-[11px] text-muted-foreground">Churn</p><p className="mt-1 font-semibold text-foreground">{churnRate.toFixed(2)}%</p></div>
             <div className="rounded-md border border-border/50 bg-secondary/30 p-3"><p className="text-[11px] text-muted-foreground">Active Users</p><p className="mt-1 font-semibold text-foreground">{formatNumber(activeSubscribers)}</p></div>
           </div>
-          <div className="h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={dailySeries}><CartesianGrid stroke="hsl(var(--border) / 0.35)" strokeDasharray="3 3" /><XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} /><YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} /><Tooltip contentStyle={{ background: "hsl(var(--background) / 0.95)", border: "1px solid hsl(var(--border) / 0.6)", borderRadius: "8px" }} /><Bar dataKey="signups" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div>
+          <div className="relative rounded-lg overflow-hidden" style={{ background: "linear-gradient(180deg, hsl(222 28% 4%) 0%, hsl(222 24% 3%) 100%)", border: "1px solid hsl(217 30% 11%)" }}>
+            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 30% 13% / 0.35) 0px, transparent 1px, transparent 36px, hsl(217 30% 13% / 0.35) 37px)", backgroundSize: "100% 37px" }} />
+            <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "hsl(217 30% 11%)" }}>
+              <span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:USR</span>
+              <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground/40"><span>1D</span><span className="text-amber-400/80">7D</span><span>30D</span></div>
+            </div>
+            <div className="h-56 px-1 pt-2 pb-1">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={dailySeries} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <defs><linearGradient id="gradBar" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(38 92% 50%)" stopOpacity={0.9} /><stop offset="100%" stopColor="hsl(38 92% 50%)" stopOpacity={0.4} /></linearGradient></defs>
+                  <CartesianGrid vertical={false} stroke="hsl(217 30% 13% / 0)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={{ stroke: "hsl(217 30% 13%)" }} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ background: "hsl(222 28% 6% / 0.97)", border: "1px solid hsl(217 30% 16%)", borderRadius: "6px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 8px 24px hsl(0 0% 0% / 0.5)" }} cursor={{ fill: "hsl(217 91% 60% / 0.05)" }} />
+                  <Bar dataKey="signups" name="Signups" fill="url(#gradBar)" radius={[3, 3, 0, 0]} maxBarSize={24} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex items-center gap-3 px-4 py-2 border-t" style={{ borderColor: "hsl(217 30% 11%)" }}>
+              <span className="w-4 h-[2px] rounded-full" style={{ background: "hsl(38 92% 50%)" }} />
+              <span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-wider">Daily Signups</span>
+              <span className="ml-auto text-[9px] font-mono text-muted-foreground/25">RobinOS Analytics v1</span>
+            </div>
+          </div>
         </SectionCard>
       </section>
 
@@ -1042,17 +1125,34 @@ const AdminDashboard = () => {
           </div>
         </SectionCard>
 
-        <SectionCard title="Top Feature Usage" subtitle="Feature usage from feature_usage table">
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topFeatureUsage.length ? topFeatureUsage : [{ feature: "No data", value: 0 }]}> 
-                <CartesianGrid stroke="hsl(var(--border) / 0.35)" strokeDasharray="3 3" />
-                <XAxis dataKey="feature" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
-                <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
-                <Tooltip contentStyle={{ background: "hsl(var(--background) / 0.95)", border: "1px solid hsl(var(--border) / 0.6)", borderRadius: "8px" }} />
-                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+        {/* ── Top Feature Usage — trading terminal ── */}
+        <SectionCard
+          title={<div className="flex items-center gap-2"><span className="text-sm font-semibold text-foreground">Top Feature Usage</span><span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-mono tracking-widest" style={{ background: "hsl(172 70% 40% / 0.12)", border: "1px solid hsl(172 70% 40% / 0.25)", color: "hsl(172 70% 60%)" }}><span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />LIVE</span></div>}
+          subtitle={<span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:FEAT · Usage from feature_usage table</span>}
+        >
+          <div className="relative rounded-lg overflow-hidden" style={{ background: "linear-gradient(180deg, hsl(222 28% 4%) 0%, hsl(222 24% 3%) 100%)", border: "1px solid hsl(217 30% 11%)" }}>
+            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 30% 13% / 0.35) 0px, transparent 1px, transparent 36px, hsl(217 30% 13% / 0.35) 37px)", backgroundSize: "100% 37px" }} />
+            <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "hsl(217 30% 11%)" }}>
+              <span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:FEAT</span>
+              <span className="text-[9px] font-mono text-muted-foreground/30">TOP {Math.min(topFeatureUsage.length, 6)}</span>
+            </div>
+            <div className="h-[220px] px-1 pt-2 pb-1">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={topFeatureUsage.length ? topFeatureUsage : [{ feature: "No data", value: 0 }]} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <defs><linearGradient id="gradFeat" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(172 70% 45%)" stopOpacity={0.9} /><stop offset="100%" stopColor="hsl(172 70% 45%)" stopOpacity={0.4} /></linearGradient></defs>
+                  <CartesianGrid vertical={false} stroke="hsl(217 30% 13% / 0)" />
+                  <XAxis dataKey="feature" tick={{ fontSize: 8, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={{ stroke: "hsl(217 30% 13%)" }} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ background: "hsl(222 28% 6% / 0.97)", border: "1px solid hsl(217 30% 16%)", borderRadius: "6px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 8px 24px hsl(0 0% 0% / 0.5)" }} cursor={{ fill: "hsl(217 91% 60% / 0.05)" }} />
+                  <Bar dataKey="value" name="Usage" fill="url(#gradFeat)" radius={[3, 3, 0, 0]} maxBarSize={32} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex items-center gap-3 px-4 py-2 border-t" style={{ borderColor: "hsl(217 30% 11%)" }}>
+              <span className="w-4 h-[2px] rounded-full" style={{ background: "hsl(172 70% 45%)" }} />
+              <span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-wider">Feature Events</span>
+              <span className="ml-auto text-[9px] font-mono text-muted-foreground/25">RobinOS Analytics v1</span>
+            </div>
           </div>
         </SectionCard>
       </section>
@@ -1497,11 +1597,71 @@ const AdminDashboard = () => {
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <SectionCard title="Top Affiliates" subtitle="email, clicks, conversions, earned"><DataTable headers={["email", "clicks", "conversions", "earned"]} colSpan={4} empty={!affiliateProfiles.length}>{affiliateProfiles.slice(0, 10).map((a) => <tr key={a.user_id} className="border-t border-border/40"><td className="p-3 text-foreground">{profileMap.get(a.user_id)?.email ?? a.user_id.slice(0, 8)}</td><td className="p-3 font-mono text-foreground">{formatNumber(a.total_clicks)}</td><td className="p-3 font-mono text-foreground">{formatNumber(a.total_conversions)}</td><td className="p-3 font-mono text-primary">{formatCurrency(a.total_earned)}</td></tr>)}</DataTable></SectionCard>
-        <SectionCard title="Referral Conversion Analytics" subtitle="Conversions and earnings by affiliate"><div className="h-72"><ResponsiveContainer width="100%" height="100%"><BarChart data={affiliateProfiles.slice(0, 10).map((a) => ({ email: (profileMap.get(a.user_id)?.email || a.user_id).split("@")[0], conversions: a.total_conversions, earned: a.total_earned }))}><CartesianGrid stroke="hsl(var(--border) / 0.35)" strokeDasharray="3 3" /><XAxis dataKey="email" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} /><YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} /><Tooltip contentStyle={{ background: "hsl(var(--background) / 0.95)", border: "1px solid hsl(var(--border) / 0.6)", borderRadius: "8px" }} /><Legend /><Bar dataKey="conversions" fill="hsl(var(--primary))" /><Bar dataKey="earned" fill="hsl(var(--primary) / 0.45)" /></BarChart></ResponsiveContainer></div></SectionCard>
+        <SectionCard
+          title={<div className="flex items-center gap-2"><span className="text-sm font-semibold text-foreground">Referral Conversion Analytics</span><span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-mono tracking-widest" style={{ background: "hsl(217 91% 60% / 0.12)", border: "1px solid hsl(217 91% 60% / 0.25)", color: "hsl(217 95% 72%)" }}><span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />LIVE</span></div>}
+          subtitle={<span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:AFF · Conversions and earnings by affiliate</span>}
+        >
+          <div className="relative rounded-lg overflow-hidden" style={{ background: "linear-gradient(180deg, hsl(222 28% 4%) 0%, hsl(222 24% 3%) 100%)", border: "1px solid hsl(217 30% 11%)" }}>
+            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 30% 13% / 0.35) 0px, transparent 1px, transparent 36px, hsl(217 30% 13% / 0.35) 37px)", backgroundSize: "100% 37px" }} />
+            <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "hsl(217 30% 11%)" }}>
+              <span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:AFF</span>
+              <div className="flex items-center gap-3 text-[9px] font-mono"><span className="flex items-center gap-1"><span className="w-3 h-[2px] rounded-full" style={{ background: "hsl(217 91% 60%)" }} />Conversions</span><span className="flex items-center gap-1"><span className="w-3 h-[2px] rounded-full" style={{ background: "hsl(38 92% 50%)" }} />Earned</span></div>
+            </div>
+            <div className="h-64 px-1 pt-2 pb-1">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={affiliateProfiles.slice(0, 10).map((a) => ({ email: (profileMap.get(a.user_id)?.email || a.user_id).split("@")[0], conversions: a.total_conversions, earned: a.total_earned }))} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gradAffC" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(217 91% 60%)" stopOpacity={0.9} /><stop offset="100%" stopColor="hsl(217 91% 60%)" stopOpacity={0.4} /></linearGradient>
+                    <linearGradient id="gradAffE" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(38 92% 50%)" stopOpacity={0.85} /><stop offset="100%" stopColor="hsl(38 92% 50%)" stopOpacity={0.35} /></linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} stroke="hsl(217 30% 13% / 0)" />
+                  <XAxis dataKey="email" tick={{ fontSize: 8, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={{ stroke: "hsl(217 30% 13%)" }} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ background: "hsl(222 28% 6% / 0.97)", border: "1px solid hsl(217 30% 16%)", borderRadius: "6px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 8px 24px hsl(0 0% 0% / 0.5)" }} cursor={{ fill: "hsl(217 91% 60% / 0.05)" }} />
+                  <Bar dataKey="conversions" name="Conversions" fill="url(#gradAffC)" radius={[3, 3, 0, 0]} maxBarSize={20} />
+                  <Bar dataKey="earned" name="Earned" fill="url(#gradAffE)" radius={[3, 3, 0, 0]} maxBarSize={20} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex items-center gap-3 px-4 py-2 border-t" style={{ borderColor: "hsl(217 30% 11%)" }}>
+              <span className="w-4 h-[2px] rounded-full" style={{ background: "hsl(217 91% 60%)" }} /><span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-wider">Conversions</span>
+              <span className="w-4 h-[2px] rounded-full" style={{ background: "hsl(38 92% 50%)" }} /><span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-wider">Earned</span>
+              <span className="ml-auto text-[9px] font-mono text-muted-foreground/25">RobinOS Analytics v1</span>
+            </div>
+          </div>
+        </SectionCard>
       </section>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <SectionCard title="Affiliate Growth" subtitle="Affiliate onboarding over time"><div className="h-72"><ResponsiveContainer width="100%" height="100%"><AreaChart data={dailySeries}><CartesianGrid stroke="hsl(var(--border) / 0.35)" strokeDasharray="3 3" /><XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} /><YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} /><Tooltip contentStyle={{ background: "hsl(var(--background) / 0.95)", border: "1px solid hsl(var(--border) / 0.6)", borderRadius: "8px" }} /><Area type="monotone" dataKey="users" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.18)" strokeWidth={2} /></AreaChart></ResponsiveContainer></div></SectionCard>
+        <SectionCard
+          title={<div className="flex items-center gap-2"><span className="text-sm font-semibold text-foreground">Affiliate Growth</span><span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-mono tracking-widest" style={{ background: "hsl(142 70% 40% / 0.12)", border: "1px solid hsl(142 70% 40% / 0.25)", color: "hsl(142 70% 60%)" }}><span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />LIVE</span></div>}
+          subtitle={<span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:AFFG · Affiliate onboarding over time</span>}
+        >
+          <div className="relative rounded-lg overflow-hidden" style={{ background: "linear-gradient(180deg, hsl(222 28% 4%) 0%, hsl(222 24% 3%) 100%)", border: "1px solid hsl(217 30% 11%)" }}>
+            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 30% 13% / 0.35) 0px, transparent 1px, transparent 36px, hsl(217 30% 13% / 0.35) 37px)", backgroundSize: "100% 37px" }} />
+            <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "hsl(217 30% 11%)" }}>
+              <span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:AFFG</span>
+              <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground/40"><span>1D</span><span className="text-emerald-400/80">7D</span><span>30D</span></div>
+            </div>
+            <div className="h-64 px-1 pt-2 pb-1">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={dailySeries} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <defs><linearGradient id="gradAffG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(142 70% 45%)" stopOpacity={0.2} /><stop offset="95%" stopColor="hsl(142 70% 45%)" stopOpacity={0} /></linearGradient></defs>
+                  <CartesianGrid vertical={false} stroke="hsl(217 30% 13% / 0)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={{ stroke: "hsl(217 30% 13%)" }} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ background: "hsl(222 28% 6% / 0.97)", border: "1px solid hsl(217 30% 16%)", borderRadius: "6px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 8px 24px hsl(0 0% 0% / 0.5)" }} cursor={{ stroke: "hsl(142 70% 45% / 0.3)", strokeWidth: 1, strokeDasharray: "4 4" }} />
+                  <Area type="monotone" dataKey="users" name="Users" stroke="hsl(142 70% 45%)" strokeWidth={1.5} fill="url(#gradAffG)" dot={false} activeDot={{ r: 3, fill: "hsl(142 70% 45%)", strokeWidth: 0 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex items-center gap-3 px-4 py-2 border-t" style={{ borderColor: "hsl(217 30% 11%)" }}>
+              <span className="w-4 h-[2px] rounded-full" style={{ background: "hsl(142 70% 45%)" }} />
+              <span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-wider">Total Users</span>
+              <span className="ml-auto text-[9px] font-mono text-muted-foreground/25">RobinOS Analytics v1</span>
+            </div>
+          </div>
+        </SectionCard>
         <SectionCard title="Pending Commission Queue" subtitle="Commissions waiting for processing"><DataTable headers={["affiliate", "commission", "created"]} colSpan={3} empty={!affiliateCommissions.filter((c) => c.status === "pending").length}>{affiliateCommissions.filter((c) => c.status === "pending").slice(0, 10).map((c) => <tr key={c.id} className="border-t border-border/40"><td className="p-3 text-foreground">{profileMap.get(c.affiliate_user_id)?.email ?? c.affiliate_user_id.slice(0, 8)}</td><td className="p-3 font-mono text-foreground">{formatCurrency(c.amount)}</td><td className="p-3 text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</td></tr>)}</DataTable></SectionCard>
       </section>
     </div>
