@@ -278,35 +278,86 @@ const estimateGenerationCost = (provider: string | null, creditsUsed: number) =>
   return Number(creditsUsed || 0) * perCredit;
 };
 
+// ── Live badge ──────────────────────────────────────────────
+const LiveBadge = ({ color = "blue" }: { color?: "blue" | "green" | "amber" | "teal" }) => {
+  const palette: Record<string, { bg: string; border: string; text: string }> = {
+    blue:  { bg: "hsl(217 91% 60% / 0.1)",  border: "hsl(217 91% 60% / 0.22)", text: "hsl(217 91% 72%)" },
+    green: { bg: "hsl(142 70% 45% / 0.1)",  border: "hsl(142 70% 45% / 0.22)", text: "hsl(142 70% 65%)" },
+    amber: { bg: "hsl(38 92% 50% / 0.1)",   border: "hsl(38 92% 50% / 0.22)",  text: "hsl(38 92% 68%)" },
+    teal:  { bg: "hsl(172 70% 40% / 0.1)",  border: "hsl(172 70% 40% / 0.22)", text: "hsl(172 70% 62%)" },
+  };
+  const c = palette[color];
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded px-1.5 py-0.5 text-[9px] font-mono tracking-widest"
+      style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text }}
+    >
+      <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />
+      LIVE
+    </span>
+  );
+};
+
+// ── Section card ─────────────────────────────────────────────
 const SectionCard = ({ title, subtitle, right, children }: { title: ReactNode; subtitle?: ReactNode; right?: ReactNode; children: ReactNode }) => (
-  <section className="rounded-lg border border-border/60 bg-card/45 p-4 backdrop-blur-md">
-    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+  <section
+    className="rounded-xl overflow-hidden"
+    style={{
+      background: "linear-gradient(135deg, hsl(222 28% 8% / 0.96) 0%, hsl(222 22% 6% / 0.96) 100%)",
+      border: "1px solid hsl(217 30% 14% / 0.85)",
+      boxShadow: "0 4px 32px hsl(0 0% 0% / 0.28), inset 0 1px 0 hsl(0 0% 100% / 0.03)",
+    }}
+  >
+    <div
+      className="flex flex-wrap items-center justify-between gap-3 px-5 py-4"
+      style={{ borderBottom: "1px solid hsl(217 28% 11% / 0.8)" }}
+    >
       <div>
-        <p className="text-sm font-medium text-foreground">{title}</p>
-        {subtitle ? <p className="text-[11px] text-muted-foreground">{subtitle}</p> : null}
+        <div className="text-sm font-semibold tracking-tight text-foreground/90">{title}</div>
+        {subtitle ? <div className="mt-0.5 text-[11px] leading-relaxed" style={{ color: "hsl(var(--muted-foreground) / 0.5)" }}>{subtitle}</div> : null}
       </div>
       {right}
     </div>
-    {children}
+    <div className="p-5">{children}</div>
   </section>
 );
 
+// ── Empty state ───────────────────────────────────────────────
 const EmptyState = ({ title, description }: { title: string; description: string }) => (
-  <div className="grid min-h-[180px] place-items-center rounded-lg border border-dashed border-border/70 bg-secondary/20 p-6 text-center">
-    <div>
-      <Inbox className="mx-auto mb-2 h-5 w-5 text-muted-foreground" />
-      <p className="text-sm font-medium text-foreground">{title}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+  <div
+    className="grid min-h-[160px] place-items-center rounded-lg p-8 text-center"
+    style={{
+      background: "hsl(222 32% 5% / 0.5)",
+      border: "1px dashed hsl(217 28% 15% / 0.5)",
+    }}
+  >
+    <div className="space-y-2.5">
+      <div
+        className="mx-auto w-9 h-9 rounded-xl flex items-center justify-center"
+        style={{ background: "hsl(217 28% 9%)", border: "1px solid hsl(217 28% 16%)" }}
+      >
+        <Inbox className="h-4 w-4 text-muted-foreground/25" />
+      </div>
+      <p className="text-[9px] font-mono uppercase tracking-[0.18em] text-muted-foreground/35">{title}</p>
+      <p className="text-[10px] text-muted-foreground/22 max-w-[200px] mx-auto leading-relaxed">{description}</p>
     </div>
   </div>
 );
 
+// ── TinySparkline (legacy – kept for compatibility) ───────────
 const TinySparkline = ({ data }: { data: SparkPoint[] }) => {
   const max = Math.max(...data.map((d) => d.v), 1);
   return (
-    <div className="mt-2 flex h-8 items-end gap-1">
+    <div className="mt-2 flex h-8 items-end gap-0.5">
       {data.map((d, i) => (
-        <span key={i} className="w-1.5 rounded-sm bg-primary/70" style={{ height: `${Math.max(8, (d.v / max) * 28)}px` }} />
+        <span
+          key={i}
+          className="flex-1 rounded-sm"
+          style={{
+            height: `${Math.max(20, (d.v / max) * 100)}%`,
+            background: i === data.length - 1 ? "hsl(217 91% 60%)" : `hsl(217 91% 60% / ${0.15 + (i / data.length) * 0.5})`,
+          }}
+        />
       ))}
     </div>
   );
@@ -445,17 +496,21 @@ const MetricCard = ({ label, value, icon: Icon, spark, growth }: { label: string
 };
 
 const DataTable = ({ headers, children, empty, colSpan }: { headers: string[]; children: ReactNode; empty?: boolean; colSpan: number }) => (
-  <div className="overflow-auto rounded-lg border border-border/50">
+  <div className="overflow-auto rounded-lg" style={{ border: "1px solid hsl(217 28% 11% / 0.8)" }}>
     <table className="w-full min-w-[760px] text-xs">
-      <thead className="bg-secondary/40 text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
-        <tr>{headers.map((h) => <th key={h} className="p-3 text-left">{h}</th>)}</tr>
+      <thead style={{ background: "hsl(222 28% 5%)", borderBottom: "1px solid hsl(217 28% 11%)" }}>
+        <tr>
+          {headers.map((h) => (
+            <th key={h} className="px-4 py-3 text-left text-[9px] font-mono uppercase tracking-[0.14em]" style={{ color: "hsl(var(--muted-foreground) / 0.35)" }}>{h}</th>
+          ))}
+        </tr>
       </thead>
       <tbody>
         {children}
         {empty ? (
           <tr>
             <td colSpan={colSpan} className="p-0">
-              <EmptyState title="No records yet" description="Live backend data will appear here as activity starts." />
+              <EmptyState title="No records detected" description="Live backend data will stream here as activity starts." />
             </td>
           </tr>
         ) : null}
@@ -465,14 +520,149 @@ const DataTable = ({ headers, children, empty, colSpan }: { headers: string[]; c
 );
 
 const PaginationControls = ({ page, totalPages, setPage }: { page: number; totalPages: number; setPage: (page: number) => void }) => (
-  <div className="flex items-center justify-between border-t border-border/40 px-3 py-2 text-xs">
-    <span className="text-muted-foreground">Page {page} of {totalPages}</span>
+  <div className="flex items-center justify-between px-4 py-3 text-xs" style={{ borderTop: "1px solid hsl(217 28% 11% / 0.6)" }}>
+    <span className="text-[9px] font-mono text-muted-foreground/30 tracking-wider">PAGE {page} / {totalPages}</span>
     <div className="flex items-center gap-1.5">
-      <button onClick={() => setPage(Math.max(page - 1, 1))} disabled={page <= 1} className="h-7 rounded-md border border-border/60 px-2 text-foreground disabled:opacity-40">Prev</button>
-      <button onClick={() => setPage(Math.min(page + 1, totalPages))} disabled={page >= totalPages} className="h-7 rounded-md border border-border/60 px-2 text-foreground disabled:opacity-40">Next</button>
+      <button
+        onClick={() => setPage(Math.max(page - 1, 1))}
+        disabled={page <= 1}
+        className="h-7 rounded-md px-3 text-[10px] font-mono text-muted-foreground transition-all disabled:opacity-25 hover:text-foreground"
+        style={{ border: "1px solid hsl(217 28% 14%)", background: "hsl(222 28% 7%)" }}
+      >
+        ← PREV
+      </button>
+      <button
+        onClick={() => setPage(Math.min(page + 1, totalPages))}
+        disabled={page >= totalPages}
+        className="h-7 rounded-md px-3 text-[10px] font-mono text-muted-foreground transition-all disabled:opacity-25 hover:text-foreground"
+        style={{ border: "1px solid hsl(217 28% 14%)", background: "hsl(222 28% 7%)" }}
+      >
+        NEXT →
+      </button>
     </div>
   </div>
 );
+
+// ── Shared chart: single area ────────────────────────────────
+const TerminalChart = ({
+  id, data, dataKey, color = "hsl(217 91% 60%)", height = 220, emptyMsg = "Awaiting telemetry.",
+}: {
+  id: string; data: object[]; dataKey: string; color?: string; height?: number; emptyMsg?: string;
+}) => (
+  <div
+    className="relative rounded-xl overflow-hidden"
+    style={{ background: "linear-gradient(180deg, hsl(222 32% 4%) 0%, hsl(222 26% 3%) 100%)", border: "1px solid hsl(217 28% 10%)" }}
+  >
+    <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 28% 12% / 0.22) 0px, transparent 1px, transparent 40px)", backgroundSize: "100% 40px" }} />
+    <div style={{ height }} className="px-1 pt-3 pb-1">
+      {(data as Record<string, unknown>[]).length ? (
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 4, right: 8, left: -24, bottom: 0 }}>
+            <defs>
+              <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={color} stopOpacity={0.2} />
+                <stop offset="95%" stopColor={color} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid vertical={false} stroke="hsl(217 28% 12% / 0)" />
+            <XAxis dataKey="date" tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.3)" }} axisLine={{ stroke: "hsl(217 28% 11%)" }} tickLine={false} />
+            <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.3)" }} axisLine={false} tickLine={false} />
+            <Tooltip
+              contentStyle={{ background: "hsl(222 28% 7% / 0.98)", border: `1px solid ${color.replace(")", " / 0.3)")}`, borderRadius: "8px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 12px 40px hsl(0 0% 0% / 0.6)" }}
+              cursor={{ stroke: `${color.replace(")", " / 0.25)")}`, strokeWidth: 1, strokeDasharray: "4 3" }}
+            />
+            <Area type="monotone" dataKey={dataKey} stroke={color} strokeWidth={1.5} fill={`url(#${id})`} dot={false} activeDot={{ r: 3, fill: color, strokeWidth: 0 }} />
+          </AreaChart>
+        </ResponsiveContainer>
+      ) : (
+        <div className="h-full flex flex-col items-center justify-center gap-2">
+          <p className="text-[9px] font-mono text-muted-foreground/25 tracking-widest uppercase">{emptyMsg}</p>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+// ── Shared chart: multi-area (plan distribution) ─────────────
+const MultiAreaChart = ({ id, data, height = 220 }: { id: string; data: Array<{ date: string; creator: number; pro: number; agency: number }>, height?: number }) => (
+  <div
+    className="relative rounded-xl overflow-hidden"
+    style={{ background: "linear-gradient(180deg, hsl(222 32% 4%) 0%, hsl(222 26% 3%) 100%)", border: "1px solid hsl(217 28% 10%)" }}
+  >
+    <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 28% 12% / 0.22) 0px, transparent 1px, transparent 40px)", backgroundSize: "100% 40px" }} />
+    <div style={{ height }} className="px-1 pt-3 pb-1">
+      {data.length > 0 ? (
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 4, right: 8, left: -24, bottom: 0 }}>
+            <defs>
+              <linearGradient id={`${id}C`} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(217 91% 60%)" stopOpacity={0.18} /><stop offset="95%" stopColor="hsl(217 91% 60%)" stopOpacity={0} /></linearGradient>
+              <linearGradient id={`${id}P`} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(38 92% 50%)" stopOpacity={0.14} /><stop offset="95%" stopColor="hsl(38 92% 50%)" stopOpacity={0} /></linearGradient>
+              <linearGradient id={`${id}A`} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(142 70% 45%)" stopOpacity={0.12} /><stop offset="95%" stopColor="hsl(142 70% 45%)" stopOpacity={0} /></linearGradient>
+            </defs>
+            <CartesianGrid vertical={false} stroke="hsl(217 28% 12% / 0)" />
+            <XAxis dataKey="date" tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.3)" }} axisLine={{ stroke: "hsl(217 28% 11%)" }} tickLine={false} />
+            <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.3)" }} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={{ background: "hsl(222 28% 7% / 0.98)", border: "1px solid hsl(217 28% 16%)", borderRadius: "8px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 12px 40px hsl(0 0% 0% / 0.6)" }} cursor={{ stroke: "hsl(217 91% 60% / 0.2)", strokeWidth: 1, strokeDasharray: "4 3" }} />
+            <Area type="monotone" dataKey="creator" name="Creator" stroke="hsl(217 91% 60%)" strokeWidth={1.5} fill={`url(#${id}C)`} dot={false} activeDot={{ r: 3, fill: "hsl(217 91% 60%)", strokeWidth: 0 }} />
+            <Area type="monotone" dataKey="pro" name="Pro" stroke="hsl(38 92% 50%)" strokeWidth={1.5} fill={`url(#${id}P)`} dot={false} activeDot={{ r: 3, fill: "hsl(38 92% 50%)", strokeWidth: 0 }} />
+            <Area type="monotone" dataKey="agency" name="Agency" stroke="hsl(142 70% 45%)" strokeWidth={1.5} fill={`url(#${id}A)`} dot={false} activeDot={{ r: 3, fill: "hsl(142 70% 45%)", strokeWidth: 0 }} />
+          </AreaChart>
+        </ResponsiveContainer>
+      ) : (
+        <div className="h-full flex flex-col items-center justify-center">
+          <p className="text-[9px] font-mono text-muted-foreground/25 tracking-widest uppercase">No subscription data yet.</p>
+        </div>
+      )}
+    </div>
+    <div className="flex items-center gap-4 px-4 py-2.5" style={{ borderTop: "1px solid hsl(217 28% 10%)" }}>
+      {[{ l: "Creator", c: "hsl(217 91% 60%)" }, { l: "Pro", c: "hsl(38 92% 50%)" }, { l: "Agency", c: "hsl(142 70% 45%)" }].map((i) => (
+        <div key={i.l} className="flex items-center gap-1.5">
+          <span className="w-3 h-[1.5px] rounded-full" style={{ background: i.c }} />
+          <span className="text-[9px] font-mono tracking-wider" style={{ color: "hsl(var(--muted-foreground) / 0.35)" }}>{i.l.toUpperCase()}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// ── PlanChip ──────────────────────────────────────────────────
+const PlanChip = ({ plan }: { plan: string }) => {
+  const cfg: Record<string, { label: string; cls: string }> = {
+    creator: { label: "Creator", cls: "bg-blue-500/8 text-blue-400/80 border-blue-500/20" },
+    pro:     { label: "Pro",     cls: "bg-amber-500/8 text-amber-400/80 border-amber-500/20" },
+    agency:  { label: "Agency",  cls: "bg-emerald-500/8 text-emerald-400/80 border-emerald-500/20" },
+  };
+  const { label, cls } = cfg[plan] ?? cfg.creator;
+  return <span className={`inline-flex rounded-md border px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider ${cls}`}>{label}</span>;
+};
+
+// ── StatusChip ────────────────────────────────────────────────
+const StatusChip = ({ status }: { status: string }) => {
+  const s = (status || "").toLowerCase();
+  const base = "inline-flex rounded-full border px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider";
+  if (s === "active")    return <span className={`${base} bg-emerald-500/10 text-emerald-400 border-emerald-500/25`}>active</span>;
+  if (s === "suspended") return <span className={`${base} bg-red-500/10 text-red-400 border-red-500/25`}>suspended</span>;
+  if (s === "cancelled") return <span className={`${base} bg-secondary/50 text-muted-foreground/50 border-border/40`}>cancelled</span>;
+  if (s === "past_due")  return <span className={`${base} bg-amber-500/10 text-amber-400 border-amber-500/25`}>past due</span>;
+  return <span className={`${base} bg-secondary/40 text-muted-foreground/40 border-border/30`}>{s || "—"}</span>;
+};
+
+// ── SourceBadge ───────────────────────────────────────────────
+const SourceBadge = ({ src }: { src: string }) => {
+  const cfg: Record<string, { label: string; cls: string }> = {
+    creem:            { label: "Paid",      cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25" },
+    dodo:             { label: "Paid",      cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25" },
+    stripe:           { label: "Paid",      cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25" },
+    manual_admin:     { label: "Manual",    cls: "bg-amber-500/10 text-amber-400 border-amber-500/25" },
+    promo:            { label: "Promo",     cls: "bg-purple-500/10 text-purple-400 border-purple-500/25" },
+    internal:         { label: "Internal",  cls: "bg-purple-500/10 text-purple-400 border-purple-500/25" },
+    affiliate_reward: { label: "Affiliate", cls: "bg-blue-500/10 text-blue-400 border-blue-500/25" },
+    migration:        { label: "Migration", cls: "bg-secondary/50 text-muted-foreground/50 border-border/40" },
+    trial:            { label: "Trial",     cls: "bg-secondary/50 text-muted-foreground/50 border-border/40" },
+  };
+  const { label, cls } = cfg[(src ?? "manual_admin").toLowerCase()] ?? cfg.manual_admin;
+  return <span className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-mono ${cls}`}>{label}</span>;
+};
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -1038,9 +1228,15 @@ const AdminDashboard = () => {
 
   if (authLoading || (user && roleLoading) || (!authLoading && user && isAdmin === false)) {
     return (
-      <div className="grid min-h-screen place-items-center bg-background">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Checking admin access...
+      <div className="grid min-h-screen place-items-center" style={{ background: "hsl(222 30% 4%)" }}>
+        <div className="text-center space-y-4">
+          <div className="mx-auto w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.2)" }}>
+            <Shield className="h-5 w-5" style={{ color: "hsl(217 91% 60%)" }} />
+          </div>
+          <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground/40 uppercase tracking-widest">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Verifying admin clearance...
+          </div>
         </div>
       </div>
     );
@@ -1058,215 +1254,265 @@ const AdminDashboard = () => {
   ];
 
   const renderDashboardPage = () => (
-    <div className="space-y-4">
-      <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">{dashboardMetrics.map((card) => <MetricCard key={card.label} label={card.label} value={card.value} growth={card.growth} icon={card.icon} spark={card.spark} />)}</section>
-
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        {/* ── Revenue Overview — trading terminal ── */}
-        <SectionCard
-          title={<div className="flex items-center gap-2"><span className="text-sm font-semibold text-foreground">Revenue Overview</span><span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-mono tracking-widest" style={{ background: "hsl(217 91% 60% / 0.12)", border: "1px solid hsl(217 91% 60% / 0.25)", color: "hsl(217 95% 72%)" }}><span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />LIVE</span></div>}
-          subtitle={<span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:REV · Active subscription value</span>}
-        >
-          <div className="relative rounded-lg overflow-hidden" style={{ background: "linear-gradient(180deg, hsl(222 28% 4%) 0%, hsl(222 24% 3%) 100%)", border: "1px solid hsl(217 30% 11%)" }}>
-            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 30% 13% / 0.35) 0px, transparent 1px, transparent 36px, hsl(217 30% 13% / 0.35) 37px)", backgroundSize: "100% 37px" }} />
-            <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "hsl(217 30% 11%)" }}>
-              <div className="flex items-center gap-3"><span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:REV</span><span className="text-[10px] font-mono" style={{ color: "hsl(217 91% 60%)" }}>{formatCurrency(monthlyRevenue)}</span></div>
-              <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground/40"><span>1D</span><span className="text-primary/80">7D</span><span>30D</span></div>
+    <div className="space-y-6">
+      {/* ── Hero ── */}
+      <div
+        className="rounded-2xl p-6 relative overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, hsl(222 32% 8%) 0%, hsl(217 40% 10%) 50%, hsl(222 28% 7%) 100%)",
+          border: "1px solid hsl(217 30% 14%)",
+          boxShadow: "0 8px 48px hsl(217 91% 60% / 0.05)",
+        }}
+      >
+        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 60% 40% at 80% 50%, hsl(217 91% 60% / 0.04), transparent)" }} />
+        <div className="relative flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-[9px] font-mono uppercase tracking-[0.22em]" style={{ color: "hsl(217 91% 60% / 0.6)" }}>ROBINOS COMMAND CENTER</span>
+              <LiveBadge />
             </div>
-            <div className="h-64 px-1 pt-2 pb-1">
-              {dailySeries.length ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={dailySeries} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                    <defs><linearGradient id="gradRev" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(217 91% 60%)" stopOpacity={0.22} /><stop offset="95%" stopColor="hsl(217 91% 60%)" stopOpacity={0} /></linearGradient></defs>
-                    <CartesianGrid vertical={false} stroke="hsl(217 30% 13% / 0)" />
-                    <XAxis dataKey="date" tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={{ stroke: "hsl(217 30% 13%)" }} tickLine={false} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ background: "hsl(222 28% 6% / 0.97)", border: "1px solid hsl(217 30% 16%)", borderRadius: "6px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 8px 24px hsl(0 0% 0% / 0.5)" }} cursor={{ stroke: "hsl(217 91% 60% / 0.3)", strokeWidth: 1, strokeDasharray: "4 4" }} />
-                    <Area type="monotone" dataKey="revenue" name="Revenue" stroke="hsl(217 91% 60%)" strokeWidth={1.5} fill="url(#gradRev)" dot={false} activeDot={{ r: 3, fill: "hsl(217 91% 60%)", strokeWidth: 0 }} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center gap-2"><p className="text-[10px] font-mono text-muted-foreground/40 tracking-widest uppercase">Awaiting market data</p><p className="text-[9px] font-mono text-muted-foreground/25">Chart populates after subscription records are available</p></div>
-              )}
+            <h2 className="text-xl font-bold text-foreground/90 tracking-tight">Executive Dashboard</h2>
+            <p className="mt-1 text-[11px] leading-relaxed" style={{ color: "hsl(var(--muted-foreground) / 0.45)" }}>
+              Platform-wide operational overview — revenue, users, AI activity, withdrawals.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="text-right">
+              <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/30">MRR</p>
+              <p className="text-lg font-bold text-foreground/90" style={{ fontVariantNumeric: "tabular-nums" }}>{formatCurrency(mrr)}</p>
             </div>
-            <div className="flex items-center gap-3 px-4 py-2 border-t" style={{ borderColor: "hsl(217 30% 11%)" }}>
-              <span className="w-4 h-[2px] rounded-full" style={{ background: "hsl(217 91% 60%)" }} />
-              <span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-wider">Revenue</span>
-              <span className="ml-auto text-[9px] font-mono text-muted-foreground/25">RobinOS Analytics v1</span>
+            <div className="w-px h-8" style={{ background: "hsl(217 28% 16%)" }} />
+            <div className="text-right">
+              <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/30">USERS</p>
+              <p className="text-lg font-bold text-foreground/90">{formatNumber(profiles.length)}</p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* ── Metric grid ── */}
+      <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {dashboardMetrics.map((card) => (
+          <MetricCard key={card.label} label={card.label} value={card.value} growth={card.growth} icon={card.icon} spark={card.spark} />
+        ))}
+      </section>
+
+      <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        {/* Revenue Overview chart */}
+        <SectionCard
+          title={<div className="flex items-center gap-2.5">Revenue Overview<LiveBadge /></div>}
+          subtitle={<span className="font-mono">ROBINOS:REV · Active subscription value</span>}
+        >
+          <TerminalChart id="gradRev" data={dailySeries} dataKey="revenue" color="hsl(217 91% 60%)" height={220} emptyMsg="Revenue stream inactive — awaiting subscription data." />
         </SectionCard>
 
-        {/* ── Plan Distribution (Dashboard) — trading terminal ── */}
+        {/* Plan Distribution chart */}
         <SectionCard
-          title={<div className="flex items-center gap-2"><span className="text-sm font-semibold text-foreground">Plan Distribution</span><span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-mono tracking-widest" style={{ background: "hsl(217 91% 60% / 0.12)", border: "1px solid hsl(217 91% 60% / 0.25)", color: "hsl(217 95% 72%)" }}><span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />LIVE</span></div>}
-          subtitle={<div className="flex items-center gap-3 mt-0.5"><span className="text-[10px] font-mono text-muted-foreground/60">PLAN / TOTAL ·</span>{planDistribution.map((p) => <span key={p.name} className="text-[10px] font-mono" style={{ color: p.fill }}>{p.name.toUpperCase()} {p.value > 0 ? `+${p.value}` : "—"}</span>)}</div>}
+          title={<div className="flex items-center gap-2.5">Plan Distribution<LiveBadge /></div>}
+          subtitle={
+            <span className="flex items-center gap-3 font-mono">
+              ROBINOS:PLANS ·{" "}
+              {planDistribution.map((p) => (
+                <span key={p.name} style={{ color: p.name === "Creator" ? "hsl(217 91% 60%)" : p.name === "Pro" ? "hsl(38 92% 50%)" : "hsl(142 70% 45%)" }}>
+                  {p.name.toUpperCase()} {p.value > 0 ? `+${p.value}` : "—"}
+                </span>
+              ))}
+            </span>
+          }
         >
-          <div className="relative rounded-lg overflow-hidden" style={{ background: "linear-gradient(180deg, hsl(222 28% 4%) 0%, hsl(222 24% 3%) 100%)", border: "1px solid hsl(217 30% 11%)" }}>
-            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 30% 13% / 0.35) 0px, transparent 1px, transparent 36px, hsl(217 30% 13% / 0.35) 37px)", backgroundSize: "100% 37px" }} />
-            <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "hsl(217 30% 11%)" }}>
-              <span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:PLANS</span>
-              <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground/40"><span>1D</span><span className="text-primary/80">7D</span><span>30D</span></div>
-            </div>
-            <div className="h-56 px-1 pt-2 pb-1">
-              {planDistributionTrend.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={planDistributionTrend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="dashGradC" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(217 91% 60%)" stopOpacity={0.18} /><stop offset="95%" stopColor="hsl(217 91% 60%)" stopOpacity={0} /></linearGradient>
-                      <linearGradient id="dashGradP" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(38 92% 50%)" stopOpacity={0.15} /><stop offset="95%" stopColor="hsl(38 92% 50%)" stopOpacity={0} /></linearGradient>
-                      <linearGradient id="dashGradA" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(142 70% 45%)" stopOpacity={0.12} /><stop offset="95%" stopColor="hsl(142 70% 45%)" stopOpacity={0} /></linearGradient>
-                    </defs>
-                    <CartesianGrid vertical={false} stroke="hsl(217 30% 13% / 0)" />
-                    <XAxis dataKey="date" tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={{ stroke: "hsl(217 30% 13%)" }} tickLine={false} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ background: "hsl(222 28% 6% / 0.97)", border: "1px solid hsl(217 30% 16%)", borderRadius: "6px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 8px 24px hsl(0 0% 0% / 0.5)" }} cursor={{ stroke: "hsl(217 91% 60% / 0.3)", strokeWidth: 1, strokeDasharray: "4 4" }} />
-                    <Area type="monotone" dataKey="creator" name="Creator" stroke="hsl(217 91% 60%)" strokeWidth={1.5} fill="url(#dashGradC)" dot={false} activeDot={{ r: 3, fill: "hsl(217 91% 60%)", strokeWidth: 0 }} />
-                    <Area type="monotone" dataKey="pro" name="Pro" stroke="hsl(38 92% 50%)" strokeWidth={1.5} fill="url(#dashGradP)" dot={false} activeDot={{ r: 3, fill: "hsl(38 92% 50%)", strokeWidth: 0 }} />
-                    <Area type="monotone" dataKey="agency" name="Agency" stroke="hsl(142 70% 45%)" strokeWidth={1.5} fill="url(#dashGradA)" dot={false} activeDot={{ r: 3, fill: "hsl(142 70% 45%)", strokeWidth: 0 }} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center gap-2"><p className="text-[10px] font-mono text-muted-foreground/40 tracking-widest uppercase">Awaiting market data</p></div>
-              )}
-            </div>
-            <div className="flex items-center gap-4 px-4 py-2 border-t" style={{ borderColor: "hsl(217 30% 11%)" }}>
-              {[{ l: "Creator", c: "hsl(217 91% 60%)", v: planDistribution.find((p) => p.name === "Creator")?.value ?? 0 }, { l: "Pro", c: "hsl(38 92% 50%)", v: planDistribution.find((p) => p.name === "Pro")?.value ?? 0 }, { l: "Agency", c: "hsl(142 70% 45%)", v: planDistribution.find((p) => p.name === "Agency")?.value ?? 0 }].map((i) => (<div key={i.l} className="flex items-center gap-1.5"><span className="w-4 h-[2px] rounded-full" style={{ background: i.c }} /><span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-wider">{i.l}</span><span className="text-[10px] font-mono" style={{ color: i.c }}>{i.v}</span></div>))}
-              <span className="ml-auto text-[9px] font-mono text-muted-foreground/25">RobinOS Analytics v1</span>
-            </div>
-          </div>
+          <MultiAreaChart id="dashPlan" data={planDistributionTrend} height={220} />
         </SectionCard>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <SectionCard title="Latest Users" subtitle="Latest 10 profiles"><DataTable headers={["email", "plan", "signup date"]} colSpan={3} empty={!usersEnriched.length}>{usersEnriched.slice(0, 10).map((u) => <tr key={u.user_id} className="border-t border-border/40"><td className="p-3 text-foreground">{u.email}</td><td className="p-3 uppercase text-muted-foreground">{u.plan}</td><td className="p-3 text-muted-foreground">{new Date(u.created_at).toLocaleDateString()}</td></tr>)}</DataTable></SectionCard>
-        <SectionCard title="Recent Subscriptions" subtitle="Latest active subscription updates"><DataTable headers={["customer", "amount", "currency", "status"]} colSpan={4} empty={!subscriptions.length}>{subscriptions.slice(0, 10).map((s) => <tr key={s.id} className="border-t border-border/40"><td className="p-3 text-foreground">{profileMap.get(s.user_id)?.email ?? s.user_id.slice(0, 8)}</td><td className="p-3 font-mono text-foreground">{formatCurrency(s.amount)}</td><td className="p-3 text-muted-foreground">{s.currency}</td><td className="p-3 text-muted-foreground">{s.status}</td></tr>)}</DataTable></SectionCard>
-        <SectionCard title="Recent Withdrawals" subtitle="Latest withdrawal requests"><DataTable headers={["affiliate", "amount", "payout", "status"]} colSpan={4} empty={!withdrawals.length}>{withdrawals.slice(0, 10).map((w) => <tr key={w.id} className="border-t border-border/40"><td className="p-3 text-foreground">{profileMap.get(w.user_id)?.email ?? w.user_id.slice(0, 8)}</td><td className="p-3 font-mono text-foreground">{formatCurrency(w.amount)}</td><td className="p-3 text-muted-foreground">{w.payout_method}</td><td className="p-3"><span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] uppercase ${statusClass[asWithdrawStatus(w.status)]}`}>{asWithdrawStatus(w.status)}</span></td></tr>)}</DataTable></SectionCard>
+      <section className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+        <SectionCard title="Latest Users" subtitle="Most recently registered accounts">
+          <DataTable headers={["email", "plan", "joined"]} colSpan={3} empty={!usersEnriched.length}>
+            {usersEnriched.slice(0, 8).map((u) => (
+              <tr key={u.user_id} className="border-t hover:bg-white/[0.015] transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}>
+                <td className="px-4 py-2.5 text-foreground/80">{u.email}</td>
+                <td className="px-4 py-2.5"><PlanChip plan={u.plan} /></td>
+                <td className="px-4 py-2.5 font-mono text-[10px] text-muted-foreground/40">{new Date(u.created_at).toLocaleDateString()}</td>
+              </tr>
+            ))}
+          </DataTable>
+        </SectionCard>
+        <SectionCard title="Recent Subscriptions" subtitle="Latest billing events">
+          <DataTable headers={["customer", "amount", "status"]} colSpan={3} empty={!subscriptions.length}>
+            {subscriptions.slice(0, 8).map((s) => (
+              <tr key={s.id} className="border-t hover:bg-white/[0.015] transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}>
+                <td className="px-4 py-2.5 text-foreground/80 truncate max-w-[140px]">{profileMap.get(s.user_id)?.email ?? s.user_id.slice(0, 8)}</td>
+                <td className="px-4 py-2.5 font-mono text-foreground/90">{formatCurrency(s.amount)}</td>
+                <td className="px-4 py-2.5"><StatusChip status={s.status} /></td>
+              </tr>
+            ))}
+          </DataTable>
+        </SectionCard>
+        <SectionCard title="Recent Withdrawals" subtitle="Pending payout requests">
+          <DataTable headers={["affiliate", "amount", "status"]} colSpan={3} empty={!withdrawals.length}>
+            {withdrawals.slice(0, 8).map((w) => (
+              <tr key={w.id} className="border-t hover:bg-white/[0.015] transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}>
+                <td className="px-4 py-2.5 text-foreground/80 truncate max-w-[140px]">{profileMap.get(w.user_id)?.email ?? w.user_id.slice(0, 8)}</td>
+                <td className="px-4 py-2.5 font-mono text-foreground/90">{formatCurrency(w.amount)}</td>
+                <td className="px-4 py-2.5"><span className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-mono uppercase ${statusClass[asWithdrawStatus(w.status)]}`}>{asWithdrawStatus(w.status)}</span></td>
+              </tr>
+            ))}
+          </DataTable>
+        </SectionCard>
       </section>
     </div>
   );
 
   const renderAnalyticsPage = () => (
-    <div className="space-y-4">
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        {/* ── Revenue Analytics — trading terminal ── */}
+    <div className="space-y-6">
+      {/* ── Hero ── */}
+      <div
+        className="rounded-2xl p-6 relative overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, hsl(222 32% 8%) 0%, hsl(228 40% 10%) 50%, hsl(222 28% 7%) 100%)",
+          border: "1px solid hsl(217 30% 14%)",
+          boxShadow: "0 8px 48px hsl(217 91% 60% / 0.04)",
+        }}
+      >
+        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 50% 60% at 90% 50%, hsl(217 91% 60% / 0.05), transparent)" }} />
+        <div className="relative">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="text-[9px] font-mono uppercase tracking-[0.22em]" style={{ color: "hsl(217 91% 60% / 0.55)" }}>INTELLIGENCE CENTER</span>
+            <LiveBadge />
+          </div>
+          <h2 className="text-xl font-bold text-foreground/90 tracking-tight">Platform Analytics</h2>
+          <p className="mt-1 text-[11px]" style={{ color: "hsl(var(--muted-foreground) / 0.4)" }}>
+            Realtime infrastructure, growth, and AI usage telemetry.
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-xl">
+            {[
+              { label: "MRR", val: formatCurrency(mrr) },
+              { label: "ARR", val: formatCurrency(arr) },
+              { label: "Growth", val: `${growthPercent.toFixed(1)}%` },
+              { label: "Churn", val: `${churnRate.toFixed(2)}%` },
+            ].map(({ label, val }) => (
+              <div key={label} className="rounded-xl px-3 py-2.5" style={{ background: "hsl(222 28% 5% / 0.7)", border: "1px solid hsl(217 28% 12%)" }}>
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/30">{label}</p>
+                <p className="mt-0.5 text-sm font-bold text-foreground/85" style={{ fontVariantNumeric: "tabular-nums" }}>{val}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Revenue + Signups charts ── */}
+      <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <SectionCard
-          title={<div className="flex items-center gap-2"><span className="text-sm font-semibold text-foreground">Revenue Analytics</span><span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-mono tracking-widest" style={{ background: "hsl(217 91% 60% / 0.12)", border: "1px solid hsl(217 91% 60% / 0.25)", color: "hsl(217 95% 72%)" }}><span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />LIVE</span></div>}
-          subtitle={<span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:MRR · Monthly recurring revenue</span>}
+          title={<div className="flex items-center gap-2.5">Revenue Analytics<LiveBadge /></div>}
+          subtitle={<span className="font-mono">ROBINOS:MRR · Monthly recurring revenue stream</span>}
         >
-          <div className="mb-3 grid grid-cols-3 gap-2">
-            <div className="rounded-md border border-border/50 bg-secondary/30 p-3"><p className="text-[11px] text-muted-foreground">MRR</p><p className="mt-1 font-semibold text-foreground">{formatCurrency(mrr)}</p></div>
-            <div className="rounded-md border border-border/50 bg-secondary/30 p-3"><p className="text-[11px] text-muted-foreground">ARR</p><p className="mt-1 font-semibold text-foreground">{formatCurrency(arr)}</p></div>
-            <div className="rounded-md border border-border/50 bg-secondary/30 p-3"><p className="text-[11px] text-muted-foreground">Growth</p><p className="mt-1 font-semibold text-foreground">{growthPercent.toFixed(1)}%</p></div>
-          </div>
-          <div className="relative rounded-lg overflow-hidden" style={{ background: "linear-gradient(180deg, hsl(222 28% 4%) 0%, hsl(222 24% 3%) 100%)", border: "1px solid hsl(217 30% 11%)" }}>
-            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 30% 13% / 0.35) 0px, transparent 1px, transparent 36px, hsl(217 30% 13% / 0.35) 37px)", backgroundSize: "100% 37px" }} />
-            <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "hsl(217 30% 11%)" }}>
-              <span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:MRR</span>
-              <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground/40"><span>1D</span><span className="text-primary/80">7D</span><span>30D</span></div>
-            </div>
-            <div className="h-56 px-1 pt-2 pb-1">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={dailySeries} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <defs><linearGradient id="gradRevA" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(217 91% 60%)" stopOpacity={0.22} /><stop offset="95%" stopColor="hsl(217 91% 60%)" stopOpacity={0} /></linearGradient></defs>
-                  <CartesianGrid vertical={false} stroke="hsl(217 30% 13% / 0)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={{ stroke: "hsl(217 30% 13%)" }} tickLine={false} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ background: "hsl(222 28% 6% / 0.97)", border: "1px solid hsl(217 30% 16%)", borderRadius: "6px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 8px 24px hsl(0 0% 0% / 0.5)" }} cursor={{ stroke: "hsl(217 91% 60% / 0.3)", strokeWidth: 1, strokeDasharray: "4 4" }} />
-                  <Area type="monotone" dataKey="revenue" name="Revenue" stroke="hsl(217 91% 60%)" strokeWidth={1.5} fill="url(#gradRevA)" dot={false} activeDot={{ r: 3, fill: "hsl(217 91% 60%)", strokeWidth: 0 }} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex items-center gap-3 px-4 py-2 border-t" style={{ borderColor: "hsl(217 30% 11%)" }}>
-              <span className="w-4 h-[2px] rounded-full" style={{ background: "hsl(217 91% 60%)" }} />
-              <span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-wider">Revenue</span>
-              <span className="ml-auto text-[9px] font-mono text-muted-foreground/25">RobinOS Analytics v1</span>
-            </div>
-          </div>
+          <TerminalChart id="gradRevA" data={dailySeries} dataKey="revenue" color="hsl(217 91% 60%)" height={200} emptyMsg="Revenue stream inactive." />
         </SectionCard>
 
-        {/* ── User Growth — trading terminal ── */}
         <SectionCard
-          title={<div className="flex items-center gap-2"><span className="text-sm font-semibold text-foreground">User Growth</span><span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-mono tracking-widest" style={{ background: "hsl(38 92% 50% / 0.12)", border: "1px solid hsl(38 92% 50% / 0.25)", color: "hsl(38 92% 70%)" }}><span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />LIVE</span></div>}
-          subtitle={<span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:USR · Daily signups from profiles</span>}
+          title={<div className="flex items-center gap-2.5">User Growth<LiveBadge color="amber" /></div>}
+          subtitle={<span className="font-mono">ROBINOS:USR · Daily signup cadence</span>}
         >
-          <div className="mb-3 grid grid-cols-3 gap-2">
-            <div className="rounded-md border border-border/50 bg-secondary/30 p-3"><p className="text-[11px] text-muted-foreground">Daily Signups</p><p className="mt-1 font-semibold text-foreground">{formatNumber(dailySeries.at(-1)?.signups ?? 0)}</p></div>
-            <div className="rounded-md border border-border/50 bg-secondary/30 p-3"><p className="text-[11px] text-muted-foreground">Churn</p><p className="mt-1 font-semibold text-foreground">{churnRate.toFixed(2)}%</p></div>
-            <div className="rounded-md border border-border/50 bg-secondary/30 p-3"><p className="text-[11px] text-muted-foreground">Active Users</p><p className="mt-1 font-semibold text-foreground">{formatNumber(activeSubscribers)}</p></div>
-          </div>
-          <div className="relative rounded-lg overflow-hidden" style={{ background: "linear-gradient(180deg, hsl(222 28% 4%) 0%, hsl(222 24% 3%) 100%)", border: "1px solid hsl(217 30% 11%)" }}>
-            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 30% 13% / 0.35) 0px, transparent 1px, transparent 36px, hsl(217 30% 13% / 0.35) 37px)", backgroundSize: "100% 37px" }} />
-            <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "hsl(217 30% 11%)" }}>
-              <span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:USR</span>
-              <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground/40"><span>1D</span><span className="text-amber-400/80">7D</span><span>30D</span></div>
-            </div>
-            <div className="h-56 px-1 pt-2 pb-1">
+          <div
+            className="relative rounded-xl overflow-hidden"
+            style={{ background: "linear-gradient(180deg, hsl(222 32% 4%) 0%, hsl(222 26% 3%) 100%)", border: "1px solid hsl(217 28% 10%)" }}
+          >
+            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 28% 12% / 0.22) 0px, transparent 1px, transparent 40px)", backgroundSize: "100% 40px" }} />
+            <div className="h-[200px] px-1 pt-3 pb-1">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={dailySeries} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <defs><linearGradient id="gradBar" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(38 92% 50%)" stopOpacity={0.9} /><stop offset="100%" stopColor="hsl(38 92% 50%)" stopOpacity={0.4} /></linearGradient></defs>
-                  <CartesianGrid vertical={false} stroke="hsl(217 30% 13% / 0)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={{ stroke: "hsl(217 30% 13%)" }} tickLine={false} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ background: "hsl(222 28% 6% / 0.97)", border: "1px solid hsl(217 30% 16%)", borderRadius: "6px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 8px 24px hsl(0 0% 0% / 0.5)" }} cursor={{ fill: "hsl(217 91% 60% / 0.05)" }} />
-                  <Bar dataKey="signups" name="Signups" fill="url(#gradBar)" radius={[3, 3, 0, 0]} maxBarSize={24} />
+                <BarChart data={dailySeries} margin={{ top: 4, right: 8, left: -24, bottom: 0 }}>
+                  <defs><linearGradient id="gradSignups" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(38 92% 50%)" stopOpacity={0.88} /><stop offset="100%" stopColor="hsl(38 92% 50%)" stopOpacity={0.35} /></linearGradient></defs>
+                  <CartesianGrid vertical={false} stroke="hsl(217 28% 12% / 0)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.3)" }} axisLine={{ stroke: "hsl(217 28% 11%)" }} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.3)" }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ background: "hsl(222 28% 7% / 0.98)", border: "1px solid hsl(38 92% 50% / 0.25)", borderRadius: "8px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 12px 40px hsl(0 0% 0% / 0.6)" }} cursor={{ fill: "hsl(38 92% 50% / 0.04)" }} />
+                  <Bar dataKey="signups" name="Signups" fill="url(#gradSignups)" radius={[3, 3, 0, 0]} maxBarSize={20} />
                 </BarChart>
               </ResponsiveContainer>
-            </div>
-            <div className="flex items-center gap-3 px-4 py-2 border-t" style={{ borderColor: "hsl(217 30% 11%)" }}>
-              <span className="w-4 h-[2px] rounded-full" style={{ background: "hsl(38 92% 50%)" }} />
-              <span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-wider">Daily Signups</span>
-              <span className="ml-auto text-[9px] font-mono text-muted-foreground/25">RobinOS Analytics v1</span>
             </div>
           </div>
         </SectionCard>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <SectionCard title="AI Usage" subtitle="Script, trends, voice, video generations">
+      {/* ── AI Telemetry + Feature Usage ── */}
+      <section className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+        <SectionCard title="AI Telemetry" subtitle="Generation events across all AI pipelines">
           <div className="space-y-2">
-            <div className="rounded-md border border-border/50 bg-secondary/30 p-3"><div className="flex items-center justify-between"><span className="text-xs text-muted-foreground">Scripts generated</span><Sparkles className="h-4 w-4 text-primary" /></div><p className="mt-1 font-semibold text-foreground">{formatNumber(scriptsGenerated)}</p></div>
-            <div className="rounded-md border border-border/50 bg-secondary/30 p-3"><div className="flex items-center justify-between"><span className="text-xs text-muted-foreground">Trend scans</span><BarChart3 className="h-4 w-4 text-primary" /></div><p className="mt-1 font-semibold text-foreground">{formatNumber(trendSearches)}</p></div>
-            <div className="rounded-md border border-border/50 bg-secondary/30 p-3"><div className="flex items-center justify-between"><span className="text-xs text-muted-foreground">Voice generations</span><Mic className="h-4 w-4 text-primary" /></div><p className="mt-1 font-semibold text-foreground">{formatNumber(voiceGenerations)}</p></div>
-            <div className="rounded-md border border-border/50 bg-secondary/30 p-3"><div className="flex items-center justify-between"><span className="text-xs text-muted-foreground">Video generations</span><Video className="h-4 w-4 text-primary" /></div><p className="mt-1 font-semibold text-foreground">{formatNumber(videoGenerations)}</p></div>
+            {[
+              { label: "Scripts generated", val: formatNumber(scriptsGenerated), icon: Sparkles, color: "hsl(217 91% 60%)" },
+              { label: "Trend scans",        val: formatNumber(trendSearches),   icon: BarChart3, color: "hsl(142 70% 45%)" },
+              { label: "Voice generations",  val: formatNumber(voiceGenerations), icon: Mic,      color: "hsl(38 92% 50%)" },
+              { label: "Video generations",  val: formatNumber(videoGenerations), icon: Video,    color: "hsl(280 70% 60%)" },
+              { label: "Est. AI cost",       val: formatCurrency(estimatedAiCost), icon: Activity, color: "hsl(0 72% 55%)" },
+            ].map(({ label, val, icon: Icon, color }) => (
+              <div
+                key={label}
+                className="flex items-center justify-between rounded-lg px-3.5 py-2.5 group hover:bg-white/[0.02] transition-colors"
+                style={{ border: "1px solid hsl(217 28% 10%)", background: "hsl(222 28% 5.5% / 0.7)" }}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ background: `${color.replace(")", " / 0.1)")}`, border: `1px solid ${color.replace(")", " / 0.2)")}` }}>
+                    <Icon className="h-3 w-3" style={{ color }} />
+                  </div>
+                  <span className="text-[11px] text-muted-foreground/55">{label}</span>
+                </div>
+                <span className="text-sm font-bold text-foreground/85 font-mono">{val}</span>
+              </div>
+            ))}
           </div>
         </SectionCard>
 
-        <SectionCard title="Plan Usage Mix" subtitle="Free users, paid users, estimated AI spend">
-          <div className="space-y-2">
-            <div className="rounded-md border border-border/50 bg-secondary/30 p-3"><p className="text-[11px] text-muted-foreground">Free users</p><p className="mt-1 font-semibold text-foreground">{formatNumber(freeUsers)}</p></div>
-            <div className="rounded-md border border-border/50 bg-secondary/30 p-3"><p className="text-[11px] text-muted-foreground">Paid users</p><p className="mt-1 font-semibold text-foreground">{formatNumber(paidUsers)}</p></div>
-            <div className="rounded-md border border-border/50 bg-secondary/30 p-3"><p className="text-[11px] text-muted-foreground">Estimated AI cost</p><p className="mt-1 font-semibold text-foreground">{formatCurrency(estimatedAiCost)}</p></div>
-          </div>
-        </SectionCard>
-
-        {/* ── Top Feature Usage — trading terminal ── */}
-        <SectionCard
-          title={<div className="flex items-center gap-2"><span className="text-sm font-semibold text-foreground">Top Feature Usage</span><span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-mono tracking-widest" style={{ background: "hsl(172 70% 40% / 0.12)", border: "1px solid hsl(172 70% 40% / 0.25)", color: "hsl(172 70% 60%)" }}><span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />LIVE</span></div>}
-          subtitle={<span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:FEAT · Usage from feature_usage table</span>}
-        >
-          <div className="relative rounded-lg overflow-hidden" style={{ background: "linear-gradient(180deg, hsl(222 28% 4%) 0%, hsl(222 24% 3%) 100%)", border: "1px solid hsl(217 30% 11%)" }}>
-            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 30% 13% / 0.35) 0px, transparent 1px, transparent 36px, hsl(217 30% 13% / 0.35) 37px)", backgroundSize: "100% 37px" }} />
-            <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "hsl(217 30% 11%)" }}>
-              <span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:FEAT</span>
-              <span className="text-[9px] font-mono text-muted-foreground/30">TOP {Math.min(topFeatureUsage.length, 6)}</span>
+        <SectionCard title="Cohort Mix" subtitle="Free vs paid vs AI cost breakdown">
+          <div className="space-y-3">
+            <div className="rounded-xl px-4 py-3 flex items-center justify-between" style={{ background: "hsl(222 28% 5.5% / 0.7)", border: "1px solid hsl(217 28% 10%)" }}>
+              <div>
+                <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30 mb-1">Free Users</p>
+                <p className="text-2xl font-bold text-foreground/85">{formatNumber(freeUsers)}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "hsl(217 28% 9%)", border: "1px solid hsl(217 28% 15%)" }}>
+                <Users className="h-4 w-4 text-muted-foreground/30" />
+              </div>
             </div>
-            <div className="h-[220px] px-1 pt-2 pb-1">
+            <div className="rounded-xl px-4 py-3 flex items-center justify-between" style={{ background: "hsl(217 91% 60% / 0.05)", border: "1px solid hsl(217 91% 60% / 0.15)" }}>
+              <div>
+                <p className="text-[9px] font-mono uppercase tracking-widest" style={{ color: "hsl(217 91% 60% / 0.5)" }}>Paid Users</p>
+                <p className="text-2xl font-bold text-foreground/85">{formatNumber(paidUsers)}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.2)" }}>
+                <UserCheck className="h-4 w-4" style={{ color: "hsl(217 91% 60%)" }} />
+              </div>
+            </div>
+            <div className="rounded-xl px-4 py-3 flex items-center justify-between" style={{ background: "hsl(222 28% 5.5% / 0.7)", border: "1px solid hsl(217 28% 10%)" }}>
+              <div>
+                <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30 mb-1">Est. AI Cost</p>
+                <p className="text-2xl font-bold text-foreground/85">{formatCurrency(estimatedAiCost)}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "hsl(0 72% 55% / 0.08)", border: "1px solid hsl(0 72% 55% / 0.2)" }}>
+                <Activity className="h-4 w-4" style={{ color: "hsl(0 72% 55%)" }} />
+              </div>
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          title={<div className="flex items-center gap-2.5">Top Feature Usage<LiveBadge color="teal" /></div>}
+          subtitle={<span className="font-mono">ROBINOS:FEAT · Events from feature_usage table</span>}
+        >
+          <div
+            className="relative rounded-xl overflow-hidden"
+            style={{ background: "linear-gradient(180deg, hsl(222 32% 4%) 0%, hsl(222 26% 3%) 100%)", border: "1px solid hsl(217 28% 10%)" }}
+          >
+            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 28% 12% / 0.22) 0px, transparent 1px, transparent 40px)", backgroundSize: "100% 40px" }} />
+            <div className="h-[270px] px-1 pt-3 pb-1">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topFeatureUsage.length ? topFeatureUsage : [{ feature: "No data", value: 0 }]} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <defs><linearGradient id="gradFeat" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(172 70% 45%)" stopOpacity={0.9} /><stop offset="100%" stopColor="hsl(172 70% 45%)" stopOpacity={0.4} /></linearGradient></defs>
-                  <CartesianGrid vertical={false} stroke="hsl(217 30% 13% / 0)" />
-                  <XAxis dataKey="feature" tick={{ fontSize: 8, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={{ stroke: "hsl(217 30% 13%)" }} tickLine={false} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ background: "hsl(222 28% 6% / 0.97)", border: "1px solid hsl(217 30% 16%)", borderRadius: "6px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 8px 24px hsl(0 0% 0% / 0.5)" }} cursor={{ fill: "hsl(217 91% 60% / 0.05)" }} />
-                  <Bar dataKey="value" name="Usage" fill="url(#gradFeat)" radius={[3, 3, 0, 0]} maxBarSize={32} />
+                <BarChart data={topFeatureUsage.length ? topFeatureUsage : [{ feature: "—", value: 0 }]} margin={{ top: 4, right: 8, left: -24, bottom: 0 }}>
+                  <defs><linearGradient id="gradFeat2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(172 70% 45%)" stopOpacity={0.9} /><stop offset="100%" stopColor="hsl(172 70% 45%)" stopOpacity={0.35} /></linearGradient></defs>
+                  <CartesianGrid vertical={false} stroke="hsl(217 28% 12% / 0)" />
+                  <XAxis dataKey="feature" tick={{ fontSize: 8, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.3)" }} axisLine={{ stroke: "hsl(217 28% 11%)" }} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.3)" }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ background: "hsl(222 28% 7% / 0.98)", border: "1px solid hsl(172 70% 45% / 0.25)", borderRadius: "8px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 12px 40px hsl(0 0% 0% / 0.6)" }} cursor={{ fill: "hsl(172 70% 45% / 0.04)" }} />
+                  <Bar dataKey="value" name="Usage" fill="url(#gradFeat2)" radius={[3, 3, 0, 0]} maxBarSize={28} />
                 </BarChart>
               </ResponsiveContainer>
-            </div>
-            <div className="flex items-center gap-3 px-4 py-2 border-t" style={{ borderColor: "hsl(217 30% 11%)" }}>
-              <span className="w-4 h-[2px] rounded-full" style={{ background: "hsl(172 70% 45%)" }} />
-              <span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-wider">Feature Events</span>
-              <span className="ml-auto text-[9px] font-mono text-muted-foreground/25">RobinOS Analytics v1</span>
             </div>
           </div>
         </SectionCard>
@@ -1275,156 +1521,230 @@ const AdminDashboard = () => {
   );
 
   const renderSettingsPage = () => (
-    <div className="space-y-4">
-      <SectionCard
-        title="Platform Configuration"
-        subtitle="Changes persist to database and propagate system-wide immediately"
-        right={
+    <div className="space-y-6">
+      {/* ── Hero ── */}
+      <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, hsl(222 32% 8%) 0%, hsl(222 28% 9%) 100%)", border: "1px solid hsl(217 30% 14%)" }}>
+        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 40% 60% at 95% 50%, hsl(38 92% 50% / 0.04), transparent)" }} />
+        <div className="relative flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-[9px] font-mono uppercase tracking-[0.22em]" style={{ color: "hsl(38 92% 50% / 0.55)" }}>INFRASTRUCTURE CONTROL</span>
+            </div>
+            <h2 className="text-xl font-bold text-foreground/90 tracking-tight">Platform Settings</h2>
+            <p className="mt-1 text-[11px]" style={{ color: "hsl(var(--muted-foreground) / 0.4)" }}>Changes propagate globally and affect all users immediately.</p>
+          </div>
           <button
             onClick={() => saveSettingsMutation.mutate()}
             disabled={saveSettingsMutation.isPending}
-            className="h-8 rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground disabled:opacity-60 transition-opacity"
+            className="h-9 rounded-xl px-5 text-xs font-semibold text-white transition-all disabled:opacity-50"
+            style={{ background: "linear-gradient(135deg, hsl(217 91% 50%) 0%, hsl(217 80% 42%) 100%)", boxShadow: "0 4px 16px hsl(217 91% 60% / 0.2)" }}
           >
-            {saveSettingsMutation.isPending ? "Saving…" : "Save Changes"}
+            {saveSettingsMutation.isPending ? "Propagating…" : "Deploy Changes"}
           </button>
-        }
-      >
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-
-          {/* LEFT COLUMN */}
-          <div className="space-y-4">
-
-            {/* Pricing */}
-            <SectionCard title="Pricing" subtitle="Monthly prices in USD">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Creator</p>
-                  <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span><Input type="number" min={0} className="pl-6" value={settingsDraft.creator_price} onChange={(e) => setSettingsDraft((s) => ({ ...s, creator_price: Number(e.target.value) }))} /></div>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Pro Creator</p>
-                  <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span><Input type="number" min={0} className="pl-6" value={settingsDraft.pro_price} onChange={(e) => setSettingsDraft((s) => ({ ...s, pro_price: Number(e.target.value) }))} /></div>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Agency</p>
-                  <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span><Input type="number" min={0} className="pl-6" value={settingsDraft.agency_price} onChange={(e) => setSettingsDraft((s) => ({ ...s, agency_price: Number(e.target.value) }))} /></div>
-                </div>
-              </div>
-            </SectionCard>
-
-            {/* Free Limits */}
-            <SectionCard title="Free Limits" subtitle="Daily quotas for free-tier users">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Scripts / day</p>
-                  <Input type="number" min={0} value={settingsDraft.free_scripts_limit} onChange={(e) => setSettingsDraft((s) => ({ ...s, free_scripts_limit: Number(e.target.value) }))} />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Scans / day</p>
-                  <Input type="number" min={0} value={settingsDraft.free_scans_limit} onChange={(e) => setSettingsDraft((s) => ({ ...s, free_scans_limit: Number(e.target.value) }))} />
-                </div>
-              </div>
-            </SectionCard>
-
-            {/* Affiliate Controls */}
-            <SectionCard title="Affiliate Controls" subtitle="Commission, withdrawal, and payout settings">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Commission %</p>
-                  <Input type="number" min={0} max={100} value={settingsDraft.affiliate_commission_percent} onChange={(e) => setSettingsDraft((s) => ({ ...s, affiliate_commission_percent: Number(e.target.value) }))} />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Min Withdrawal $</p>
-                  <Input type="number" min={1} value={settingsDraft.minimum_withdrawal} onChange={(e) => setSettingsDraft((s) => ({ ...s, minimum_withdrawal: Number(e.target.value) }))} />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Payout Delay (days)</p>
-                  <Input type="number" min={0} value={settingsDraft.payout_delay_days} onChange={(e) => setSettingsDraft((s) => ({ ...s, payout_delay_days: Number(e.target.value) }))} />
-                </div>
-              </div>
-            </SectionCard>
-          </div>
-
-          {/* RIGHT COLUMN */}
-          <div className="space-y-4">
-
-            {/* Maintenance */}
-            <SectionCard title="Maintenance" subtitle="Global platform maintenance mode and announcement">
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Maintenance Mode</p>
-                  <select
-                    value={settingsDraft.maintenance_mode ? "true" : "false"}
-                    onChange={(e) => setSettingsDraft((s) => ({ ...s, maintenance_mode: e.target.value === "true" }))}
-                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
-                  >
-                    <option value="false">OFF — Platform running normally</option>
-                    <option value="true">ON — Show maintenance banner</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Announcement Banner</p>
-                  <Input
-                    value={settingsDraft.announcement_banner}
-                    onChange={(e) => setSettingsDraft((s) => ({ ...s, announcement_banner: e.target.value }))}
-                    placeholder="e.g. Scheduled maintenance on May 25 at 2am UTC"
-                    maxLength={280}
-                  />
-                  <p className="text-[10px] text-muted-foreground/50 font-mono text-right">{settingsDraft.announcement_banner.length}/280</p>
-                </div>
-              </div>
-            </SectionCard>
-
-            {/* Live Settings Summary */}
-            <SectionCard title="Current Live Values" subtitle="What users see right now (from database)">
-              <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs">
-                {[
-                  { label: "Creator price", value: `$${platformSettings?.creator_price ?? "—"}/mo` },
-                  { label: "Pro price", value: `$${platformSettings?.pro_price ?? "—"}/mo` },
-                  { label: "Agency price", value: `$${platformSettings?.agency_price ?? "—"}/mo` },
-                  { label: "Free scripts/day", value: platformSettings?.free_scripts_limit ?? "—" },
-                  { label: "Free scans/day", value: platformSettings?.free_scans_limit ?? "—" },
-                  { label: "Commission", value: `${platformSettings?.affiliate_commission_percent ?? "—"}%` },
-                  { label: "Min withdrawal", value: `$${platformSettings?.minimum_withdrawal ?? "—"}` },
-                  { label: "Maintenance", value: platformSettings?.maintenance_mode ? "🔴 ON" : "🟢 OFF" },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex items-center justify-between rounded-md border border-border/40 bg-secondary/30 px-2.5 py-1.5">
-                    <span className="text-muted-foreground font-mono">{label}</span>
-                    <span className="text-foreground font-medium">{String(value)}</span>
-                  </div>
-                ))}
-              </div>
-              {platformSettings?.updated_at && (
-                <p className="mt-2 text-[10px] text-muted-foreground/50 font-mono text-right">
-                  Last saved: {new Date(platformSettings.updated_at).toLocaleString()}
-                </p>
-              )}
-            </SectionCard>
-          </div>
         </div>
-      </SectionCard>
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        {/* LEFT */}
+        <div className="space-y-5">
+          <SectionCard title="Pricing Configuration" subtitle="Monthly subscription prices in USD">
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { key: "creator_price" as const, label: "Creator" },
+                { key: "pro_price" as const, label: "Pro Creator" },
+                { key: "agency_price" as const, label: "Agency" },
+              ].map(({ key, label }) => (
+                <div key={key} className="space-y-1.5">
+                  <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">{label}</p>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/40">$</span>
+                    <Input type="number" min={0} className="pl-6 h-9 text-sm" value={settingsDraft[key]} onChange={(e) => setSettingsDraft((s) => ({ ...s, [key]: Number(e.target.value) }))} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Free Tier Limits" subtitle="Daily quotas for free-tier accounts">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Scripts / day</p>
+                <Input type="number" min={0} className="h-9 text-sm" value={settingsDraft.free_scripts_limit} onChange={(e) => setSettingsDraft((s) => ({ ...s, free_scripts_limit: Number(e.target.value) }))} />
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Scans / day</p>
+                <Input type="number" min={0} className="h-9 text-sm" value={settingsDraft.free_scans_limit} onChange={(e) => setSettingsDraft((s) => ({ ...s, free_scans_limit: Number(e.target.value) }))} />
+              </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Affiliate Parameters" subtitle="Commission and payout configuration">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Commission %</p>
+                <Input type="number" min={0} max={100} className="h-9 text-sm" value={settingsDraft.affiliate_commission_percent} onChange={(e) => setSettingsDraft((s) => ({ ...s, affiliate_commission_percent: Number(e.target.value) }))} />
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Min Withdrawal</p>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/40">$</span>
+                  <Input type="number" min={1} className="pl-6 h-9 text-sm" value={settingsDraft.minimum_withdrawal} onChange={(e) => setSettingsDraft((s) => ({ ...s, minimum_withdrawal: Number(e.target.value) }))} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Payout Delay</p>
+                <Input type="number" min={0} className="h-9 text-sm" value={settingsDraft.payout_delay_days} onChange={(e) => setSettingsDraft((s) => ({ ...s, payout_delay_days: Number(e.target.value) }))} />
+              </div>
+            </div>
+          </SectionCard>
+        </div>
+
+        {/* RIGHT */}
+        <div className="space-y-5">
+          <SectionCard title="Operational State" subtitle="Global maintenance and announcement controls">
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Maintenance Mode</p>
+                <select
+                  value={settingsDraft.maintenance_mode ? "true" : "false"}
+                  onChange={(e) => setSettingsDraft((s) => ({ ...s, maintenance_mode: e.target.value === "true" }))}
+                  className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground"
+                >
+                  <option value="false">● OPERATIONAL — Platform live</option>
+                  <option value="true">⬤ MAINTENANCE — Showing banner</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Announcement Text</p>
+                <Input
+                  value={settingsDraft.announcement_banner}
+                  onChange={(e) => setSettingsDraft((s) => ({ ...s, announcement_banner: e.target.value }))}
+                  placeholder="e.g. Scheduled maintenance on May 25 at 2am UTC"
+                  maxLength={280}
+                  className="h-9 text-sm"
+                />
+                <p className="text-[9px] font-mono text-muted-foreground/25 text-right">{settingsDraft.announcement_banner.length}/280</p>
+              </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Live Configuration Snapshot" subtitle={platformSettings?.updated_at ? `Last deployed: ${new Date(platformSettings.updated_at).toLocaleString()}` : "No config deployed yet"}>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: "Creator", value: `$${platformSettings?.creator_price ?? "—"}/mo` },
+                { label: "Pro", value: `$${platformSettings?.pro_price ?? "—"}/mo` },
+                { label: "Agency", value: `$${platformSettings?.agency_price ?? "—"}/mo` },
+                { label: "Free Scripts", value: `${platformSettings?.free_scripts_limit ?? "—"}/day` },
+                { label: "Free Scans", value: `${platformSettings?.free_scans_limit ?? "—"}/day` },
+                { label: "Commission", value: `${platformSettings?.affiliate_commission_percent ?? "—"}%` },
+                { label: "Min Payout", value: `$${platformSettings?.minimum_withdrawal ?? "—"}` },
+                { label: "Status", value: platformSettings?.maintenance_mode ? "MAINTENANCE" : "OPERATIONAL" },
+              ].map(({ label, value }) => (
+                <div
+                  key={label}
+                  className="flex items-center justify-between rounded-lg px-3 py-2"
+                  style={{ background: "hsl(222 28% 5.5%)", border: "1px solid hsl(217 28% 10%)" }}
+                >
+                  <span className="text-[9px] font-mono text-muted-foreground/30 uppercase tracking-wider">{label}</span>
+                  <span className="text-[11px] font-mono text-foreground/70">{String(value)}</span>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+        </div>
+      </div>
     </div>
   );
 
   const renderUsersPage = () => (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* ── Hero ── */}
+      <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, hsl(222 32% 8%) 0%, hsl(222 28% 7%) 100%)", border: "1px solid hsl(217 30% 14%)" }}>
+        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 50% 80% at 85% 50%, hsl(142 70% 45% / 0.04), transparent)" }} />
+        <div className="relative flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-[9px] font-mono uppercase tracking-[0.22em]" style={{ color: "hsl(142 70% 45% / 0.55)" }}>OPERATIONS CONSOLE</span>
+              <LiveBadge color="green" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground/90 tracking-tight">User Management</h2>
+            <p className="mt-1 text-[11px]" style={{ color: "hsl(var(--muted-foreground) / 0.4)" }}>
+              Manage user lifecycle, plan assignments, suspensions, and access control.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            {[
+              { label: "Total", val: formatNumber(usersEnriched.length) },
+              { label: "Active", val: formatNumber(activeSubscribers) },
+              { label: "Paid", val: formatNumber(paidUsers) },
+              { label: "Free", val: formatNumber(freeUsers) },
+            ].map(({ label, val }) => (
+              <div key={label} className="text-right">
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/30">{label}</p>
+                <p className="text-base font-bold text-foreground/85">{val}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Total Users" value={formatNumber(usersEnriched.length)} icon={Users} spark={sparkFrom(dailySeries.map((d) => d.users))} />
-        <MetricCard label="Active Users" value={formatNumber(activeSubscribers)} icon={UserCheck} spark={sparkFrom(dailySeries.map((d) => d.subscriptions))} />
-        <MetricCard label="Free Users" value={formatNumber(freeUsers)} icon={Users} spark={sparkFrom(usersEnriched.filter((u) => u.plan === "creator").map((u) => u.scriptsUsed))} />
-        <MetricCard label="Paid Users" value={formatNumber(paidUsers)} icon={Users} spark={sparkFrom(usersEnriched.filter((u) => u.status === "active").map((u) => u.scriptsUsed))} />
+        <MetricCard label="Total Users"    value={formatNumber(usersEnriched.length)}  icon={Users}     spark={sparkFrom(dailySeries.map((d) => d.users))} />
+        <MetricCard label="Active Users"   value={formatNumber(activeSubscribers)}       icon={UserCheck} spark={sparkFrom(dailySeries.map((d) => d.subscriptions))} />
+        <MetricCard label="Free Users"     value={formatNumber(freeUsers)}               icon={Users}     spark={sparkFrom(usersEnriched.filter((u) => u.plan === "creator").map((u) => u.scriptsUsed))} />
+        <MetricCard label="Paid Users"     value={formatNumber(paidUsers)}               icon={Users}     spark={sparkFrom(usersEnriched.filter((u) => u.status === "active").map((u) => u.scriptsUsed))} />
       </section>
 
-      <SectionCard title="Users Table" subtitle="Search, filters, pagination, and admin actions">
-        <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-4">
-          <div className="flex h-9 items-center gap-2 rounded-md border border-border/60 bg-secondary/60 px-2 md:col-span-2"><Search className="h-4 w-4 text-muted-foreground" /><input value={userSearch} onChange={(e) => { setUserSearch(e.target.value); setUserPage(1); }} className="w-full bg-transparent text-xs text-foreground outline-none" placeholder="Search users" /></div>
-          <select value={userPlanFilter} onChange={(e) => { setUserPlanFilter(e.target.value as "all" | UserPlan); setUserPage(1); }} className="h-9 rounded-md border border-border/60 bg-secondary/60 px-2 text-xs text-foreground"><option value="all">All plans</option><option value="creator">Creator</option><option value="pro">Pro</option><option value="agency">Agency</option></select>
-          <select value={userStatusFilter} onChange={(e) => { setUserStatusFilter(e.target.value as "all" | UserEnriched["status"]); setUserPage(1); }} className="h-9 rounded-md border border-border/60 bg-secondary/60 px-2 text-xs text-foreground"><option value="all">All status</option><option value="trialing">Trialing</option><option value="active">Active</option><option value="past_due">Past due</option><option value="cancelled">Cancelled</option><option value="suspended">Suspended</option></select>
+      <SectionCard title="User Operations Table" subtitle="Search, filter, and manage all platform accounts">
+        {/* Filter bar */}
+        <div className="mb-4 grid grid-cols-1 gap-2 md:grid-cols-4">
+          <div
+            className="flex h-9 items-center gap-2 rounded-lg px-3 md:col-span-2"
+            style={{ border: "1px solid hsl(217 28% 13%)", background: "hsl(222 28% 6%)" }}
+          >
+            <Search className="h-3.5 w-3.5 text-muted-foreground/30 shrink-0" />
+            <input
+              value={userSearch}
+              onChange={(e) => { setUserSearch(e.target.value); setUserPage(1); }}
+              className="w-full bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground/25"
+              placeholder="Search by email, name, plan..."
+            />
+          </div>
+          <select
+            value={userPlanFilter}
+            onChange={(e) => { setUserPlanFilter(e.target.value as "all" | UserPlan); setUserPage(1); }}
+            className="h-9 rounded-lg px-3 text-xs text-foreground"
+            style={{ border: "1px solid hsl(217 28% 13%)", background: "hsl(222 28% 6%)" }}
+          >
+            <option value="all">All plans</option>
+            <option value="creator">Creator</option>
+            <option value="pro">Pro</option>
+            <option value="agency">Agency</option>
+          </select>
+          <select
+            value={userStatusFilter}
+            onChange={(e) => { setUserStatusFilter(e.target.value as "all" | UserEnriched["status"]); setUserPage(1); }}
+            className="h-9 rounded-lg px-3 text-xs text-foreground"
+            style={{ border: "1px solid hsl(217 28% 13%)", background: "hsl(222 28% 6%)" }}
+          >
+            <option value="all">All status</option>
+            <option value="trialing">Trialing</option>
+            <option value="active">Active</option>
+            <option value="past_due">Past due</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="suspended">Suspended</option>
+          </select>
         </div>
 
-        <div className="overflow-auto rounded-lg border border-border/50">
-          <table className="w-full min-w-[1080px] text-xs">
-            <thead className="bg-secondary/40 text-[10px] uppercase tracking-[0.08em] text-muted-foreground"><tr><th className="p-3 text-left">avatar</th><th className="p-3 text-left">email</th><th className="p-3 text-left">current plan</th><th className="p-3 text-left">scripts used</th><th className="p-3 text-left">trend scans</th><th className="p-3 text-left">joined date</th><th className="p-3 text-left">affiliate enabled</th><th className="p-3 text-left">status</th><th className="p-3 text-left">source</th><th className="p-3 text-left">actions</th></tr></thead>
+        <div className="overflow-auto rounded-xl" style={{ border: "1px solid hsl(217 28% 11% / 0.8)" }}>
+          <table className="w-full min-w-[1100px] text-xs">
+            <thead style={{ background: "hsl(222 28% 5%)", borderBottom: "1px solid hsl(217 28% 11%)" }}>
+              <tr>
+                {["account", "email", "plan", "scripts", "scans", "joined", "affiliate", "status", "source", "actions"].map((h) => (
+                  <th key={h} className="px-4 py-3 text-left text-[9px] font-mono uppercase tracking-[0.14em]" style={{ color: "hsl(var(--muted-foreground) / 0.3)" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
             <tbody>
               {pagedUsers.map((row) => {
                 const planLadder: UserPlan[] = ["creator", "pro", "agency"];
@@ -1432,86 +1752,64 @@ const AdminDashboard = () => {
                 const upgradePlan: UserPlan = currentIdx < planLadder.length - 1 ? planLadder[currentIdx + 1] : "agency";
                 const downgradePlan: UserPlan = currentIdx > 0 ? planLadder[currentIdx - 1] : "creator";
                 const canUpgrade = row.plan !== "agency";
-                // Free users (plan === "creator" because asPlan maps free→creator) with no subscription can be downgraded
-                // to free, but we prevent downgrade from creator when they're already on the seeded free plan
                 const canDowngrade = !(row.plan === "creator" && row.amount === 0);
                 const isSuspendPending = userStatusMutation.isPending && (userStatusMutation.variables as any)?.row?.user_id === row.user_id;
                 const isPlanPending = userPlanMutation.isPending && (userPlanMutation.variables as any)?.row?.user_id === row.user_id;
                 return (
-                  <tr key={row.user_id} className="border-t border-border/40 hover:bg-secondary/20">
-                    <td className="p-3"><span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/60 bg-secondary/40 text-[10px] text-foreground">{row.email.slice(0, 1).toUpperCase()}</span></td>
-                    <td className="p-3 text-foreground">{row.email}</td>
-                    <td className="p-3 uppercase text-muted-foreground">{row.plan}</td>
-                    <td className="p-3 font-mono text-foreground">{formatNumber(row.scriptsUsed)}</td>
-                    <td className="p-3 font-mono text-foreground">{formatNumber(row.trendScans)}</td>
-                    <td className="p-3 text-muted-foreground">{new Date(row.created_at).toLocaleDateString()}</td>
-                    <td className="p-3 text-muted-foreground">{row.is_affiliate ? "Yes" : "No"}</td>
-                    <td className="p-3">
-                      <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] uppercase ${
-                        row.status === "suspended"
-                          ? "bg-red-500/10 text-red-400 border-red-500/25"
-                          : row.status === "active"
-                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
-                            : "bg-secondary/50 text-muted-foreground border-border/50"
-                      }`}>{row.status}</span>
+                  <tr key={row.user_id} className="border-t hover:bg-white/[0.018] transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}>
+                    <td className="px-4 py-3">
+                      <span
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-[10px] font-bold"
+                        style={{ background: "hsl(217 91% 60% / 0.1)", border: "1px solid hsl(217 91% 60% / 0.2)", color: "hsl(217 91% 70%)" }}
+                      >
+                        {row.email.slice(0, 1).toUpperCase()}
+                      </span>
                     </td>
-                    <td className="p-3">
-                      {/* Source badge */}
-                      {(() => {
-                        const src = (row.subscriptionSource ?? "manual_admin").toLowerCase();
-                        const cfg: Record<string, { label: string; cls: string }> = {
-                          creem:            { label: "Paid",       cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25" },
-                          dodo:             { label: "Paid",       cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25" },
-                          stripe:           { label: "Paid",       cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25" },
-                          manual_admin:     { label: "Manual",     cls: "bg-amber-500/10 text-amber-400 border-amber-500/25" },
-                          promo:            { label: "Promo",      cls: "bg-purple-500/10 text-purple-400 border-purple-500/25" },
-                          internal:         { label: "Internal",   cls: "bg-purple-500/10 text-purple-400 border-purple-500/25" },
-                          affiliate_reward: { label: "Affiliate",  cls: "bg-blue-500/10 text-blue-400 border-blue-500/25" },
-                          migration:        { label: "Migration",  cls: "bg-secondary/50 text-muted-foreground border-border/50" },
-                          trial:            { label: "Trial",      cls: "bg-secondary/50 text-muted-foreground border-border/50" },
-                        };
-                        const { label, cls } = cfg[src] ?? cfg.manual_admin;
-                        return (
-                          <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] ${cls}`}>{label}</span>
-                        );
-                      })()}
-                    </td>
-                    <td className="p-3">
+                    <td className="px-4 py-3 text-foreground/80 max-w-[180px] truncate">{row.email}</td>
+                    <td className="px-4 py-3"><PlanChip plan={row.plan} /></td>
+                    <td className="px-4 py-3 font-mono text-foreground/70">{formatNumber(row.scriptsUsed)}</td>
+                    <td className="px-4 py-3 font-mono text-foreground/70">{formatNumber(row.trendScans)}</td>
+                    <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground/35">{new Date(row.created_at).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-muted-foreground/40 text-[10px]">{row.is_affiliate ? "Yes" : "—"}</td>
+                    <td className="px-4 py-3"><StatusChip status={row.status} /></td>
+                    <td className="px-4 py-3"><SourceBadge src={row.subscriptionSource} /></td>
+                    <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1.5">
-                        {/* Suspend / Activate */}
                         <button
-                          className={`h-7 rounded border px-2 text-[10px] transition-colors disabled:opacity-50 ${
+                          className={`h-7 rounded-lg border px-2.5 text-[9px] font-mono uppercase tracking-wider transition-all disabled:opacity-40 ${
                             row.status === "suspended"
                               ? "border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
-                              : "border-red-500/30 text-red-400 hover:bg-red-500/10"
+                              : "border-red-500/25 text-red-400 hover:bg-red-500/8"
                           }`}
                           disabled={isSuspendPending}
                           onClick={() => userStatusMutation.mutate({ row, suspended: row.status !== "suspended" })}
                         >
                           {isSuspendPending ? "…" : row.status === "suspended" ? "activate" : "suspend"}
                         </button>
-                        {/* Upgrade */}
                         <button
-                          className="h-7 rounded border border-primary/30 px-2 text-[10px] text-primary hover:bg-primary/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="h-7 rounded-lg border px-2.5 text-[9px] font-mono uppercase tracking-wider transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          style={{ borderColor: "hsl(217 91% 60% / 0.25)", color: "hsl(217 91% 60%)" }}
                           disabled={!canUpgrade || isPlanPending}
                           onClick={() => userPlanMutation.mutate({ row, plan: upgradePlan })}
                         >
-                          {isPlanPending ? "…" : "upgrade"}
+                          {isPlanPending ? "…" : "↑ up"}
                         </button>
-                        {/* Downgrade */}
                         <button
-                          className="h-7 rounded border border-border/60 px-2 text-[10px] text-muted-foreground hover:text-foreground hover:border-border transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="h-7 rounded-lg border px-2.5 text-[9px] font-mono uppercase tracking-wider text-muted-foreground/40 hover:text-foreground/60 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          style={{ borderColor: "hsl(217 28% 14%)" }}
                           disabled={!canDowngrade || isPlanPending}
                           onClick={() => userPlanMutation.mutate({ row, plan: downgradePlan })}
                         >
-                          {isPlanPending ? "…" : "downgrade"}
+                          {isPlanPending ? "…" : "↓ down"}
                         </button>
                       </div>
                     </td>
                   </tr>
                 );
               })}
-              {!pagedUsers.length ? <tr><td colSpan={10} className="p-0"><EmptyState title="No users found" description="Try adjusting filters or search query." /></td></tr> : null}
+              {!pagedUsers.length ? (
+                <tr><td colSpan={10} className="p-0"><EmptyState title="No accounts detected" description="Adjust your search or filters to locate users." /></td></tr>
+              ) : null}
             </tbody>
           </table>
           <PaginationControls page={userPage} totalPages={totalUserPages} setPage={setUserPage} />
@@ -1524,176 +1822,97 @@ const AdminDashboard = () => {
   const cancelledSubs = useMemo(() => subscriptions.filter((s) => asSubscriptionStatus(s.status) === "cancelled"), [subscriptions]);
 
   const renderSubscriptionsPage = () => (
-    <div className="space-y-4">
-      {/* ── Subscription KPI grid — same MetricCard system ─── */}
+    <div className="space-y-6">
+      {/* ── Hero ── */}
+      <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, hsl(222 32% 8%) 0%, hsl(220 36% 10%) 50%, hsl(222 28% 7%) 100%)", border: "1px solid hsl(217 30% 14%)" }}>
+        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 60% 50% at 80% 50%, hsl(142 70% 45% / 0.04), transparent)" }} />
+        <div className="relative">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="text-[9px] font-mono uppercase tracking-[0.22em]" style={{ color: "hsl(142 70% 45% / 0.5)" }}>BILLING OPERATIONS</span>
+            <LiveBadge color="green" />
+          </div>
+          <h2 className="text-xl font-bold text-foreground/90 tracking-tight">Subscription Management</h2>
+          <p className="mt-1 text-[11px]" style={{ color: "hsl(var(--muted-foreground) / 0.4)" }}>
+            Monitor recurring revenue systems and subscription lifecycle integrity.
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-xl">
+            {[
+              { label: "MRR",         val: formatCurrency(mrr) },
+              { label: "ARR",         val: formatCurrency(arr) },
+              { label: "Churn",       val: `${churnRate.toFixed(2)}%` },
+              { label: "At-Risk",     val: formatNumber(atRiskSubscriptions.length) },
+            ].map(({ label, val }) => (
+              <div key={label} className="rounded-xl px-3 py-2.5" style={{ background: "hsl(222 28% 5% / 0.7)", border: "1px solid hsl(217 28% 12%)" }}>
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/30">{label}</p>
+                <p className="mt-0.5 text-sm font-bold text-foreground/85">{val}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Active Plan Value" value={formatCurrency(monthlyRevenue)} icon={Wallet} spark={sparkFrom(dailySeries.map((d) => d.revenue))} growth={growthPercent} />
-        <MetricCard label="Active Subscribers" value={formatNumber(activeSubscribers)} icon={UserCheck} spark={sparkFrom(dailySeries.map((d) => d.subscriptions))} />
-        <MetricCard label="Churn Rate" value={`${churnRate.toFixed(2)}%`} icon={ArrowDownRight} spark={sparkFrom(cancelledSubs.map((s) => Number(s.amount || 0)))} />
-        <MetricCard label="At-Risk Subs" value={formatNumber(atRiskSubscriptions.length)} icon={Clock3} spark={sparkFrom(atRiskSubscriptions.map((s) => Number(s.amount || 0)))} />
+        <MetricCard label="Active Plan Value"   value={formatCurrency(monthlyRevenue)}           icon={Wallet}       spark={sparkFrom(dailySeries.map((d) => d.revenue))}              growth={growthPercent} />
+        <MetricCard label="Active Subscribers"  value={formatNumber(activeSubscribers)}           icon={UserCheck}    spark={sparkFrom(dailySeries.map((d) => d.subscriptions))} />
+        <MetricCard label="Churn Rate"          value={`${churnRate.toFixed(2)}%`}               icon={ArrowDownRight} spark={sparkFrom(cancelledSubs.map((s) => Number(s.amount || 0)))} />
+        <MetricCard label="At-Risk Subs"        value={formatNumber(atRiskSubscriptions.length)} icon={Clock3}       spark={sparkFrom(atRiskSubscriptions.map((s) => Number(s.amount || 0)))} />
       </section>
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <SectionCard
-          title={
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-foreground">Plan Distribution</span>
-              <span
-                className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-mono tracking-widest"
-                style={{ background: "hsl(217 91% 60% / 0.12)", border: "1px solid hsl(217 91% 60% / 0.25)", color: "hsl(217 95% 72%)" }}
-              >
-                <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />
-                LIVE
-              </span>
-            </div>
-          }
+          title={<div className="flex items-center gap-2.5">Plan Distribution<LiveBadge /></div>}
           subtitle={
-            <div className="flex items-center gap-3 mt-0.5">
-              <span className="text-[10px] font-mono text-muted-foreground/60">PLAN / TOTAL ·</span>
+            <span className="flex items-center gap-3 font-mono">
+              ROBINOS:PLANS ·{" "}
               {planDistribution.map((p) => (
-                <span key={p.name} className="text-[10px] font-mono" style={{ color: p.fill }}>
+                <span key={p.name} style={{ color: p.name === "Creator" ? "hsl(217 91% 60%)" : p.name === "Pro" ? "hsl(38 92% 50%)" : "hsl(142 70% 45%)" }}>
                   {p.name.toUpperCase()} {p.value > 0 ? `+${p.value}` : "—"}
                 </span>
               ))}
-            </div>
+            </span>
           }
         >
-          <div
-            className="relative rounded-lg overflow-hidden"
-            style={{
-              background: "linear-gradient(180deg, hsl(222 28% 4%) 0%, hsl(222 24% 3%) 100%)",
-              border: "1px solid hsl(217 30% 11%)",
-            }}
-          >
-            {/* Horizontal grid lines overlay */}
-            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 30% 13% / 0.35) 0px, transparent 1px, transparent 36px, hsl(217 30% 13% / 0.35) 37px)", backgroundSize: "100% 37px" }} />
-
-            {/* Ticker header bar */}
-            <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "hsl(217 30% 11%)" }}>
-              <div className="flex items-center gap-3">
-                <span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:PLANS</span>
-                <span className="text-[10px] font-mono" style={{ color: "hsl(217 91% 60%)" }}>
-                  TOTAL {planDistribution.reduce((s, p) => s + p.value, 0)}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground/40">
-                <span>1D</span>
-                <span className="text-primary/80">7D</span>
-                <span>30D</span>
-              </div>
-            </div>
-
-            {/* Chart */}
-            <div className="h-56 px-1 pt-2 pb-1">
-              {planDistributionTrend.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={planDistributionTrend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="gradCreator" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(217 91% 60%)" stopOpacity={0.18} />
-                        <stop offset="95%" stopColor="hsl(217 91% 60%)" stopOpacity={0.0} />
-                      </linearGradient>
-                      <linearGradient id="gradPro" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(38 92% 50%)" stopOpacity={0.15} />
-                        <stop offset="95%" stopColor="hsl(38 92% 50%)" stopOpacity={0.0} />
-                      </linearGradient>
-                      <linearGradient id="gradAgency" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(142 70% 45%)" stopOpacity={0.12} />
-                        <stop offset="95%" stopColor="hsl(142 70% 45%)" stopOpacity={0.0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid
-                      vertical={false}
-                      stroke="hsl(217 30% 13% / 0.0)"
-                      strokeDasharray="0"
-                    />
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }}
-                      axisLine={{ stroke: "hsl(217 30% 13%)" }}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      allowDecimals={false}
-                      tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: "hsl(222 28% 6% / 0.97)",
-                        border: "1px solid hsl(217 30% 16%)",
-                        borderRadius: "6px",
-                        fontSize: "11px",
-                        fontFamily: "monospace",
-                        boxShadow: "0 8px 24px hsl(0 0% 0% / 0.5)",
-                      }}
-                      labelStyle={{ color: "hsl(var(--muted-foreground))", marginBottom: "4px" }}
-                      cursor={{ stroke: "hsl(217 91% 60% / 0.3)", strokeWidth: 1, strokeDasharray: "4 4" }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="creator"
-                      name="Creator"
-                      stroke="hsl(217 91% 60%)"
-                      strokeWidth={1.5}
-                      fill="url(#gradCreator)"
-                      dot={false}
-                      activeDot={{ r: 3, fill: "hsl(217 91% 60%)", strokeWidth: 0 }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="pro"
-                      name="Pro"
-                      stroke="hsl(38 92% 50%)"
-                      strokeWidth={1.5}
-                      fill="url(#gradPro)"
-                      dot={false}
-                      activeDot={{ r: 3, fill: "hsl(38 92% 50%)", strokeWidth: 0 }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="agency"
-                      name="Agency"
-                      stroke="hsl(142 70% 45%)"
-                      strokeWidth={1.5}
-                      fill="url(#gradAgency)"
-                      dot={false}
-                      activeDot={{ r: 3, fill: "hsl(142 70% 45%)", strokeWidth: 0 }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center gap-2">
-                  <p className="text-[10px] font-mono text-muted-foreground/40 tracking-widest uppercase">Awaiting market data</p>
-                  <p className="text-[9px] font-mono text-muted-foreground/25">Chart populates after subscriptions are recorded</p>
-                </div>
-              )}
-            </div>
-
-            {/* Footer legend bar */}
-            <div className="flex items-center gap-4 px-4 py-2 border-t" style={{ borderColor: "hsl(217 30% 11%)" }}>
-              {[
-                { label: "Creator", color: "hsl(217 91% 60%)", val: planDistribution.find((p) => p.name === "Creator")?.value ?? 0 },
-                { label: "Pro",     color: "hsl(38 92% 50%)",   val: planDistribution.find((p) => p.name === "Pro")?.value ?? 0 },
-                { label: "Agency",  color: "hsl(142 70% 45%)",  val: planDistribution.find((p) => p.name === "Agency")?.value ?? 0 },
-              ].map((item) => (
-                <div key={item.label} className="flex items-center gap-1.5">
-                  <span className="w-4 h-[2px] rounded-full" style={{ background: item.color }} />
-                  <span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-wider">{item.label}</span>
-                  <span className="text-[10px] font-mono" style={{ color: item.color }}>{item.val}</span>
-                </div>
-              ))}
-              <span className="ml-auto text-[9px] font-mono text-muted-foreground/25">RobinOS Analytics v1</span>
-            </div>
-          </div>
+          <MultiAreaChart id="subPlan" data={planDistributionTrend} height={220} />
         </SectionCard>
-        <SectionCard title="Active Subscription Table" subtitle="email, plan, billing cycle, renewal date, amount, status"><DataTable headers={["email", "plan", "billing cycle", "renewal date", "amount", "status"]} colSpan={6} empty={!usersEnriched.filter((u) => u.status === "active").length}>{usersEnriched.filter((u) => u.status === "active").slice(0, 10).map((u) => <tr key={u.user_id} className="border-t border-border/40"><td className="p-3 text-foreground">{u.email}</td><td className="p-3 uppercase text-muted-foreground">{u.plan}</td><td className="p-3 text-muted-foreground">{u.billing_cycle}</td><td className="p-3 text-muted-foreground">{u.renewal_date ? new Date(u.renewal_date).toLocaleDateString() : "—"}</td><td className="p-3 font-mono text-foreground">{formatCurrency(u.amount)}</td><td className="p-3 text-muted-foreground">{u.status}</td></tr>)}</DataTable></SectionCard>
+
+        <SectionCard title="Active Subscriptions" subtitle="Currently active billing accounts">
+          <DataTable headers={["email", "plan", "amount", "status"]} colSpan={4} empty={!usersEnriched.filter((u) => u.status === "active").length}>
+            {usersEnriched.filter((u) => u.status === "active").slice(0, 10).map((u) => (
+              <tr key={u.user_id} className="border-t hover:bg-white/[0.015] transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}>
+                <td className="px-4 py-2.5 text-foreground/80 max-w-[160px] truncate">{u.email}</td>
+                <td className="px-4 py-2.5"><PlanChip plan={u.plan} /></td>
+                <td className="px-4 py-2.5 font-mono text-foreground/80">{formatCurrency(u.amount)}</td>
+                <td className="px-4 py-2.5"><StatusChip status={u.status} /></td>
+              </tr>
+            ))}
+          </DataTable>
+        </SectionCard>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <SectionCard title="At-Risk Subscriptions" subtitle="Operational follow-up queue"><DataTable headers={["email", "amount", "currency", "status"]} colSpan={4} empty={!atRiskSubscriptions.length}>{atRiskSubscriptions.slice(0, 10).map((s) => <tr key={s.id} className="border-t border-border/40"><td className="p-3 text-foreground">{profileMap.get(s.user_id)?.email ?? s.user_id.slice(0, 8)}</td><td className="p-3 font-mono text-foreground">{formatCurrency(s.amount)}</td><td className="p-3 text-muted-foreground">{s.currency}</td><td className="p-3 text-muted-foreground">{s.status}</td></tr>)}</DataTable></SectionCard>
-        <SectionCard title="Cancelled Subscriptions" subtitle="Churn monitoring list"><DataTable headers={["user", "plan", "status"]} colSpan={3} empty={!cancelledSubs.length}>{cancelledSubs.slice(0, 10).map((s) => <tr key={s.id} className="border-t border-border/40"><td className="p-3 text-foreground">{profileMap.get(s.user_id)?.email ?? s.user_id.slice(0, 8)}</td><td className="p-3 text-muted-foreground">{s.plan}</td><td className="p-3 text-muted-foreground">{s.status}</td></tr>)}</DataTable></SectionCard>
+      <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <SectionCard title="At-Risk Subscriptions" subtitle="Past due and flagged accounts — require action">
+          <DataTable headers={["email", "amount", "currency", "status"]} colSpan={4} empty={!atRiskSubscriptions.length}>
+            {atRiskSubscriptions.slice(0, 10).map((s) => (
+              <tr key={s.id} className="border-t hover:bg-white/[0.015] transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}>
+                <td className="px-4 py-2.5 text-foreground/80">{profileMap.get(s.user_id)?.email ?? s.user_id.slice(0, 8)}</td>
+                <td className="px-4 py-2.5 font-mono text-foreground/80">{formatCurrency(s.amount)}</td>
+                <td className="px-4 py-2.5 text-muted-foreground/40 font-mono text-[10px]">{s.currency}</td>
+                <td className="px-4 py-2.5"><StatusChip status={s.status} /></td>
+              </tr>
+            ))}
+          </DataTable>
+        </SectionCard>
+        <SectionCard title="Churned Accounts" subtitle="Cancelled subscriptions — churn monitoring">
+          <DataTable headers={["email", "plan", "status"]} colSpan={3} empty={!cancelledSubs.length}>
+            {cancelledSubs.slice(0, 10).map((s) => (
+              <tr key={s.id} className="border-t hover:bg-white/[0.015] transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}>
+                <td className="px-4 py-2.5 text-foreground/80">{profileMap.get(s.user_id)?.email ?? s.user_id.slice(0, 8)}</td>
+                <td className="px-4 py-2.5"><PlanChip plan={asPlan(s.plan)} /></td>
+                <td className="px-4 py-2.5"><StatusChip status={s.status} /></td>
+              </tr>
+            ))}
+          </DataTable>
+        </SectionCard>
       </section>
     </div>
   );
@@ -1703,82 +1922,109 @@ const AdminDashboard = () => {
   const paidAffiliateCommissions = useMemo(() => affiliateCommissions.filter((c) => c.status === "paid").reduce((s, c) => s + Number(c.amount || 0), 0), [affiliateCommissions]);
 
   const renderAffiliatesPage = () => (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* ── Hero ── */}
+      <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, hsl(222 32% 8%) 0%, hsl(225 36% 10%) 100%)", border: "1px solid hsl(217 30% 14%)" }}>
+        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 60% 50% at 80% 50%, hsl(38 92% 50% / 0.04), transparent)" }} />
+        <div className="relative flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-[9px] font-mono uppercase tracking-[0.22em]" style={{ color: "hsl(38 92% 50% / 0.5)" }}>GROWTH INTELLIGENCE</span>
+              <LiveBadge color="amber" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground/90 tracking-tight">Affiliate Operations</h2>
+            <p className="mt-1 text-[11px]" style={{ color: "hsl(var(--muted-foreground) / 0.4)" }}>
+              Conversion performance, commission health, and payout lifecycle.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {[
+              { label: "Affiliates", val: formatNumber(affiliateProfiles.length) },
+              { label: "Pending",    val: formatCurrency(pendingAffiliateCommissions) },
+              { label: "Paid Out",   val: formatCurrency(paidAffiliateCommissions) },
+            ].map(({ label, val }) => (
+              <div key={label} className="text-right">
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/30">{label}</p>
+                <p className="text-base font-bold text-foreground/85">{val}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Total Affiliates" value={formatNumber(affiliateProfiles.length)} icon={Users} spark={sparkFrom(affiliateProfiles.map((a) => Number(a.total_clicks || 0)))} />
-        <MetricCard label="Pending Commissions" value={formatCurrency(pendingAffiliateCommissions)} icon={Clock3} spark={sparkFrom(affiliateCommissions.filter((a) => a.status === "pending").map((a) => Number(a.amount || 0)))} />
-        <MetricCard label="Paid Commissions" value={formatCurrency(paidAffiliateCommissions)} icon={CheckCircle2} spark={sparkFrom(affiliateCommissions.filter((a) => a.status === "paid").map((a) => Number(a.amount || 0)))} />
-        <MetricCard label="Conversion Revenue" value={formatCurrency(totalAffiliateEarnings)} icon={TrendingUp} spark={sparkFrom(affiliateCommissions.map((a) => Number(a.amount || 0)))} />
+        <MetricCard label="Total Affiliates"    value={formatNumber(affiliateProfiles.length)}    icon={Users}        spark={sparkFrom(affiliateProfiles.map((a) => Number(a.total_clicks || 0)))} />
+        <MetricCard label="Pending Commissions" value={formatCurrency(pendingAffiliateCommissions)} icon={Clock3}     spark={sparkFrom(affiliateCommissions.filter((a) => a.status === "pending").map((a) => Number(a.amount || 0)))} />
+        <MetricCard label="Paid Commissions"    value={formatCurrency(paidAffiliateCommissions)}  icon={CheckCircle2} spark={sparkFrom(affiliateCommissions.filter((a) => a.status === "paid").map((a) => Number(a.amount || 0)))} />
+        <MetricCard label="Conversion Revenue"  value={formatCurrency(totalAffiliateEarnings)}    icon={TrendingUp}   spark={sparkFrom(affiliateCommissions.map((a) => Number(a.amount || 0)))} />
       </section>
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <SectionCard title="Top Affiliates" subtitle="email, clicks, conversions, earned"><DataTable headers={["email", "clicks", "conversions", "earned"]} colSpan={4} empty={!affiliateProfiles.length}>{affiliateProfiles.slice(0, 10).map((a) => <tr key={a.user_id} className="border-t border-border/40"><td className="p-3 text-foreground">{profileMap.get(a.user_id)?.email ?? a.user_id.slice(0, 8)}</td><td className="p-3 font-mono text-foreground">{formatNumber(a.total_clicks)}</td><td className="p-3 font-mono text-foreground">{formatNumber(a.total_conversions)}</td><td className="p-3 font-mono text-primary">{formatCurrency(a.total_earned)}</td></tr>)}</DataTable></SectionCard>
+      <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <SectionCard title="Affiliate Leaderboard" subtitle="Top performers by earnings and conversions">
+          <DataTable headers={["rank", "email", "clicks", "conversions", "earned"]} colSpan={5} empty={!affiliateProfiles.length}>
+            {affiliateProfiles.slice(0, 10).map((a, idx) => (
+              <tr key={a.user_id} className="border-t hover:bg-white/[0.015] transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}>
+                <td className="px-4 py-2.5">
+                  <span className="text-[10px] font-mono" style={{ color: idx === 0 ? "hsl(38 92% 55%)" : idx === 1 ? "hsl(220 15% 55%)" : idx === 2 ? "hsl(25 60% 45%)" : "hsl(var(--muted-foreground) / 0.25)" }}>
+                    #{idx + 1}
+                  </span>
+                </td>
+                <td className="px-4 py-2.5 text-foreground/80 max-w-[160px] truncate">{profileMap.get(a.user_id)?.email ?? a.user_id.slice(0, 8)}</td>
+                <td className="px-4 py-2.5 font-mono text-foreground/60">{formatNumber(a.total_clicks)}</td>
+                <td className="px-4 py-2.5 font-mono text-foreground/60">{formatNumber(a.total_conversions)}</td>
+                <td className="px-4 py-2.5 font-mono font-semibold" style={{ color: "hsl(217 91% 65%)" }}>{formatCurrency(a.total_earned)}</td>
+              </tr>
+            ))}
+          </DataTable>
+        </SectionCard>
+
         <SectionCard
-          title={<div className="flex items-center gap-2"><span className="text-sm font-semibold text-foreground">Referral Conversion Analytics</span><span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-mono tracking-widest" style={{ background: "hsl(217 91% 60% / 0.12)", border: "1px solid hsl(217 91% 60% / 0.25)", color: "hsl(217 95% 72%)" }}><span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />LIVE</span></div>}
-          subtitle={<span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:AFF · Conversions and earnings by affiliate</span>}
+          title={<div className="flex items-center gap-2.5">Referral Conversions<LiveBadge color="amber" /></div>}
+          subtitle={<span className="font-mono">ROBINOS:AFF · Per-affiliate conversion and earnings</span>}
         >
-          <div className="relative rounded-lg overflow-hidden" style={{ background: "linear-gradient(180deg, hsl(222 28% 4%) 0%, hsl(222 24% 3%) 100%)", border: "1px solid hsl(217 30% 11%)" }}>
-            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 30% 13% / 0.35) 0px, transparent 1px, transparent 36px, hsl(217 30% 13% / 0.35) 37px)", backgroundSize: "100% 37px" }} />
-            <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "hsl(217 30% 11%)" }}>
-              <span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:AFF</span>
-              <div className="flex items-center gap-3 text-[9px] font-mono"><span className="flex items-center gap-1"><span className="w-3 h-[2px] rounded-full" style={{ background: "hsl(217 91% 60%)" }} />Conversions</span><span className="flex items-center gap-1"><span className="w-3 h-[2px] rounded-full" style={{ background: "hsl(38 92% 50%)" }} />Earned</span></div>
-            </div>
-            <div className="h-64 px-1 pt-2 pb-1">
+          <div className="relative rounded-xl overflow-hidden" style={{ background: "linear-gradient(180deg, hsl(222 32% 4%) 0%, hsl(222 26% 3%) 100%)", border: "1px solid hsl(217 28% 10%)" }}>
+            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 28% 12% / 0.22) 0px, transparent 1px, transparent 40px)", backgroundSize: "100% 40px" }} />
+            <div className="h-[240px] px-1 pt-3 pb-1">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={affiliateProfiles.slice(0, 10).map((a) => ({ email: (profileMap.get(a.user_id)?.email || a.user_id).split("@")[0], conversions: a.total_conversions, earned: a.total_earned }))} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                <BarChart
+                  data={affiliateProfiles.slice(0, 8).map((a) => ({ name: (profileMap.get(a.user_id)?.email || a.user_id).split("@")[0], conversions: a.total_conversions, earned: a.total_earned }))}
+                  margin={{ top: 4, right: 8, left: -24, bottom: 0 }}
+                >
                   <defs>
-                    <linearGradient id="gradAffC" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(217 91% 60%)" stopOpacity={0.9} /><stop offset="100%" stopColor="hsl(217 91% 60%)" stopOpacity={0.4} /></linearGradient>
-                    <linearGradient id="gradAffE" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(38 92% 50%)" stopOpacity={0.85} /><stop offset="100%" stopColor="hsl(38 92% 50%)" stopOpacity={0.35} /></linearGradient>
+                    <linearGradient id="affConvGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(217 91% 60%)" stopOpacity={0.9} /><stop offset="100%" stopColor="hsl(217 91% 60%)" stopOpacity={0.35} /></linearGradient>
+                    <linearGradient id="affEarnGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(38 92% 50%)" stopOpacity={0.85} /><stop offset="100%" stopColor="hsl(38 92% 50%)" stopOpacity={0.3} /></linearGradient>
                   </defs>
-                  <CartesianGrid vertical={false} stroke="hsl(217 30% 13% / 0)" />
-                  <XAxis dataKey="email" tick={{ fontSize: 8, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={{ stroke: "hsl(217 30% 13%)" }} tickLine={false} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ background: "hsl(222 28% 6% / 0.97)", border: "1px solid hsl(217 30% 16%)", borderRadius: "6px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 8px 24px hsl(0 0% 0% / 0.5)" }} cursor={{ fill: "hsl(217 91% 60% / 0.05)" }} />
-                  <Bar dataKey="conversions" name="Conversions" fill="url(#gradAffC)" radius={[3, 3, 0, 0]} maxBarSize={20} />
-                  <Bar dataKey="earned" name="Earned" fill="url(#gradAffE)" radius={[3, 3, 0, 0]} maxBarSize={20} />
+                  <CartesianGrid vertical={false} stroke="hsl(217 28% 12% / 0)" />
+                  <XAxis dataKey="name" tick={{ fontSize: 8, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.3)" }} axisLine={{ stroke: "hsl(217 28% 11%)" }} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.3)" }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ background: "hsl(222 28% 7% / 0.98)", border: "1px solid hsl(217 28% 16%)", borderRadius: "8px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 12px 40px hsl(0 0% 0% / 0.6)" }} cursor={{ fill: "hsl(217 91% 60% / 0.04)" }} />
+                  <Bar dataKey="conversions" name="Conversions" fill="url(#affConvGrad)" radius={[3, 3, 0, 0]} maxBarSize={18} />
+                  <Bar dataKey="earned" name="Earned" fill="url(#affEarnGrad)" radius={[3, 3, 0, 0]} maxBarSize={18} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex items-center gap-3 px-4 py-2 border-t" style={{ borderColor: "hsl(217 30% 11%)" }}>
-              <span className="w-4 h-[2px] rounded-full" style={{ background: "hsl(217 91% 60%)" }} /><span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-wider">Conversions</span>
-              <span className="w-4 h-[2px] rounded-full" style={{ background: "hsl(38 92% 50%)" }} /><span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-wider">Earned</span>
-              <span className="ml-auto text-[9px] font-mono text-muted-foreground/25">RobinOS Analytics v1</span>
-            </div>
           </div>
         </SectionCard>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <SectionCard
-          title={<div className="flex items-center gap-2"><span className="text-sm font-semibold text-foreground">Affiliate Growth</span><span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-mono tracking-widest" style={{ background: "hsl(142 70% 40% / 0.12)", border: "1px solid hsl(142 70% 40% / 0.25)", color: "hsl(142 70% 60%)" }}><span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />LIVE</span></div>}
-          subtitle={<span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:AFFG · Affiliate onboarding over time</span>}
+          title={<div className="flex items-center gap-2.5">Affiliate Growth<LiveBadge color="green" /></div>}
+          subtitle={<span className="font-mono">ROBINOS:AFFG · Cumulative affiliate onboarding</span>}
         >
-          <div className="relative rounded-lg overflow-hidden" style={{ background: "linear-gradient(180deg, hsl(222 28% 4%) 0%, hsl(222 24% 3%) 100%)", border: "1px solid hsl(217 30% 11%)" }}>
-            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 30% 13% / 0.35) 0px, transparent 1px, transparent 36px, hsl(217 30% 13% / 0.35) 37px)", backgroundSize: "100% 37px" }} />
-            <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "hsl(217 30% 11%)" }}>
-              <span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:AFFG</span>
-              <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground/40"><span>1D</span><span className="text-emerald-400/80">7D</span><span>30D</span></div>
-            </div>
-            <div className="h-64 px-1 pt-2 pb-1">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={dailySeries} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <defs><linearGradient id="gradAffG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(142 70% 45%)" stopOpacity={0.2} /><stop offset="95%" stopColor="hsl(142 70% 45%)" stopOpacity={0} /></linearGradient></defs>
-                  <CartesianGrid vertical={false} stroke="hsl(217 30% 13% / 0)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={{ stroke: "hsl(217 30% 13%)" }} tickLine={false} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ background: "hsl(222 28% 6% / 0.97)", border: "1px solid hsl(217 30% 16%)", borderRadius: "6px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 8px 24px hsl(0 0% 0% / 0.5)" }} cursor={{ stroke: "hsl(142 70% 45% / 0.3)", strokeWidth: 1, strokeDasharray: "4 4" }} />
-                  <Area type="monotone" dataKey="users" name="Users" stroke="hsl(142 70% 45%)" strokeWidth={1.5} fill="url(#gradAffG)" dot={false} activeDot={{ r: 3, fill: "hsl(142 70% 45%)", strokeWidth: 0 }} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex items-center gap-3 px-4 py-2 border-t" style={{ borderColor: "hsl(217 30% 11%)" }}>
-              <span className="w-4 h-[2px] rounded-full" style={{ background: "hsl(142 70% 45%)" }} />
-              <span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-wider">Total Users</span>
-              <span className="ml-auto text-[9px] font-mono text-muted-foreground/25">RobinOS Analytics v1</span>
-            </div>
-          </div>
+          <TerminalChart id="affGrowth" data={dailySeries} dataKey="users" color="hsl(142 70% 45%)" height={200} emptyMsg="No affiliate activity detected." />
         </SectionCard>
-        <SectionCard title="Pending Commission Queue" subtitle="Commissions waiting for processing"><DataTable headers={["affiliate", "commission", "created"]} colSpan={3} empty={!affiliateCommissions.filter((c) => c.status === "pending").length}>{affiliateCommissions.filter((c) => c.status === "pending").slice(0, 10).map((c) => <tr key={c.id} className="border-t border-border/40"><td className="p-3 text-foreground">{profileMap.get(c.affiliate_user_id)?.email ?? c.affiliate_user_id.slice(0, 8)}</td><td className="p-3 font-mono text-foreground">{formatCurrency(c.amount)}</td><td className="p-3 text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</td></tr>)}</DataTable></SectionCard>
+        <SectionCard title="Pending Commission Queue" subtitle="Awaiting processing and payout">
+          <DataTable headers={["affiliate", "commission", "date"]} colSpan={3} empty={!affiliateCommissions.filter((c) => c.status === "pending").length}>
+            {affiliateCommissions.filter((c) => c.status === "pending").slice(0, 10).map((c) => (
+              <tr key={c.id} className="border-t hover:bg-white/[0.015] transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}>
+                <td className="px-4 py-2.5 text-foreground/80">{profileMap.get(c.affiliate_user_id)?.email ?? c.affiliate_user_id.slice(0, 8)}</td>
+                <td className="px-4 py-2.5 font-mono text-foreground/80">{formatCurrency(c.amount)}</td>
+                <td className="px-4 py-2.5 font-mono text-[10px] text-muted-foreground/35">{new Date(c.created_at).toLocaleDateString()}</td>
+              </tr>
+            ))}
+          </DataTable>
+        </SectionCard>
       </section>
     </div>
   );
@@ -1794,49 +2040,134 @@ const AdminDashboard = () => {
   const renderWithdrawalsPage = () => {
     const filtered = withdrawStatusFilter === "all" ? withdrawals : withdrawals.filter((w) => asWithdrawStatus(w.status) === withdrawStatusFilter);
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
+        {/* ── Hero ── */}
+        <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, hsl(222 32% 8%) 0%, hsl(218 36% 10%) 100%)", border: "1px solid hsl(217 30% 14%)" }}>
+          <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse 50% 60% at 85% 50%, hsl(280 70% 60% / 0.04), transparent)" }} />
+          <div className="relative flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-[9px] font-mono uppercase tracking-[0.22em]" style={{ color: "hsl(280 70% 60% / 0.5)" }}>TREASURY OPERATIONS</span>
+              </div>
+              <h2 className="text-xl font-bold text-foreground/90 tracking-tight">Withdrawal Operations</h2>
+              <p className="mt-1 text-[11px]" style={{ color: "hsl(var(--muted-foreground) / 0.4)" }}>
+                Audit-safe payout queue. Approve, process, or reject affiliate payouts.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              {[
+                { label: "Pending",  val: formatNumber(pendingWithdrawals.length) },
+                { label: "Volume",   val: formatCurrency(totalWithdrawalVolume) },
+                { label: "Rejected", val: formatNumber(failedWithdrawals) },
+              ].map(({ label, val }) => (
+                <div key={label} className="text-right">
+                  <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/30">{label}</p>
+                  <p className="text-base font-bold text-foreground/85">{val}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <MetricCard label="Pending Withdrawals" value={formatNumber(pendingWithdrawals.length)} icon={Clock3} spark={sparkFrom(pendingWithdrawals.map((w) => Number(w.amount || 0)))} />
-          <MetricCard label="Paid This Month" value={formatCurrency(paidWithdrawalsMonth.reduce((s, w) => s + Number(w.amount || 0), 0))} icon={CheckCircle2} spark={sparkFrom(paidWithdrawalsMonth.map((w) => Number(w.amount || 0)))} />
-          <MetricCard label="Total Withdrawal Volume" value={formatCurrency(totalWithdrawalVolume)} icon={Wallet} spark={sparkFrom(withdrawals.map((w) => Number(w.amount || 0)))} />
-          <MetricCard label="Failed Withdrawals" value={formatNumber(failedWithdrawals)} icon={ArrowDownRight} spark={sparkFrom(withdrawals.filter((w) => asWithdrawStatus(w.status) === "rejected").map((w) => Number(w.amount || 0)))} />
+          <MetricCard label="Pending Withdrawals"       value={formatNumber(pendingWithdrawals.length)}                                      icon={Clock3}       spark={sparkFrom(pendingWithdrawals.map((w) => Number(w.amount || 0)))} />
+          <MetricCard label="Paid This Month"           value={formatCurrency(paidWithdrawalsMonth.reduce((s, w) => s + Number(w.amount || 0), 0))} icon={CheckCircle2} spark={sparkFrom(paidWithdrawalsMonth.map((w) => Number(w.amount || 0)))} />
+          <MetricCard label="Total Volume"              value={formatCurrency(totalWithdrawalVolume)}                                         icon={Wallet}       spark={sparkFrom(withdrawals.map((w) => Number(w.amount || 0)))} />
+          <MetricCard label="Failed Withdrawals"        value={formatNumber(failedWithdrawals)}                                              icon={ArrowDownRight} spark={sparkFrom(withdrawals.filter((w) => asWithdrawStatus(w.status) === "rejected").map((w) => Number(w.amount || 0)))} />
         </section>
 
-        <SectionCard title="Withdrawal Request Queue" subtitle="Approve, reject, and mark paid" right={<select value={withdrawStatusFilter} onChange={(e) => setWithdrawStatusFilter(e.target.value as "all" | WithdrawStatus)} className="h-8 rounded-md border border-border/60 bg-secondary/70 px-2 text-xs text-foreground"><option value="all">All status</option><option value="pending">pending</option><option value="approved">approved</option><option value="paid">paid</option><option value="rejected">rejected</option></select>}>
-          <div className="overflow-auto rounded-lg border border-border/50">
-            <table className="w-full min-w-[1080px] text-xs">
-              <thead className="bg-secondary/40 text-[10px] uppercase tracking-[0.08em] text-muted-foreground"><tr><th className="p-3 text-left">affiliate email</th><th className="p-3 text-left">payout method</th><th className="p-3 text-left">payout address</th><th className="p-3 text-left">requested amount</th><th className="p-3 text-left">request date</th><th className="p-3 text-left">status</th><th className="p-3 text-left">actions</th></tr></thead>
+        <SectionCard
+          title="Payout Request Queue"
+          subtitle="Review, approve, and mark withdrawals as paid"
+          right={
+            <select
+              value={withdrawStatusFilter}
+              onChange={(e) => setWithdrawStatusFilter(e.target.value as "all" | WithdrawStatus)}
+              className="h-8 rounded-lg px-3 text-[10px] font-mono text-foreground"
+              style={{ border: "1px solid hsl(217 28% 13%)", background: "hsl(222 28% 6%)" }}
+            >
+              <option value="all">All status</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="paid">Paid</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          }
+        >
+          <div className="overflow-auto rounded-xl" style={{ border: "1px solid hsl(217 28% 11% / 0.8)" }}>
+            <table className="w-full min-w-[1100px] text-xs">
+              <thead style={{ background: "hsl(222 28% 5%)", borderBottom: "1px solid hsl(217 28% 11%)" }}>
+                <tr>
+                  {["affiliate", "method", "payout address", "amount", "date", "status", "actions"].map((h) => (
+                    <th key={h} className="px-4 py-3 text-left text-[9px] font-mono uppercase tracking-[0.14em]" style={{ color: "hsl(var(--muted-foreground) / 0.3)" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
               <tbody>
                 {filtered.map((row) => {
                   const status = asWithdrawStatus(row.status);
                   const email = profileMap.get(row.user_id)?.email ?? row.user_id.slice(0, 8);
-                  const payoutMethodLabel = row.payout_method === "usdt_trc20" ? "USDT (TRC20)" : "PayPal";
+                  const payoutMethodLabel = row.payout_method === "usdt_trc20" ? "USDT TRC20" : "PayPal";
                   return (
-                    <tr key={row.id} className="border-t border-border/40 hover:bg-secondary/20">
-                      <td className="p-3 text-foreground">{email}</td>
-                      <td className="p-3 text-muted-foreground">{payoutMethodLabel}</td>
-                      <td className="p-3 text-muted-foreground">
+                    <tr key={row.id} className="border-t hover:bg-white/[0.018] transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}>
+                      <td className="px-4 py-3 text-foreground/80 max-w-[140px] truncate">{email}</td>
+                      <td className="px-4 py-3">
+                        <span className="text-[9px] font-mono px-2 py-0.5 rounded" style={{ background: "hsl(217 28% 10%)", color: "hsl(var(--muted-foreground) / 0.5)", border: "1px solid hsl(217 28% 14%)" }}>
+                          {payoutMethodLabel}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground/50 max-w-[200px]">
                         <div className="flex items-center gap-2">
-                          <span className="max-w-[280px] truncate">{row.payout_details}</span>
+                          <span className="truncate">{row.payout_details}</span>
                           <button
-                            onClick={() => {
-                              void navigator.clipboard.writeText(row.payout_details || "");
-                              toast.success("Payout details copied");
-                            }}
-                            className="inline-flex h-7 items-center gap-1 rounded border border-border/60 px-2 text-[10px] text-foreground hover:border-primary/40"
+                            onClick={() => { void navigator.clipboard.writeText(row.payout_details || ""); toast.success("Copied"); }}
+                            className="shrink-0 inline-flex h-6 items-center gap-1 rounded px-1.5 text-[9px] font-mono text-muted-foreground/35 hover:text-foreground/60 transition-colors"
+                            style={{ border: "1px solid hsl(217 28% 13%)" }}
                           >
-                            <Copy className="h-3 w-3" /> copy
+                            <Copy className="h-2.5 w-2.5" /> copy
                           </button>
                         </div>
                       </td>
-                      <td className="p-3 font-mono text-foreground">{formatCurrency(row.amount)}</td>
-                      <td className="p-3 text-muted-foreground">{new Date(row.created_at).toLocaleDateString()}</td>
-                      <td className="p-3"><span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] uppercase ${statusClass[status]}`}>{status}</span></td>
-                      <td className="p-3"><div className="flex flex-wrap gap-1.5">{status === "pending" ? <><button onClick={() => withdrawalMutation.mutate({ id: row.id, status: "approved" })} className="h-7 rounded bg-primary px-2 text-[10px] text-primary-foreground">approve</button><button onClick={() => withdrawalMutation.mutate({ id: row.id, status: "rejected" })} className="h-7 rounded border border-border/60 px-2 text-[10px]">reject</button></> : null}{status === "approved" ? <button onClick={() => withdrawalMutation.mutate({ id: row.id, status: "paid" })} className="h-7 rounded bg-primary px-2 text-[10px] text-primary-foreground">mark paid</button> : null}</div></td>
+                      <td className="px-4 py-3 font-mono font-semibold text-foreground/85">{formatCurrency(row.amount)}</td>
+                      <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground/35">{new Date(row.created_at).toLocaleDateString()}</td>
+                      <td className="px-4 py-3"><span className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider ${statusClass[status]}`}>{status}</span></td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1.5">
+                          {status === "pending" ? (
+                            <>
+                              <button
+                                onClick={() => withdrawalMutation.mutate({ id: row.id, status: "approved" })}
+                                className="h-7 rounded-lg px-2.5 text-[9px] font-mono uppercase tracking-wider text-white transition-all"
+                                style={{ background: "hsl(217 91% 50% / 0.85)", border: "1px solid hsl(217 91% 60% / 0.3)" }}
+                              >
+                                approve
+                              </button>
+                              <button
+                                onClick={() => withdrawalMutation.mutate({ id: row.id, status: "rejected" })}
+                                className="h-7 rounded-lg px-2.5 text-[9px] font-mono uppercase tracking-wider text-red-400 transition-all"
+                                style={{ border: "1px solid hsl(0 72% 55% / 0.25)", background: "hsl(0 72% 55% / 0.06)" }}
+                              >
+                                reject
+                              </button>
+                            </>
+                          ) : null}
+                          {status === "approved" ? (
+                            <button
+                              onClick={() => withdrawalMutation.mutate({ id: row.id, status: "paid" })}
+                              className="h-7 rounded-lg px-2.5 text-[9px] font-mono uppercase tracking-wider text-emerald-400 transition-all"
+                              style={{ border: "1px solid hsl(142 70% 45% / 0.3)", background: "hsl(142 70% 45% / 0.07)" }}
+                            >
+                              mark paid
+                            </button>
+                          ) : null}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
-                {!filtered.length ? <tr><td colSpan={7} className="p-0"><EmptyState title="No withdrawals found" description="Requests will appear here when affiliates submit payouts." /></td></tr> : null}
+                {!filtered.length ? (
+                  <tr><td colSpan={7} className="p-0"><EmptyState title="No payout requests detected" description="Affiliate withdrawal requests will appear here." /></td></tr>
+                ) : null}
               </tbody>
             </table>
           </div>
@@ -1870,56 +2201,178 @@ const AdminDashboard = () => {
 
   return (
     <SidebarProvider defaultOpen>
-      <div className="flex min-h-screen w-full overflow-hidden bg-background grain">
-        <Sidebar collapsible="icon" className="border-r border-border/60 bg-sidebar/90 backdrop-blur-xl">
+      <div
+        className="flex min-h-screen w-full overflow-hidden"
+        style={{ background: "hsl(222 30% 4%)" }}
+      >
+        {/* ── Sidebar ── */}
+        <Sidebar
+          collapsible="icon"
+          className="backdrop-blur-2xl"
+          style={{
+            background: "linear-gradient(180deg, hsl(222 32% 6%) 0%, hsl(222 28% 5%) 100%)",
+            borderRight: "1px solid hsl(217 28% 10%)",
+          }}
+        >
           <SidebarContent>
-            <div className="flex h-14 items-center border-b border-border/60 px-3"><BrandMark size={18} withWordmark className="drop-shadow-[0_0_12px_hsl(217_91%_60%/0.2)] group-data-[collapsible=icon]:opacity-0" /></div>
-            {navGroups.map((group) => {
-              const isExpanded = group.items.some((item) => currentPath === item.path);
-              return (
-                <SidebarGroup key={group.title} className={isExpanded ? "rounded-md bg-sidebar-accent/20" : ""}>
-                  <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
-                  <SidebarGroupContent>
-                    <SidebarMenu>
-                      {group.items.map((item) => (
-                        <SidebarMenuItem key={item.path}>
-                          <SidebarMenuButton asChild isActive={currentPath === item.path}>
-                            <NavLink to={item.path} className="flex items-center gap-2 text-xs"><item.icon className="h-4 w-4" /><span>{item.label}</span></NavLink>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      ))}
-                    </SidebarMenu>
-                  </SidebarGroupContent>
-                </SidebarGroup>
-              );
-            })}
+            {/* Brand */}
+            <div
+              className="flex h-14 items-center px-4"
+              style={{ borderBottom: "1px solid hsl(217 28% 10%)" }}
+            >
+              <BrandMark
+                size={18}
+                withWordmark
+                className="drop-shadow-[0_0_14px_hsl(217_91%_60%/0.25)] group-data-[collapsible=icon]:opacity-0"
+              />
+            </div>
+
+            {/* System status strip */}
+            <div
+              className="mx-3 mt-3 flex items-center gap-2 rounded-lg px-3 py-2 group-data-[collapsible=icon]:hidden"
+              style={{ background: "hsl(217 91% 60% / 0.05)", border: "1px solid hsl(217 91% 60% / 0.1)" }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2.5s" }} />
+              <span className="text-[9px] font-mono uppercase tracking-wider" style={{ color: "hsl(217 91% 60% / 0.55)" }}>
+                PRODUCTION · LIVE
+              </span>
+            </div>
+
+            {/* Nav */}
+            <div className="px-2 pt-3 pb-2 space-y-1">
+              {navGroups.map((group) => {
+                const isGroupActive = group.items.some((item) => currentPath === item.path);
+                return (
+                  <SidebarGroup key={group.title} className={isGroupActive ? "rounded-xl" : ""} style={isGroupActive ? { background: "hsl(217 91% 60% / 0.04)" } : {}}>
+                    <SidebarGroupLabel className="text-[9px] font-mono uppercase tracking-[0.18em] px-3 pb-1 pt-2" style={{ color: "hsl(var(--muted-foreground) / 0.25)" }}>
+                      {group.title}
+                    </SidebarGroupLabel>
+                    <SidebarGroupContent>
+                      <SidebarMenu>
+                        {group.items.map((item) => {
+                          const isActive = currentPath === item.path;
+                          return (
+                            <SidebarMenuItem key={item.path}>
+                              <SidebarMenuButton asChild isActive={isActive}>
+                                <NavLink
+                                  to={item.path}
+                                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs transition-all"
+                                  style={isActive ? {
+                                    background: "hsl(217 91% 60% / 0.1)",
+                                    color: "hsl(217 91% 70%)",
+                                    border: "1px solid hsl(217 91% 60% / 0.18)",
+                                  } : {
+                                    color: "hsl(var(--muted-foreground) / 0.5)",
+                                    border: "1px solid transparent",
+                                  }}
+                                >
+                                  <item.icon className="h-3.5 w-3.5 shrink-0" />
+                                  <span className="font-medium tracking-wide">{item.label}</span>
+                                  {isActive && <span className="ml-auto w-1 h-1 rounded-full" style={{ background: "hsl(217 91% 60%)" }} />}
+                                </NavLink>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          );
+                        })}
+                      </SidebarMenu>
+                    </SidebarGroupContent>
+                  </SidebarGroup>
+                );
+              })}
+            </div>
+
+            {/* Admin identity footer */}
+            <div
+              className="mx-3 mt-auto mb-3 rounded-xl px-3 py-2.5 group-data-[collapsible=icon]:hidden"
+              style={{ background: "hsl(222 28% 6%)", border: "1px solid hsl(217 28% 11%)" }}
+            >
+              <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/20 mb-0.5">Admin</p>
+              <p className="text-[10px] font-mono text-muted-foreground/40 truncate">{user?.email ?? "—"}</p>
+            </div>
           </SidebarContent>
         </Sidebar>
 
-        <div className="min-w-0 flex-1">
-          <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border/60 bg-background/85 px-3 backdrop-blur-lg sm:px-5">
-            <div className="flex items-center gap-2"><SidebarTrigger className="text-muted-foreground hover:text-foreground" /><Shield className="h-4 w-4 text-primary" /><span className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Admin Operations</span></div>
-            <div className="flex items-center gap-2"><button onClick={refreshAll} className="rounded-lg p-2 text-muted-foreground transition-colors hover:text-foreground"><RefreshCw className="h-4 w-4" /></button><span className="hidden text-xs font-mono text-muted-foreground md:inline">{user?.email}</span><button onClick={async () => { if (user?.id) { try { await logAdminAction("admin_logout", user.id, { email: user.email ?? null }); } catch {} } await signOut(); navigate("/adminsh/auth"); }} className="rounded-lg p-2 text-muted-foreground transition-colors hover:text-foreground"><LogOut className="h-4 w-4" /></button></div>
+        {/* ── Main ── */}
+        <div className="min-w-0 flex-1 flex flex-col">
+          {/* Topbar */}
+          <header
+            className="sticky top-0 z-20 flex h-14 items-center justify-between px-4 sm:px-6 backdrop-blur-xl"
+            style={{
+              background: "hsl(222 30% 5% / 0.92)",
+              borderBottom: "1px solid hsl(217 28% 10%)",
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <SidebarTrigger className="text-muted-foreground/30 hover:text-foreground/60 transition-colors" />
+              <div className="w-px h-4 shrink-0" style={{ background: "hsl(217 28% 12%)" }} />
+              <div className="flex items-center gap-1.5">
+                <Shield className="h-3.5 w-3.5" style={{ color: "hsl(217 91% 60% / 0.6)" }} />
+                <span
+                  className="text-[9px] uppercase tracking-[0.18em] font-mono hidden sm:block"
+                  style={{ color: "hsl(var(--muted-foreground) / 0.3)" }}
+                >
+                  {meta.title}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={refreshAll}
+                className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground/30 hover:text-foreground/60 transition-colors"
+                style={{ border: "1px solid hsl(217 28% 12%)" }}
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={async () => {
+                  if (user?.id) { try { await logAdminAction("admin_logout", user.id, { email: user.email ?? null }); } catch {} }
+                  await signOut();
+                  navigate("/adminsh/auth");
+                }}
+                className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground/30 hover:text-red-400/60 transition-colors"
+                style={{ border: "1px solid hsl(217 28% 12%)" }}
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </header>
 
-          <main className="mx-auto max-w-[1540px] space-y-6 p-4 md:p-6">
-            <section className="rounded-lg border border-border/60 bg-card/35 p-4"><h1 className="text-xl font-semibold text-foreground">{meta.title}</h1><p className="mt-1 text-sm text-muted-foreground">{meta.subtitle}</p></section>
-
+          {/* Page content */}
+          <main
+            className="flex-1 overflow-auto mx-auto w-full max-w-[1600px] p-4 md:p-6 space-y-6"
+          >
             {queryErrors.length ? (
-              <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
-                Some backend queries failed.
-                <button onClick={refreshAll} className="ml-2 underline underline-offset-2">Retry</button>
+              <div
+                className="rounded-xl p-3 text-xs font-mono flex items-center gap-2"
+                style={{ background: "hsl(0 72% 55% / 0.08)", border: "1px solid hsl(0 72% 55% / 0.2)", color: "hsl(0 72% 65%)" }}
+              >
+                <span>⚠ Some backend queries failed.</span>
+                <button onClick={refreshAll} className="underline underline-offset-2">Retry</button>
               </div>
             ) : null}
 
             {isBootLoading ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-lg" />)}</div>
-                <Skeleton className="h-72 rounded-lg" />
-                <Skeleton className="h-72 rounded-lg" />
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <Skeleton key={i} className="h-36 rounded-xl" style={{ background: "hsl(222 28% 7%)" }} />
+                  ))}
+                </div>
+                <Skeleton className="h-64 rounded-xl" style={{ background: "hsl(222 28% 7%)" }} />
+                <Skeleton className="h-64 rounded-xl" style={{ background: "hsl(222 28% 7%)" }} />
               </div>
             ) : (
-              <AnimatePresence mode="wait"><motion.div key={currentPath} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}>{renderPage()}</motion.div></AnimatePresence>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentPath}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+                >
+                  {renderPage()}
+                </motion.div>
+              </AnimatePresence>
             )}
           </main>
         </div>
