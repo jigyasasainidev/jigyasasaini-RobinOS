@@ -53,7 +53,7 @@ const faqItems = [
   { q: "What plans do you offer?", a: "We offer four plans: Free (24hr trial with 1 scan, 2 scripts, 2 audio scans, 3 hashtag scans), Creator ($19/mo — 20 scripts/day, trend discovery, hashtag research), Pro Creator ($39/mo — 100 scripts/day, advanced optimization, analytics), and Agency ($99/mo — team workspaces, unlimited generations with fair usage, white-label exports). All paid plans come with a 14-day money-back guarantee." },
   { q: "What is Trending Audio & Hashtag Discovery?", a: "Our AI scans TikTok, Instagram, Facebook & YouTube to find currently viral audio tracks and trending hashtags. It surfaces global creator momentum and platform-level trend signals for international teams. Results update with every scan — so you always get fresh, real-time data." },
   { q: "Is there a free trial?", a: "Yes! The Free plan gives you 1 scan, 2 scripts, 2 trending audio scans, and 3 hashtag scans within 24 hours to test the platform. No credit card required." },
-  { q: "How does the Affiliate Program work?", a: "After signing up, you get a unique referral link in your dashboard's Referrals tab. You earn 30% commission when your referred users subscribe to any paid plan. Monthly plans give recurring commission; yearly plans give one-time 30% commission. Minimum withdrawal is $10 through your configured payout method." },
+  { q: "How does the Affiliate Program work?", a: "After signing up, you get a unique referral link in your dashboard's Referrals tab. You earn commissions when your referred users subscribe to any paid plan. Monthly plans give recurring commission; yearly plans give one-time commission. Check your dashboard for current commission rates and minimum withdrawal threshold." },
   { q: "Which platforms are supported for Trending Audio & Hashtags?", a: "Free and Creator plans support Instagram only. Pro Creator and Agency plans unlock TikTok, Instagram, Facebook & YouTube — covering all major platforms for both audio and hashtag discovery." },
   { q: "Is my data secure?", a: "Yes. All data is encrypted at rest (AES-256) and in transit (TLS 1.3). Row-level security ensures you can only access your own data. API keys are encrypted and never logged or cached." },
   { q: "Can I cancel my subscription anytime?", a: "Absolutely. All plans are month-to-month with no lock-in. Cancel anytime from your dashboard. We also offer a 14-day money-back guarantee — no questions asked." },
@@ -917,14 +917,14 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
 
               {/* Copy */}
               <p className="mt-4 text-sm text-muted-foreground leading-relaxed max-w-sm">
-                Join our partner ecosystem and earn 30% monthly recurring commission on every paid referral. Real-time tracking, monthly payouts, and transparent analytics.
+                Join our partner ecosystem and earn {platformSettings?.affiliate_commission_percent ?? 30}% monthly recurring commission on every paid referral. Real-time tracking, monthly payouts, and transparent analytics.
               </p>
 
               {/* Metric cards */}
               <div className="mt-7 grid grid-cols-3 gap-2.5 max-w-sm">
                 {[
-                  { value: "30%", label: "Commission", color: "hsl(217 91% 60%)" },
-                  { value: "$25", label: "Min Payout", color: "hsl(142 70% 50%)" },
+                  { value: `${platformSettings?.affiliate_commission_percent ?? 30}%`, label: "Commission", color: "hsl(217 91% 60%)" },
+                  { value: `$${platformSettings?.minimum_withdrawal ?? 25}`, label: "Min Payout", color: "hsl(142 70% 50%)" },
                   { value: "Monthly", label: "Recurring", color: "hsl(38 92% 55%)" },
                 ].map((m) => (
                   <motion.div

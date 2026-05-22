@@ -665,7 +665,7 @@ export function AffiliateTermsPage() {
           id: "commission",
           title: "Commission structure",
           body: [
-            "Standard affiliate commission is 30% on qualifying paid referrals unless campaign-specific terms explicitly override this rate.",
+            "Standard affiliate commission applies on qualifying paid referrals as configured in the current affiliate settings. Campaign-specific terms may explicitly override the base rate. Refer to your affiliate dashboard for the current active commission percentage.",
           ],
         },
         {
