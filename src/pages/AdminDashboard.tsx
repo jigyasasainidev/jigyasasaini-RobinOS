@@ -1123,36 +1123,24 @@ const AdminDashboard = () => {
 
   const userPlanMutation = useMutation({
     mutationFn: async ({ row, plan }: { row: UserEnriched; plan: UserPlan }) => {
-      const payload = {
-        user_id: row.user_id,
-        plan: plan === "pro" ? "pro_creator" : plan,
-        amount: plan === "agency" ? settingsDraft.agency_price : plan === "pro" ? settingsDraft.pro_price : settingsDraft.creator_price,
-        currency: "USD",
-        status: row.status === "suspended" ? "past_due" : row.status,
-        // Manual admin upgrades/downgrades are entitlement-only — not revenue-generating
-        subscription_source: "manual_admin" as const,
-        is_revenue_eligible: false,
-      };
+      // ── Cooldown check ─────────────────────────────────────
+      // Admins bypass the 14-day cooldown via p_skip_cooldown=true.
+      // This matches the admin_grant_subscription RPC behavior.
+      const { error: rpcError } = await db.rpc("admin_grant_subscription", {
+        p_target_user_id: row.user_id,
+        p_plan_key: plan === "pro" ? "pro_creator" : plan,
+        p_billing_cycle: "monthly",
+        p_duration_days: 30,
+        p_granted_reason: `Admin ${plan === row.plan ? "re-granted" : "changed"} to ${plan}`,
+        p_skip_cooldown: true,           // admins always bypass cooldown
+      } as any);
 
-      if (row.subscription_id) {
-        const { error } = await db.from("user_subscriptions").update(payload).eq("id", row.subscription_id);
-        if (error) throw error;
-      } else {
-        const { error } = await db.from("user_subscriptions").insert(payload);
-        if (error) throw error;
-      }
-
-      // Update BOTH current_plan AND subscription_tier so all entitlement
-      // resolution paths (frontend useProfile + backend resolve_user_plan) stay in sync.
-      const { error: profileError } = await db.from("profiles").update({
-        current_plan: plan,
-        subscription_tier: plan === "pro" ? "pro_creator" : plan,
-      }).eq("user_id", row.user_id);
-      if (profileError) throw profileError;
+      if (rpcError) throw rpcError;
 
       await writeAdminLog("subscription_plan_updated", row.user_id, {
         email: row.email,
         plan,
+        via: "admin_grant_subscription",
       });
     },
     onSuccess: () => {
