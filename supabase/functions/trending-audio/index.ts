@@ -243,7 +243,7 @@ async function fetchRealAudios(platform: Platform) {
       title:      item.title,
       artist:     item.artist,
       category,
-      uses:       `Chart #${idx + 1}`,
+      uses:       `Signal #${idx + 1}`,   // internal rank only — UI uses velocity/confidence
       trend,
       tip:        `Use this audio on ${platform} with a strong hook in the first 2 seconds and clear on-screen context for better retention.`,
       velocity,
@@ -297,7 +297,7 @@ async function fetchRealHashtags(platform: Platform) {
     return {
       tag:      item.display,
       category,
-      posts:    `Rank #${idx + 1}`,
+      posts:    `Signal #${idx + 1}`,   // internal rank only — UI uses velocity/confidence
       trend,
       tip:      `Pair ${item.display} with a platform-specific hook and current context on ${platform} for stronger discoverability.`,
       velocity,
