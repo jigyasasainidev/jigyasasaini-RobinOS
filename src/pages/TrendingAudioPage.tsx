@@ -5,7 +5,7 @@ import { Music, TrendingUp, ArrowUp, Sparkles, Loader2, Search, Copy, Check, Loc
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { useTierLevel } from "@/hooks/useProfile";
+import { useAllPlatformsUnlocked, useEntitlements, useHashtagScanLimit, useIsAgency, useTrendScanLimit } from "@/hooks/useEntitlements";
 import { useAuth } from "@/contexts/AuthContext";
 
 type Platform = "TikTok" | "Instagram" | "Facebook" | "YouTube";
@@ -26,22 +26,6 @@ interface TrendingHashtag {
   trend: "up" | "stable" | "new";
   tip: string;
 }
-
-const TIER_PLATFORM_ACCESS: Record<string, Platform[]> = {
-  free: ["Instagram"],
-  creator: ["Instagram"],
-  pro_creator: ["TikTok", "Instagram", "Facebook", "YouTube"],
-  agency: ["TikTok", "Instagram", "Facebook", "YouTube"],
-  scale_agency: ["TikTok", "Instagram", "Facebook", "YouTube"],
-};
-
-const AUDIO_LIMITS: Record<string, number> = {
-  free: 2, creator: 50, pro_creator: 200, agency: 99999, scale_agency: 99999,
-};
-
-const HASHTAG_LIMITS: Record<string, number> = {
-  free: 3, creator: 70, pro_creator: 200, agency: 500, scale_agency: 500,
-};
 
 const platforms: { id: Platform; label: string }[] = [
   { id: "TikTok", label: "TikTok" },
@@ -70,7 +54,21 @@ const categoryColor = (cat: string) => {
 const TrendingAudioPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const tier = useTierLevel();
+  // ── Centralized entitlements — no scattered tier === 'pro_creator' checks ──
+  const allPlatformsUnlocked = useAllPlatformsUnlocked();
+  const isAgency = useIsAgency();
+  const audioLimitFromPlan = useTrendScanLimit();    // -1 = unlimited
+  const hashtagLimitFromPlan = useHashtagScanLimit(); // -1 = unlimited
+
+  // Display limits for usage badges
+  const audioLimit = audioLimitFromPlan === -1 ? 99999 : audioLimitFromPlan;
+  const hashtagLimit = hashtagLimitFromPlan === -1 ? 99999 : hashtagLimitFromPlan;
+
+  // Allowed platforms: pro_creator+ gets all; free/creator gets Instagram only
+  const allowedPlatforms: Platform[] = allPlatformsUnlocked
+    ? ["TikTok", "Instagram", "Facebook", "YouTube"]
+    : ["Instagram"];
+
   const [platform, setPlatform] = useState<Platform>("Instagram");
   const [audios, setAudios] = useState<TrendingAudio[]>([]);
   const [hashtags, setHashtags] = useState<TrendingHashtag[]>([]);
@@ -82,11 +80,6 @@ const TrendingAudioPage = () => {
   const [copiedHashIdx, setCopiedHashIdx] = useState<number | null>(null);
   const [audioUsage, setAudioUsage] = useState<{ used: number; limit: number } | null>(null);
   const [hashtagUsage, setHashtagUsage] = useState<{ used: number; limit: number } | null>(null);
-
-  const allowedPlatforms = TIER_PLATFORM_ACCESS[tier] || TIER_PLATFORM_ACCESS.free;
-  const audioLimit = AUDIO_LIMITS[tier] || 2;
-  const hashtagLimit = HASHTAG_LIMITS[tier] || 3;
-  const isAgency = tier === "agency" || tier === "scale_agency";
 
   // ─── Fetch persisted usage on mount (backend as source of truth) ───
   useEffect(() => {
@@ -244,9 +237,9 @@ const TrendingAudioPage = () => {
             {isAgency ? "Unlimited" : `Hashtags: ${hashtagUsage ? hashtagUsage.used : 0}/${hashtagUsage ? hashtagUsage.limit : hashtagLimit}`}
           </Badge>
           <Badge variant="outline" className="text-[10px] font-mono border-border text-muted-foreground">
-            {tier === "free" ? "Free Plan" : tier === "creator" ? "Creator" : tier === "pro_creator" ? "Pro Creator" : "Agency"}
+            {isAgency ? "Agency" : allPlatformsUnlocked ? "Pro Creator" : "Free / Creator"}
           </Badge>
-          {tier === "free" && (
+          {!allPlatformsUnlocked && (
             <button onClick={() => navigate("/dashboard/settings")} className="text-[10px] font-mono text-primary hover:underline">
               Upgrade for more →
             </button>

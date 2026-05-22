@@ -3,7 +3,8 @@ import { motion } from "framer-motion";
 import { Mic, Play, Pause, Download, Loader2, Lock, Volume2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useByokAccess, useProfile, useTierLevel } from "@/hooks/useProfile";
+import { useProfile } from "@/hooks/useProfile";
+import { useIsVoiceEnabled, useIsByokEnabled, usePlanKey } from "@/hooks/useEntitlements";
 import { Badge } from "@/components/ui/badge";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 
@@ -20,11 +21,12 @@ const voices = [
 
 const VoiceOverStudioPage = () => {
   const { data: profile } = useProfile();
-  const tier = useTierLevel();
-  const { data: byokEnabled } = useByokAccess();
-  const isTierEligible = tier === "pro_creator" || tier === "agency" || tier === "scale_agency";
-  const isProOrAbove = byokEnabled ?? isTierEligible;
-  const hasKey = !!profile?.elevenlabs_api_key;
+  const plan = usePlanKey();
+  // Voice engine: enabled only for pro_creator+ (tts_generation feature)
+  const isVoiceEnabled = useIsVoiceEnabled();
+  const isByokEnabled = useIsByokEnabled();
+  // hasKey means BYOK is enabled AND the user actually stored their key
+  const hasKey = isByokEnabled && !!profile?.elevenlabs_api_key;
 
   const [script, setScript] = useState("");
   const [selectedVoice, setSelectedVoice] = useState(voices[0].id);
@@ -36,7 +38,7 @@ const VoiceOverStudioPage = () => {
 
   const handleGenerate = async () => {
     if (!script.trim()) { toast.error("Paste your script first"); return; }
-    if (!isProOrAbove) { setShowUpgrade(true); return; }
+    if (!isVoiceEnabled) { setShowUpgrade(true); return; }
     if (!hasKey) { toast.error("Add your ElevenLabs API key in Settings → API Keys"); return; }
     if (script.length > 5000) { toast.error("Script must be under 5000 characters"); return; }
 
@@ -107,14 +109,14 @@ const VoiceOverStudioPage = () => {
         </div>
         <div className="flex items-center gap-3">
           <h1 className="text-chrome text-2xl md:text-3xl font-semibold">Voice Engine</h1>
-          <Badge variant="outline" className={`text-[10px] font-mono ${isProOrAbove ? "border-primary/30 text-primary" : "border-border text-muted-foreground"}`}>
-            {isProOrAbove ? "UNLIMITED (BYOK)" : "PRO CREATOR+ ONLY"}
+          <Badge variant="outline" className={`text-[10px] font-mono ${isVoiceEnabled ? "border-primary/30 text-primary" : "border-border text-muted-foreground"}`}>
+            {isVoiceEnabled ? "ENABLED (BYOK)" : "PRO CREATOR+ ONLY"}
           </Badge>
         </div>
         <p className="text-muted-foreground text-sm mt-1">Generate professional voice overs from your scripts using ElevenLabs.</p>
       </div>
 
-      {!isProOrAbove ? (
+      {!isVoiceEnabled ? (
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="max-w-xl">
           <div className="rounded-xl border border-border/50 bg-card/30 p-8 text-center">
             <Lock className="w-8 h-8 text-muted-foreground/40 mx-auto mb-4" />

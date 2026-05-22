@@ -79,7 +79,9 @@ export function useProfile() {
 
 export function useTierLevel(): TierLevel {
   const { data: profile } = useProfile();
-  const raw = profile?.subscription_tier;
+  // Prefer current_plan which is synced by admin mutations.
+  // Fall back to subscription_tier for compatibility.
+  const raw = (profile as any)?.current_plan || profile?.subscription_tier;
   const normalized = normalizeTier(raw);
   if (["agency", "scale_agency", "pro_creator", "creator"].includes(normalized)) return normalized as TierLevel;
   return "free";

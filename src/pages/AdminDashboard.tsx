@@ -1142,7 +1142,12 @@ const AdminDashboard = () => {
         if (error) throw error;
       }
 
-      const { error: profileError } = await db.from("profiles").update({ current_plan: plan }).eq("user_id", row.user_id);
+      // Update BOTH current_plan AND subscription_tier so all entitlement
+      // resolution paths (frontend useProfile + backend resolve_user_plan) stay in sync.
+      const { error: profileError } = await db.from("profiles").update({
+        current_plan: plan,
+        subscription_tier: plan === "pro" ? "pro_creator" : plan,
+      }).eq("user_id", row.user_id);
       if (profileError) throw profileError;
 
       await writeAdminLog("subscription_plan_updated", row.user_id, {
@@ -1156,6 +1161,7 @@ const AdminDashboard = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-profiles-v2"] });
       // Invalidate the affected user's own profile/entitlement cache so changes propagate
       queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["entitlements"] });
     },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Could not update plan"),
   });

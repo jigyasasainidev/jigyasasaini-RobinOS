@@ -2,7 +2,8 @@ import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Video, Download, Loader2, Lock, Film, Ratio, Palette } from "lucide-react";
 import { toast } from "sonner";
-import { useByokAccess, useProfile, useTierLevel } from "@/hooks/useProfile";
+import { useProfile } from "@/hooks/useProfile";
+import { useIsVideoEnabled, useIsByokEnabled, usePlanKey } from "@/hooks/useEntitlements";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
@@ -23,11 +24,11 @@ const bgStyles = [
 
 const VideoStudioPage = () => {
   const { data: profile } = useProfile();
-  const tier = useTierLevel();
-  const { data: byokEnabled } = useByokAccess();
-  const isTierEligible = tier === "pro_creator" || tier === "agency" || tier === "scale_agency";
-  const isProOrAbove = byokEnabled ?? isTierEligible;
-  const hasVideoKey = !!(profile as any)?.video_api_key;
+  const plan = usePlanKey();
+  // Video engine: enabled only for pro_creator+ (video_generation feature)
+  const isVideoEnabled = useIsVideoEnabled();
+  const isByokEnabled = useIsByokEnabled();
+  const hasVideoKey = isByokEnabled && !!(profile as any)?.video_api_key;
 
   const [script, setScript] = useState("");
   const [aspectRatio, setAspectRatio] = useState("9:16");
@@ -41,7 +42,7 @@ const VideoStudioPage = () => {
 
   const handleGenerate = async () => {
     if (!script.trim()) { toast.error("Paste your script first"); return; }
-    if (!isProOrAbove) { setShowUpgrade(true); return; }
+    if (!isVideoEnabled) { setShowUpgrade(true); return; }
     if (!hasVideoKey) { toast.error("Add your Replicate API key in Settings → API Keys"); return; }
 
     setGenerating(true);
@@ -149,14 +150,14 @@ const VideoStudioPage = () => {
         </div>
         <div className="flex items-center gap-3">
           <h1 className="text-chrome text-2xl md:text-3xl font-semibold">Content Engine</h1>
-          <Badge variant="outline" className={`text-[10px] font-mono ${isProOrAbove ? "border-primary/30 text-primary" : "border-border text-muted-foreground"}`}>
-            {isProOrAbove ? "UNLIMITED (BYOK)" : "PRO CREATOR+ ONLY"}
+          <Badge variant="outline" className={`text-[10px] font-mono ${isVideoEnabled ? "border-primary/30 text-primary" : "border-border text-muted-foreground"}`}>
+            {isVideoEnabled ? "ENABLED (BYOK)" : "PRO CREATOR+ ONLY"}
           </Badge>
         </div>
         <p className="text-muted-foreground text-sm mt-1">Transform your scripts into viral-ready videos with AI (Replicate).</p>
       </div>
 
-      {!isProOrAbove ? (
+      {!isVideoEnabled ? (
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="max-w-xl">
           <div className="rounded-xl border border-border/50 bg-card/30 p-8 text-center">
             <Lock className="w-8 h-8 text-muted-foreground/40 mx-auto mb-4" />
