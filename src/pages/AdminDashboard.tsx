@@ -605,8 +605,25 @@ const AdminDashboard = () => {
 
   const voiceGenerations = useMemo(() => aiGenerations.filter((g) => (g.generation_type || "").toLowerCase() === "voice").length, [aiGenerations]);
   const videoGenerations = useMemo(() => aiGenerations.filter((g) => (g.generation_type || "").toLowerCase() === "video").length, [aiGenerations]);
-  const freeUsers = useMemo(() => usersEnriched.filter((u) => u.plan === "creator" && u.status !== "active").length, [usersEnriched]);
-  const paidUsers = useMemo(() => usersEnriched.filter((u) => u.status === "active").length, [usersEnriched]);
+  // ── Free vs paid classification ───────────────────────────
+  // Source of truth: user_subscriptions table ONLY.
+  // A user is paid ONLY when they have an active/trialing subscription
+  // on a non-free plan. Every new signup gets a seeded free-plan row —
+  // that must NEVER count as paid.
+  const paidUserIds = useMemo(() => {
+    const ids = new Set<string>();
+    subscriptions.forEach((s) => {
+      const normalizedPlan = (s.plan ?? "").toLowerCase();
+      const normalizedStatus = (s.status ?? "").toLowerCase();
+      const isPaidPlan = normalizedPlan !== "free" && normalizedPlan !== "";
+      const isActiveBilling = normalizedStatus === "active" || normalizedStatus === "trialing";
+      if (isPaidPlan && isActiveBilling) ids.add(s.user_id);
+    });
+    return ids;
+  }, [subscriptions]);
+
+  const paidUsers = useMemo(() => paidUserIds.size, [paidUserIds]);
+  const freeUsers = useMemo(() => Math.max(0, profiles.length - paidUserIds.size), [profiles.length, paidUserIds]);
 
   const churnRate = useMemo(() => {
     if (!subscriptions.length) return 0;
