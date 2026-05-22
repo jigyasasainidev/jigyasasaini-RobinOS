@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { Shield, ShieldCheck, Eye, Zap } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { SmartLink } from "@/components/SmartLink";
@@ -137,8 +136,6 @@ export function PublicFooter() {
               </SmartLink>
               <SmartLink to="/trust-safety" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Trust & Safety</SmartLink>
               <SmartLink to="/acceptable-use-policy" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Acceptable Use</SmartLink>
-              <SmartLink to="/privacy" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Privacy</SmartLink>
-              <SmartLink to="/terms" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Terms</SmartLink>
             </div>
           </div>
         </div>
