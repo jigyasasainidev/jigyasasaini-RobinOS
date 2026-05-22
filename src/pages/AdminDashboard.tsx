@@ -45,6 +45,8 @@ import { db } from "@/lib/cloudDb";
 import { supabase } from "@/integrations/supabase/client";
 import { logAdminAction } from "@/lib/adminAudit";
 import type { AdminAuditAction } from "@/types/admin";
+import { PLATFORM_SETTINGS_DEFAULTS, validateSettingsDraft } from "@/types/platform-config";
+import type { PlatformSettingsDraft } from "@/types/platform-config";
 import { BrandMark } from "@/components/BrandMark";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -368,20 +370,7 @@ const AdminDashboard = () => {
   const [userPage, setUserPage] = useState(1);
   const [withdrawStatusFilter, setWithdrawStatusFilter] = useState<"all" | WithdrawStatus>("all");
 
-  const [settingsDraft, setSettingsDraft] = useState({
-    creator_price: 19,
-    pro_price: 39,
-    agency_price: 99,
-    free_scripts_limit: 5,
-    free_scans_limit: 3,
-    affiliate_commission_percent: 30,
-    minimum_withdrawal: 25,
-    payout_delay_days: 7,
-    maintenance_mode: false,
-    announcement_banner: "",
-    support_email: "",
-    platform_domain: "",
-  });
+  const [settingsDraft, setSettingsDraft] = useState<PlatformSettingsDraft>(PLATFORM_SETTINGS_DEFAULTS);
 
   const currentPath = useMemo<AdminPath>(() => (pageMeta[location.pathname as AdminPath] ? (location.pathname as AdminPath) : "/adminsh/dashboard"), [location.pathname]);
 
@@ -498,8 +487,6 @@ const AdminDashboard = () => {
       payout_delay_days: Number(platformSettings.payout_delay_days || 0),
       maintenance_mode: !!platformSettings.maintenance_mode,
       announcement_banner: platformSettings.announcement_banner ?? "",
-      support_email: platformSettings.support_email ?? "",
-      platform_domain: platformSettings.platform_domain ?? "",
     });
   }, [platformSettings]);
 
@@ -852,19 +839,24 @@ const AdminDashboard = () => {
 
   const saveSettingsMutation = useMutation({
     mutationFn: async () => {
+      // Validate before persisting
+      const errors = validateSettingsDraft(settingsDraft);
+      if (Object.keys(errors).length > 0) {
+        const first = Object.values(errors)[0];
+        throw new Error(first);
+      }
+
       const payload = {
-        creator_price: Number(settingsDraft.creator_price || 0),
-        pro_price: Number(settingsDraft.pro_price || 0),
-        agency_price: Number(settingsDraft.agency_price || 0),
-        free_scripts_limit: Number(settingsDraft.free_scripts_limit || 0),
-        free_scans_limit: Number(settingsDraft.free_scans_limit || 0),
-        affiliate_commission_percent: Number(settingsDraft.affiliate_commission_percent || 0),
-        minimum_withdrawal: Number(settingsDraft.minimum_withdrawal || 0),
-        payout_delay_days: Number(settingsDraft.payout_delay_days || 0),
+        creator_price: Number(settingsDraft.creator_price),
+        pro_price: Number(settingsDraft.pro_price),
+        agency_price: Number(settingsDraft.agency_price),
+        free_scripts_limit: Number(settingsDraft.free_scripts_limit),
+        free_scans_limit: Number(settingsDraft.free_scans_limit),
+        affiliate_commission_percent: Number(settingsDraft.affiliate_commission_percent),
+        minimum_withdrawal: Number(settingsDraft.minimum_withdrawal),
+        payout_delay_days: Number(settingsDraft.payout_delay_days),
         maintenance_mode: !!settingsDraft.maintenance_mode,
         announcement_banner: settingsDraft.announcement_banner || null,
-        support_email: settingsDraft.support_email || null,
-        platform_domain: settingsDraft.platform_domain || null,
       };
 
       if (platformSettings?.id) {
@@ -1039,16 +1031,130 @@ const AdminDashboard = () => {
 
   const renderSettingsPage = () => (
     <div className="space-y-4">
-      <SectionCard title="Platform Configuration" subtitle="All settings persist to backend" right={<button onClick={() => saveSettingsMutation.mutate()} className="h-8 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground">{saveSettingsMutation.isPending ? "Saving..." : "Save Changes"}</button>}>
+      <SectionCard
+        title="Platform Configuration"
+        subtitle="Changes persist to database and propagate system-wide immediately"
+        right={
+          <button
+            onClick={() => saveSettingsMutation.mutate()}
+            disabled={saveSettingsMutation.isPending}
+            className="h-8 rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground disabled:opacity-60 transition-opacity"
+          >
+            {saveSettingsMutation.isPending ? "Saving…" : "Save Changes"}
+          </button>
+        }
+      >
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          <div className="space-y-3">
-            <SectionCard title="Pricing" subtitle="Creator / Pro / Agency"><div className="grid grid-cols-3 gap-2"><Input type="number" value={settingsDraft.creator_price} onChange={(e) => setSettingsDraft((s) => ({ ...s, creator_price: Number(e.target.value) }))} /><Input type="number" value={settingsDraft.pro_price} onChange={(e) => setSettingsDraft((s) => ({ ...s, pro_price: Number(e.target.value) }))} /><Input type="number" value={settingsDraft.agency_price} onChange={(e) => setSettingsDraft((s) => ({ ...s, agency_price: Number(e.target.value) }))} /></div></SectionCard>
-            <SectionCard title="Free Limits" subtitle="scripts and scans limits"><div className="grid grid-cols-2 gap-2"><Input type="number" value={settingsDraft.free_scripts_limit} onChange={(e) => setSettingsDraft((s) => ({ ...s, free_scripts_limit: Number(e.target.value) }))} /><Input type="number" value={settingsDraft.free_scans_limit} onChange={(e) => setSettingsDraft((s) => ({ ...s, free_scans_limit: Number(e.target.value) }))} /></div></SectionCard>
-            <SectionCard title="Affiliate Controls" subtitle="commission, minimum withdrawal, payout delay"><div className="grid grid-cols-3 gap-2"><Input type="number" value={settingsDraft.affiliate_commission_percent} onChange={(e) => setSettingsDraft((s) => ({ ...s, affiliate_commission_percent: Number(e.target.value) }))} /><Input type="number" value={settingsDraft.minimum_withdrawal} onChange={(e) => setSettingsDraft((s) => ({ ...s, minimum_withdrawal: Number(e.target.value) }))} /><Input type="number" value={settingsDraft.payout_delay_days} onChange={(e) => setSettingsDraft((s) => ({ ...s, payout_delay_days: Number(e.target.value) }))} /></div></SectionCard>
+
+          {/* LEFT COLUMN */}
+          <div className="space-y-4">
+
+            {/* Pricing */}
+            <SectionCard title="Pricing" subtitle="Monthly prices in USD">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Creator</p>
+                  <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span><Input type="number" min={0} className="pl-6" value={settingsDraft.creator_price} onChange={(e) => setSettingsDraft((s) => ({ ...s, creator_price: Number(e.target.value) }))} /></div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Pro Creator</p>
+                  <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span><Input type="number" min={0} className="pl-6" value={settingsDraft.pro_price} onChange={(e) => setSettingsDraft((s) => ({ ...s, pro_price: Number(e.target.value) }))} /></div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Agency</p>
+                  <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span><Input type="number" min={0} className="pl-6" value={settingsDraft.agency_price} onChange={(e) => setSettingsDraft((s) => ({ ...s, agency_price: Number(e.target.value) }))} /></div>
+                </div>
+              </div>
+            </SectionCard>
+
+            {/* Free Limits */}
+            <SectionCard title="Free Limits" subtitle="Daily quotas for free-tier users">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Scripts / day</p>
+                  <Input type="number" min={0} value={settingsDraft.free_scripts_limit} onChange={(e) => setSettingsDraft((s) => ({ ...s, free_scripts_limit: Number(e.target.value) }))} />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Scans / day</p>
+                  <Input type="number" min={0} value={settingsDraft.free_scans_limit} onChange={(e) => setSettingsDraft((s) => ({ ...s, free_scans_limit: Number(e.target.value) }))} />
+                </div>
+              </div>
+            </SectionCard>
+
+            {/* Affiliate Controls */}
+            <SectionCard title="Affiliate Controls" subtitle="Commission, withdrawal, and payout settings">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Commission %</p>
+                  <Input type="number" min={0} max={100} value={settingsDraft.affiliate_commission_percent} onChange={(e) => setSettingsDraft((s) => ({ ...s, affiliate_commission_percent: Number(e.target.value) }))} />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Min Withdrawal $</p>
+                  <Input type="number" min={1} value={settingsDraft.minimum_withdrawal} onChange={(e) => setSettingsDraft((s) => ({ ...s, minimum_withdrawal: Number(e.target.value) }))} />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Payout Delay (days)</p>
+                  <Input type="number" min={0} value={settingsDraft.payout_delay_days} onChange={(e) => setSettingsDraft((s) => ({ ...s, payout_delay_days: Number(e.target.value) }))} />
+                </div>
+              </div>
+            </SectionCard>
           </div>
-          <div className="space-y-3">
-            <SectionCard title="Maintenance" subtitle="global maintenance and banner"><div className="grid grid-cols-1 gap-2"><select value={settingsDraft.maintenance_mode ? "true" : "false"} onChange={(e) => setSettingsDraft((s) => ({ ...s, maintenance_mode: e.target.value === "true" }))} className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground"><option value="false">Maintenance OFF</option><option value="true">Maintenance ON</option></select><Input value={settingsDraft.announcement_banner} onChange={(e) => setSettingsDraft((s) => ({ ...s, announcement_banner: e.target.value }))} placeholder="Announcement banner" /></div></SectionCard>
-            <SectionCard title="Branding" subtitle="Support email and platform domain"><div className="grid grid-cols-1 gap-2"><button className="h-10 rounded-md border border-border/60 text-sm text-foreground">Upload Logo</button><Input value={settingsDraft.support_email} onChange={(e) => setSettingsDraft((s) => ({ ...s, support_email: e.target.value }))} placeholder="Support email" /><Input value={settingsDraft.platform_domain} onChange={(e) => setSettingsDraft((s) => ({ ...s, platform_domain: e.target.value }))} placeholder="Platform domain" /></div></SectionCard>
+
+          {/* RIGHT COLUMN */}
+          <div className="space-y-4">
+
+            {/* Maintenance */}
+            <SectionCard title="Maintenance" subtitle="Global platform maintenance mode and announcement">
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Maintenance Mode</p>
+                  <select
+                    value={settingsDraft.maintenance_mode ? "true" : "false"}
+                    onChange={(e) => setSettingsDraft((s) => ({ ...s, maintenance_mode: e.target.value === "true" }))}
+                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
+                  >
+                    <option value="false">OFF — Platform running normally</option>
+                    <option value="true">ON — Show maintenance banner</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Announcement Banner</p>
+                  <Input
+                    value={settingsDraft.announcement_banner}
+                    onChange={(e) => setSettingsDraft((s) => ({ ...s, announcement_banner: e.target.value }))}
+                    placeholder="e.g. Scheduled maintenance on May 25 at 2am UTC"
+                    maxLength={280}
+                  />
+                  <p className="text-[10px] text-muted-foreground/50 font-mono text-right">{settingsDraft.announcement_banner.length}/280</p>
+                </div>
+              </div>
+            </SectionCard>
+
+            {/* Live Settings Summary */}
+            <SectionCard title="Current Live Values" subtitle="What users see right now (from database)">
+              <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs">
+                {[
+                  { label: "Creator price", value: `$${platformSettings?.creator_price ?? "—"}/mo` },
+                  { label: "Pro price", value: `$${platformSettings?.pro_price ?? "—"}/mo` },
+                  { label: "Agency price", value: `$${platformSettings?.agency_price ?? "—"}/mo` },
+                  { label: "Free scripts/day", value: platformSettings?.free_scripts_limit ?? "—" },
+                  { label: "Free scans/day", value: platformSettings?.free_scans_limit ?? "—" },
+                  { label: "Commission", value: `${platformSettings?.affiliate_commission_percent ?? "—"}%` },
+                  { label: "Min withdrawal", value: `$${platformSettings?.minimum_withdrawal ?? "—"}` },
+                  { label: "Maintenance", value: platformSettings?.maintenance_mode ? "🔴 ON" : "🟢 OFF" },
+                ].map(({ label, value }) => (
+                  <div key={label} className="flex items-center justify-between rounded-md border border-border/40 bg-secondary/30 px-2.5 py-1.5">
+                    <span className="text-muted-foreground font-mono">{label}</span>
+                    <span className="text-foreground font-medium">{String(value)}</span>
+                  </div>
+                ))}
+              </div>
+              {platformSettings?.updated_at && (
+                <p className="mt-2 text-[10px] text-muted-foreground/50 font-mono text-right">
+                  Last saved: {new Date(platformSettings.updated_at).toLocaleString()}
+                </p>
+              )}
+            </SectionCard>
           </div>
         </div>
       </SectionCard>

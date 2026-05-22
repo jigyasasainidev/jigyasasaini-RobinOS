@@ -1,0 +1,102 @@
+// ============================================================
+// ROBINOS — PLATFORM CONFIGURATION TYPES
+// Single source of truth for all platform-wide settings shapes.
+// Backend table: public.platform_settings (singleton row).
+// ============================================================
+
+/**
+ * Full row shape as stored in the database.
+ * Matches the platform_settings table schema exactly.
+ */
+export interface PlatformSettingsRow {
+  id: string;
+  creator_price: number;
+  pro_price: number;
+  agency_price: number;
+  free_scripts_limit: number;
+  free_scans_limit: number;
+  affiliate_commission_percent: number;
+  minimum_withdrawal: number;
+  payout_delay_days: number;
+  maintenance_mode: boolean;
+  announcement_banner: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Mutable subset of settings exposed to the Admin Settings UI.
+ * Does NOT include id, created_at — those are immutable.
+ * Does NOT include support_email, platform_domain — not part of
+ * admin-controlled operational configuration.
+ */
+export interface PlatformSettingsDraft {
+  creator_price: number;
+  pro_price: number;
+  agency_price: number;
+  free_scripts_limit: number;
+  free_scans_limit: number;
+  affiliate_commission_percent: number;
+  minimum_withdrawal: number;
+  payout_delay_days: number;
+  maintenance_mode: boolean;
+  announcement_banner: string;
+}
+
+/**
+ * Canonical default values — must match the database seed row.
+ * Used as the initial draft state before the DB row is loaded.
+ */
+export const PLATFORM_SETTINGS_DEFAULTS: PlatformSettingsDraft = {
+  creator_price: 19,
+  pro_price: 39,
+  agency_price: 99,
+  free_scripts_limit: 3,
+  free_scans_limit: 20,
+  affiliate_commission_percent: 30,
+  minimum_withdrawal: 25,
+  payout_delay_days: 7,
+  maintenance_mode: false,
+  announcement_banner: "",
+};
+
+/**
+ * Validation rules for the settings draft.
+ * Returns a map of field → error message string.
+ * Empty map means valid.
+ */
+export function validateSettingsDraft(
+  draft: PlatformSettingsDraft,
+): Partial<Record<keyof PlatformSettingsDraft, string>> {
+  const errors: Partial<Record<keyof PlatformSettingsDraft, string>> = {};
+
+  if (draft.creator_price < 0) errors.creator_price = "Price must be ≥ 0";
+  if (draft.pro_price < 0) errors.pro_price = "Price must be ≥ 0";
+  if (draft.agency_price < 0) errors.agency_price = "Price must be ≥ 0";
+  if (draft.free_scripts_limit < 0) errors.free_scripts_limit = "Limit must be ≥ 0";
+  if (draft.free_scans_limit < 0) errors.free_scans_limit = "Limit must be ≥ 0";
+  if (draft.affiliate_commission_percent < 0 || draft.affiliate_commission_percent > 100)
+    errors.affiliate_commission_percent = "Commission must be 0–100%";
+  if (draft.minimum_withdrawal < 1) errors.minimum_withdrawal = "Minimum withdrawal must be ≥ 1";
+  if (draft.payout_delay_days < 0) errors.payout_delay_days = "Payout delay must be ≥ 0";
+
+  return errors;
+}
+
+/**
+ * Lightweight read-only shape used by the live settings hook
+ * (usePlatformSettings) and the EntryPage / DashboardLayout consumers.
+ */
+export interface PlatformSettingsLive {
+  creator_price: number;
+  pro_price: number;
+  agency_price: number;
+  free_scripts_limit: number;
+  free_scans_limit: number;
+  affiliate_commission_percent: number;
+  minimum_withdrawal: number;
+  payout_delay_days: number;
+  maintenance_mode: boolean;
+  announcement_banner: string | null;
+  updated_at: string;
+}
