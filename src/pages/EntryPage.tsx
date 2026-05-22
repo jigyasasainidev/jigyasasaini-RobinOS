@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { motion, useInView, useScroll, useTransform } from "framer-motion";
+import { motion, AnimatePresence, useInView, useScroll, useTransform } from "framer-motion";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Lenis from "lenis";
 import { ChevronDown, Scan, Video, BarChart3, Globe, Check, Zap, Shield, Clock, Music, Mic, Layers, Brain, Hash, Type } from "lucide-react";
@@ -330,6 +330,42 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
       />
       <div className="ambient-glow" />
       <PublicNavbar />
+
+      {/* ─── Global Maintenance Banner (same query as usePlatformSettings) ─── */}
+      <AnimatePresence>
+        {platformSettings?.maintenance_mode && (
+          <motion.div
+            key="entry-maintenance-banner"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="relative z-20 border-b"
+            style={{
+              background: "linear-gradient(90deg, hsl(217 91% 60% / 0.08), hsl(217 91% 60% / 0.04), hsl(217 91% 60% / 0.08))",
+              borderColor: "hsl(217 91% 60% / 0.22)",
+              backdropFilter: "blur(12px)",
+            }}
+          >
+            <div className="mx-auto flex w-full max-w-[1240px] items-center gap-3 px-4 py-2.5 sm:px-6">
+              <span
+                className="flex-shrink-0 w-1.5 h-1.5 rounded-full animate-pulse"
+                style={{
+                  background: "hsl(217 91% 60%)",
+                  boxShadow: "0 0 8px hsl(217 91% 60% / 0.6)",
+                  animationDuration: "2s",
+                }}
+              />
+              <svg className="flex-shrink-0 h-3.5 w-3.5 text-primary/80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              <p className="text-[11px] font-mono text-muted-foreground flex-1 truncate">
+                {platformSettings.announcement_banner?.trim() || "Platform maintenance is in progress. Some features may be temporarily limited."}
+              </p>
+              <span className="flex-shrink-0 text-[9px] font-mono text-primary/60 uppercase tracking-widest">Operational Notice</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ─── 1. HERO ─── */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-4 sm:px-6">
         <div className="absolute inset-0 pointer-events-none">
