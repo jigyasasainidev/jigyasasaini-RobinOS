@@ -83,6 +83,7 @@ export function DashboardSidebar() {
                   to={item.to}
                   onMouseEnter={() => prefetchRoute(item.to)}
                   onFocus={() => prefetchRoute(item.to)}
+                  onClick={() => { if (location.pathname === item.to) window.scrollTo({ top: 0, behavior: "smooth" }); }}
                   className="flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 rounded-xl transition-all duration-300 min-w-0"
                 >
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center border transition-all duration-300 ${active ? "bg-gradient-to-b from-primary/16 to-primary/8 border-primary/30 shadow-[0_0_16px_hsl(217_91%_60%/0.2)]" : "bg-transparent border-transparent"}`}>
@@ -145,6 +146,7 @@ export function DashboardSidebar() {
                       to={item.to}
                       onMouseEnter={() => prefetchRoute(item.to)}
                       onFocus={() => prefetchRoute(item.to)}
+                      onClick={() => { if (location.pathname === item.to) window.scrollTo({ top: 0, behavior: "smooth" }); }}
                       className="block"
                     >
                       <motion.div

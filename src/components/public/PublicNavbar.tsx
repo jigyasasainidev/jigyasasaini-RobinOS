@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { BrandMark } from "@/components/BrandMark";
+import { SmartLink } from "@/components/SmartLink";
 import { prefetchRoute } from "@/lib/routePrefetch";
 
 const links = [
@@ -34,9 +35,9 @@ export function PublicNavbar() {
   return (
     <header className="sticky top-0 z-30 border-b border-border/50 bg-background/78 backdrop-blur-xl">
       <div className="mx-auto flex h-14 w-full max-w-[1240px] items-center justify-between px-4 sm:px-6">
-        <Link to="/" onMouseEnter={() => prefetchRoute("/")} onFocus={() => prefetchRoute("/")}>
+        <SmartLink to="/" onMouseEnter={() => prefetchRoute("/")} onFocus={() => prefetchRoute("/")}>
           <BrandMark size={24} withWordmark />
-        </Link>
+        </SmartLink>
 
         <nav className="hidden items-center gap-0.5 sm:flex">
           {links.map((item) => {
@@ -47,6 +48,10 @@ export function PublicNavbar() {
                 to={item.to}
                 onClick={(event) => {
                   event.preventDefault();
+                  if (pathname === item.to) {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                    return;
+                  }
                   navigateWithTransition(item.to);
                 }}
                 onMouseEnter={() => prefetchRoute(item.to)}

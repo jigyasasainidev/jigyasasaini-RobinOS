@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Shield, ShieldCheck, Eye, Zap } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
+import { SmartLink } from "@/components/SmartLink";
 import { prefetchRoute } from "@/lib/routePrefetch";
 
 const productLinks = [
@@ -51,14 +52,14 @@ function LinkColumn({ title, links }: { title: string; links: { label: string; t
       <ul className="space-y-2.5">
         {links.map((item) => (
           <li key={item.label}>
-            <Link
+            <SmartLink
               to={item.to}
               onMouseEnter={() => prefetchRoute(item.to)}
               onFocus={() => prefetchRoute(item.to)}
               className="text-sm text-muted-foreground transition-all duration-200 hover:text-foreground hover:translate-x-0.5 inline-block"
             >
               {item.label}
-            </Link>
+            </SmartLink>
           </li>
         ))}
       </ul>
@@ -130,18 +131,14 @@ export function PublicFooter() {
           <div className="flex flex-wrap items-center justify-between w-full gap-3 mt-1">
             <p className="text-sm text-muted-foreground">© 2026 RobinOS. All rights reserved.</p>
             <div className="flex flex-wrap items-center gap-3">
-              <Link
-                to="/report-abuse"
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-all hover:opacity-90"
-                style={{ background: "hsl(0 72% 55% / 0.08)", border: "1px solid hsl(0 72% 55% / 0.18)", color: "hsl(0 72% 65%)" }}
-              >
+            <SmartLink to="/report-abuse" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-all hover:opacity-90" style={{ background: "hsl(0 72% 55% / 0.08)", border: "1px solid hsl(0 72% 55% / 0.18)", color: "hsl(0 72% 65%)" }}>
                 <span className="w-1 h-1 rounded-full bg-red-400" />
                 Report Abuse
-              </Link>
-              <Link to="/trust-safety" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Trust & Safety</Link>
-              <Link to="/acceptable-use-policy" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Acceptable Use</Link>
-              <Link to="/privacy" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Privacy</Link>
-              <Link to="/terms" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Terms</Link>
+              </SmartLink>
+              <SmartLink to="/trust-safety" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Trust & Safety</SmartLink>
+              <SmartLink to="/acceptable-use-policy" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Acceptable Use</SmartLink>
+              <SmartLink to="/privacy" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Privacy</SmartLink>
+              <SmartLink to="/terms" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Terms</SmartLink>
             </div>
           </div>
         </div>

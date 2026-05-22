@@ -2325,6 +2325,7 @@ const AdminDashboard = () => {
                               <SidebarMenuButton asChild isActive={isActive}>
                                 <NavLink
                                   to={item.path}
+                                  onClick={() => { if (currentPath === item.path) window.scrollTo({ top: 0, behavior: "smooth" }); }}
                                   className="relative flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[11px] font-medium transition-all duration-200 overflow-hidden"
                                   style={isActive ? {
                                     background: "linear-gradient(135deg, hsl(217 91% 60% / 0.13), hsl(217 60% 30% / 0.05))",
