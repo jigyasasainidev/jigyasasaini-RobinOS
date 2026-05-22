@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/cloudDb";
 import { useTierLevel, useFreeTrialStatus } from "@/hooks/useProfile";
 import { usePlanKey, useIsAgency, useAvailableScriptLengths } from "@/hooks/useEntitlements";
+import { moderatePrompt, getModerationBlockMessage } from "@/lib/moderation/engine";
+import { ModerationNotice } from "@/components/ModerationNotice";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
@@ -89,6 +91,13 @@ const StudioPage = () => {
   const handleGenerate = async () => {
     if (!topic.trim()) { toast.error("Enter a topic first"); return; }
     if (isFree && (expired || scriptsLeft <= 0)) { setShowUpgrade(true); return; }
+
+    // ── Moderation: check prompt before any AI call ──────────
+    const modResult = moderatePrompt(topic);
+    if (!modResult.safe && (modResult.severity === "HIGH" || modResult.severity === "BLOCKED")) {
+      toast.error(getModerationBlockMessage(modResult.categories));
+      return;
+    }
 
     if (!isFree) {
       const { data, error } = await db.rpc("get_usage_status", { p_feature_name: "scripts" });
@@ -319,6 +328,7 @@ const StudioPage = () => {
       />
 
       <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} />
+      <ModerationNotice className="mt-4 max-w-2xl" />
     </div>
   );
 };

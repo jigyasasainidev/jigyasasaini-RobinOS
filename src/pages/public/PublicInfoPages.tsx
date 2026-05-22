@@ -270,57 +270,102 @@ export function PrivacyPolicyPage() {
   return (
     <LegalPage
       seoTitle="Privacy Policy | RobinOS"
-      seoDescription="Read how RobinOS collects, stores, and processes account, usage, cookie, and payment-related information."
+      seoDescription="Read how RobinOS collects, stores, processes, and protects your data — including AI prompt processing, content moderation systems, and automated safety scanning."
       canonical="/privacy"
       pageTitle="Privacy Policy"
-      effectiveDate="May 19, 2026"
+      effectiveDate="January 1, 2025"
       sections={[
         {
           id: "data-collection",
-          title: "Data we collect",
+          title: "Data We Collect",
           body: [
-            "RobinOS collects account data such as name, email, authentication identifiers, and plan information required to provide access to the platform.",
-            "We also collect usage data required to operate core features, including AI generation logs, workflow actions, subscription activity, and affiliate operations where applicable.",
+            "RobinOS collects account data including name, email address, authentication identifiers, and subscription plan information required to provide access to the platform and process payments.",
+            "We collect usage data necessary to operate core features, including AI generation logs, workflow actions, subscription activity, feature usage metrics, and affiliate program operations where applicable.",
+            "We collect technical data including IP addresses, browser user agent strings, session identifiers, and access timestamps for security, fraud prevention, and platform integrity purposes.",
+          ],
+        },
+        {
+          id: "ai-prompt-processing",
+          title: "AI Prompt Processing & Content Handling",
+          body: [
+            "All prompts submitted to RobinOS AI generation features are processed by our AI providers (Groq) to generate the requested content. Prompts are transmitted securely over encrypted connections.",
+            "RobinOS does not use user prompts to train, fine-tune, or improve AI models. Prompts are processed transiently for content generation and are not retained by our AI providers for model training purposes.",
+            "Generated AI content (scripts, captions, trend reports) may be stored in your account generation history to support workflow continuity, user-controlled retrieval, and usage tracking for quota management.",
+            "Users can delete their generation history at any time through account settings. Deletion requests remove stored content from active databases within 30 days.",
+          ],
+        },
+        {
+          id: "moderation-safety",
+          title: "AI Moderation & Automated Safety Systems",
+          body: [
+            "RobinOS uses automated content moderation and safety systems to detect and prevent abusive, harmful, illegal, or policy-violating AI-generated content. These systems operate on all generation requests.",
+            "Prompts and generated outputs are automatically analyzed by safety classification systems for content policy enforcement, abuse prevention, and platform security. This processing occurs before and after AI generation.",
+            "RobinOS actively blocks NSFW, exploitative, hateful, violent, extremist, and illegal AI-generated content. Blocked content is not delivered to users.",
+            "Moderation events — including blocked content attempts — are logged to a structured audit system. Logs include severity level, content category, and timestamp, but not the full text of blocked prompts.",
+            "We reserve the right to suspend or terminate accounts that engage in prohibited content generation, repeated safety violations, or abuse of platform systems.",
+            "In cases involving illegal content including CSAM (Child Sexual Abuse Material), account data may be preserved and reported to relevant law enforcement authorities as required by applicable law.",
+          ],
+        },
+        {
+          id: "fraud-prevention",
+          title: "Fraud Prevention & Security Logging",
+          body: [
+            "RobinOS employs automated fraud detection, anomaly analysis, and security monitoring to protect the platform and its users. Security events are logged with IP addresses, timestamps, and action types.",
+            "Affiliate program activity is monitored for fraudulent referrals, self-referral abuse, chargeback manipulation, and coordinated exploitation. Suspicious patterns trigger automated review.",
+            "Security logs are retained for a minimum of 12 months for investigation, legal compliance, and platform integrity purposes.",
           ],
         },
         {
           id: "cookies",
-          title: "Cookies and similar technologies",
+          title: "Cookies and Similar Technologies",
           body: [
-            "RobinOS uses authentication cookies to keep users signed in securely, preference cookies to remember settings, and analytics cookies to understand product usage patterns.",
-            "We do not rely on broad third-party marketing trackers for cross-site ad targeting on core app surfaces.",
+            "RobinOS uses authentication cookies to maintain secure user sessions, preference cookies to remember settings, and analytics to understand product usage patterns.",
+            "We do not deploy broad third-party marketing trackers or cross-site advertising trackers on core application surfaces.",
           ],
         },
         {
           id: "payments",
-          title: "Payment and billing processing",
+          title: "Payment and Billing Processing",
           body: [
-            "Subscription and transaction processing may be handled by approved payment providers based on the active billing configuration.",
-            "RobinOS does not store full card details in product databases. Billing records include transaction status, amount, provider references, and invoice metadata needed for operations and support.",
-          ],
-        },
-        {
-          id: "ai-apis",
-          title: "AI and third-party APIs",
-          body: [
-            "RobinOS can use third-party AI APIs for script generation, trend-related processing, voice workflows, and other creator tooling functions.",
-            "Generated outputs may be stored in account history to support workflow continuity, auditing, and user-controlled retrieval.",
+            "Subscription and transaction processing is handled by approved payment providers (Creem, Stripe, or equivalent). Billing data flows through compliant payment infrastructure.",
+            "RobinOS does not store full card details in product databases. Billing records include transaction status, amounts, provider references, and invoice metadata for operations, tax, and support purposes.",
           ],
         },
         {
           id: "retention-deletion",
-          title: "Retention and deletion",
+          title: "Data Retention and Deletion",
           body: [
-            "Account and billing records are retained for legal, tax, fraud prevention, and support obligations for the minimum period required by applicable law and processor terms.",
-            "Users can request account deletion. Deletion requests are processed through support and include removal or anonymization of personal data where legally permitted.",
+            "Account and billing records are retained for legal, tax, fraud prevention, and support obligations for the minimum period required by applicable law and payment processor terms.",
+            "Moderation and security audit logs are retained for 12 months minimum for platform integrity and legal compliance purposes.",
+            "Users can request account deletion. Deletion requests are processed through support within 30 days and include removal or anonymization of personal data where legally permitted.",
+            "Data subject to active fraud investigations, law enforcement requests, or legal hold obligations is exempt from deletion until the relevant obligation is fulfilled.",
+          ],
+        },
+        {
+          id: "third-party-sharing",
+          title: "Third-Party Data Sharing",
+          body: [
+            "RobinOS does not sell personal data to third parties. We share data only with service providers necessary to operate the platform: cloud infrastructure (Supabase), AI providers (Groq), payment processors, and analytics services.",
+            "All third-party service providers are contractually bound to process data only as directed and in accordance with applicable privacy law.",
+            "RobinOS may disclose data to law enforcement, regulatory authorities, or legal counsel when required by valid legal process, court order, or applicable law.",
           ],
         },
         {
           id: "rights",
-          title: "GDPR-style rights and controls",
+          title: "Your Privacy Rights",
           body: [
-            "Depending on your jurisdiction, you may request access, correction, deletion, objection to processing, or restriction of processing for your personal data.",
-            "For data rights requests, contact support@tryrobin.xyz with your account email and request details.",
+            "Depending on your jurisdiction, you may have rights including: access to your personal data, correction of inaccurate data, deletion of your data, objection to processing, restriction of processing, and data portability.",
+            "For data rights requests, contact support@tryrobin.xyz with your account email and request details. We respond to verified rights requests within 30 days.",
+            "RobinOS aligns with GDPR principles of transparency, purpose limitation, data minimisation, and security for all users globally.",
+          ],
+        },
+        {
+          id: "contact",
+          title: "Privacy Contact",
+          body: [
+            "For privacy questions, data rights requests, or concerns: support@tryrobin.xyz",
+            "For trust and safety matters: trust@tryrobin.xyz",
+            "For legal inquiries and law enforcement requests: legal@tryrobin.xyz",
           ],
         },
       ]}
@@ -332,65 +377,116 @@ export function TermsOfServicePage() {
   return (
     <LegalPage
       seoTitle="Terms of Service | RobinOS"
-      seoDescription="Review RobinOS terms covering account responsibilities, subscriptions, acceptable use, AI output limitations, and dispute handling."
+      seoDescription="RobinOS Terms of Service covering account responsibilities, subscriptions, AI content restrictions, moderation enforcement, and dispute handling."
       canonical="/terms"
       pageTitle="Terms of Service"
-      effectiveDate="May 19, 2026"
+      effectiveDate="January 1, 2025"
       sections={[
         {
-          id: "accounts",
-          title: "Account responsibilities",
+          id: "acceptance",
+          title: "Acceptance of Terms",
           body: [
-            "You are responsible for account security, credential confidentiality, and all activity performed under your account.",
-            "You must provide accurate account and billing details and keep that information updated.",
+            "By accessing or using RobinOS, you agree to be bound by these Terms of Service, our Privacy Policy, and our Acceptable Use Policy. If you do not agree, you may not use the platform.",
+            "RobinOS reserves the right to update these Terms at any time. Material changes will be communicated to active users. Continued use constitutes acceptance of updated Terms.",
+          ],
+        },
+        {
+          id: "accounts",
+          title: "Account Responsibilities",
+          body: [
+            "You are responsible for account security, credential confidentiality, and all activity performed under your account. You must not share account credentials with third parties.",
+            "You must provide accurate account and billing information and keep that information current. Accounts with false information may be suspended.",
+            "You must notify RobinOS immediately at support@tryrobin.xyz if you suspect unauthorized access to your account.",
           ],
         },
         {
           id: "billing",
-          title: "Subscriptions and billing",
+          title: "Subscriptions, Billing & Cancellation",
           body: [
-            "RobinOS subscriptions renew automatically unless cancelled before the next billing date. Pricing and plan terms are displayed at checkout.",
-            "Payment processing may be routed through approved providers based on the configured checkout infrastructure.",
+            "RobinOS subscriptions renew automatically at the applicable billing cycle (monthly or yearly) unless cancelled before the renewal date. Pricing and plan terms are displayed at checkout.",
+            "Subscriptions expire after their billing period. Access is automatically reverted to the Free plan upon expiry unless renewed. RobinOS does not extend expired plans without valid payment.",
+            "Plan changes are subject to a 14-day cooldown period. No partial billing credits are issued when changing plans. Full payment is required for any new billing cycle.",
+            "Cancellation takes effect at the end of the current billing period. You retain access through the paid period end date.",
           ],
         },
         {
-          id: "prohibited",
-          title: "Prohibited use",
+          id: "ai-content-restrictions",
+          title: "AI Content Restrictions & Prohibited Generations",
           body: [
-            "You may not use RobinOS for fraud, abusive automation, illegal content operations, impersonation, malicious campaigns, or rights-violating content workflows.",
-            "Affiliate abuse, fake referrals, chargeback manipulation, or self-referral exploitation may lead to immediate suspension.",
+            "RobinOS strictly prohibits the generation, distribution, or use of any AI content that falls into the following categories: NSFW or sexually explicit material, pornographic content, content that sexualizes or endangers minors (zero tolerance, no exceptions), deepfake abuse or non-consensual synthetic media, hate speech or discriminatory content, content promoting violence or self-harm, extremist or terrorist propaganda, content facilitating illegal activities, identity fraud or impersonation, and harassment or stalking facilitation.",
+            "RobinOS uses automated moderation systems that detect and block prohibited content in real time. Attempts to generate prohibited content are logged, and repeated violations result in account action.",
+            "Users remain responsible for ensuring that all AI-generated content they publish, distribute, or use complies with applicable laws, platform policies, and third-party terms.",
+            "RobinOS reserves the right to suspend or permanently terminate accounts involved in prohibited content generation without refund and without prior notice for serious violations.",
           ],
         },
         {
-          id: "prohibited-ai-content",
-          title: "Prohibited AI Content & Safety Restrictions",
+          id: "moderation-enforcement",
+          title: "Automated Moderation & Enforcement Disclosure",
           body: [
-            "RobinOS strictly prohibits the generation, upload, sharing, promotion, or distribution of any content that falls under the following categories: NSFW (not safe for work) material, pornographic or sexually explicit content, exploitative or abusive content, illegal content, harmful or deceptive AI-generated media, non-consensual explicit imagery, content involving minors, and violent extremist or illegal activity promotion.",
-            "Users found violating these content restrictions may be subject to immediate account suspension or permanent ban from the platform at RobinOS's sole discretion.",
-            "RobinOS reserves the right to remove any content deemed unsafe, inappropriate, or in violation of these restrictions without prior notice, and to restrict platform access for users who engage in prohibited activities.",
+            "RobinOS employs automated AI content moderation systems that analyze all generation requests. These systems operate continuously and may block, warn, or restrict generation based on content safety rules.",
+            "Moderation events are logged to a structured audit system. Users who repeatedly trigger content safety blocks may be automatically flagged for human review.",
+            "RobinOS maintains the right to restrict, suspend, or terminate accounts at its sole discretion based on moderation findings, abuse signals, or safety concerns.",
+            "Enforcement actions include: individual content blocks, feature restrictions, temporary suspension, permanent termination, and referral to law enforcement for illegal activity.",
           ],
         },
         {
           id: "ai-output",
-          title: "AI-generated output limitations",
+          title: "AI-Generated Output Limitations",
           body: [
-            "AI outputs can contain inaccuracies or contextual errors. You remain responsible for verifying and approving all published content.",
-            "RobinOS does not guarantee legal, financial, business, or platform-performance outcomes from generated content.",
+            "AI outputs can contain inaccuracies, hallucinations, or contextual errors. You remain responsible for reviewing, verifying, and approving all content before publishing or distributing it.",
+            "RobinOS does not guarantee legal, financial, business, or platform-performance outcomes from AI-generated content. Content is provided as creative assistance only.",
+            "RobinOS is not liable for damages arising from reliance on AI-generated content, including claims of defamation, copyright infringement, or factual inaccuracy in published outputs.",
+          ],
+        },
+        {
+          id: "intellectual-property",
+          title: "Intellectual Property",
+          body: [
+            "You retain ownership of content you create using RobinOS. AI-generated outputs created with your inputs are yours subject to applicable law and the terms of our AI providers.",
+            "RobinOS owns all platform technology, design, branding, and proprietary infrastructure. You may not reproduce, reverse-engineer, or create derivative products from RobinOS systems.",
+            "You represent that your prompts do not violate third-party intellectual property rights. You are responsible for any copyright claims arising from your generated content.",
+          ],
+        },
+        {
+          id: "prohibited",
+          title: "Prohibited Platform Conduct",
+          body: [
+            "You may not use RobinOS for fraud, abusive automation, illegal content operations, impersonation, malicious campaigns, or rights-violating content workflows.",
+            "Affiliate abuse, fake referrals, chargeback manipulation, self-referral exploitation, or coordinated platform abuse may lead to immediate suspension and legal action.",
+            "You may not attempt to circumvent, bypass, or undermine any RobinOS content safety, moderation, or access control systems.",
+          ],
+        },
+        {
+          id: "liability",
+          title: "Limitation of Liability",
+          body: [
+            "RobinOS is provided 'as is' without warranties of any kind. We do not warrant uninterrupted service, error-free operation, or fitness for any particular purpose.",
+            "To the maximum extent permitted by applicable law, RobinOS's total liability to you for any claim arising from these Terms or use of the platform shall not exceed the amount paid by you to RobinOS in the 12 months preceding the claim.",
+            "RobinOS is not liable for indirect, incidental, special, consequential, or punitive damages arising from your use of or inability to use the platform.",
           ],
         },
         {
           id: "refund-dispute",
-          title: "Refunds and disputes",
+          title: "Refunds and Disputes",
           body: [
-            "Refund eligibility is governed by the refund policy. Billing disputes should first be raised with RobinOS support before initiating external disputes.",
-            "If abusive behavior or clear policy violation is detected, refund requests may be declined.",
+            "Refund eligibility is governed by our Refund Policy. Billing disputes should first be raised with RobinOS support before initiating external disputes or chargebacks.",
+            "If abusive behavior, policy violation, or fraudulent activity is detected, refund requests may be declined and accounts may be terminated.",
+          ],
+        },
+        {
+          id: "termination",
+          title: "Termination",
+          body: [
+            "Either party may terminate the service relationship. You may close your account at any time. RobinOS may suspend or terminate accounts for policy violations, non-payment, or at its discretion.",
+            "Upon termination, your access to premium features ceases immediately. For serious violations, account data may be retained for legal, fraud prevention, or law enforcement obligations.",
           ],
         },
         {
           id: "governing-law",
           title: "Governing Law",
           body: [
-            "These terms are governed by the laws of India. Any disputes related to RobinOS services, subscriptions, or affiliate operations shall be handled under applicable Indian jurisdiction.",
+            "These Terms are governed by the laws of India. Any disputes related to RobinOS services, subscriptions, or affiliate operations shall be resolved under applicable Indian jurisdiction.",
+            "For questions about these Terms, contact legal@tryrobin.xyz.",
           ],
         },
       ]}

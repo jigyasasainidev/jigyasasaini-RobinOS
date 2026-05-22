@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/cloudDb";
 import { useTierLevel } from "@/hooks/useProfile";
 import { usePlanKey } from "@/hooks/useEntitlements";
+import { moderatePrompt, getModerationBlockMessage } from "@/lib/moderation/engine";
+import { ModerationNotice } from "@/components/ModerationNotice";
 import { getCaptionLimitText } from "@/lib/pricing";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 
@@ -109,6 +111,13 @@ const CaptionEnginePage = () => {
 
     if (!canGenerate) {
       toast.error("Enter at least 3 characters to generate.");
+      return;
+    }
+
+    // ── Moderation: check prompt before any AI call ──────────
+    const modResult = moderatePrompt(prompt);
+    if (!modResult.safe && (modResult.severity === "HIGH" || modResult.severity === "BLOCKED")) {
+      toast.error(getModerationBlockMessage(modResult.categories));
       return;
     }
 
@@ -340,6 +349,7 @@ const CaptionEnginePage = () => {
       </div>
 
       <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} />
+      <ModerationNotice className="mt-4" />
     </div>
   );
 };
