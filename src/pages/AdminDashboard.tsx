@@ -1318,7 +1318,160 @@ const AdminDashboard = () => {
       </section>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <SectionCard title="Plan Distribution" subtitle="Live plan movement from subscriptions"><div className="h-72">{planDistributionTrend.length > 0 ? <ResponsiveContainer width="100%" height="100%"><AreaChart data={planDistributionTrend}><CartesianGrid stroke="hsl(var(--border) / 0.35)" strokeDasharray="3 3" /><XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} /><YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} /><Tooltip contentStyle={{ background: "hsl(var(--background) / 0.95)", border: "1px solid hsl(var(--border) / 0.6)", borderRadius: "8px" }} /><Legend /><Area type="monotone" dataKey="creator" name="Creator" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.2)" strokeWidth={2} /><Area type="monotone" dataKey="pro" name="Pro" stroke="hsl(var(--primary) / 0.72)" fill="hsl(var(--primary) / 0.12)" strokeWidth={2} /><Area type="monotone" dataKey="agency" name="Agency" stroke="hsl(var(--primary) / 0.48)" fill="hsl(var(--primary) / 0.08)" strokeWidth={2} /></AreaChart></ResponsiveContainer> : <EmptyState title="No subscriptions" description="Subscription distribution renders after plans are created." />}</div></SectionCard>
+        <SectionCard
+          title={
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-foreground">Plan Distribution</span>
+              <span
+                className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-mono tracking-widest"
+                style={{ background: "hsl(217 91% 60% / 0.12)", border: "1px solid hsl(217 91% 60% / 0.25)", color: "hsl(217 95% 72%)" }}
+              >
+                <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" style={{ animationDuration: "2s" }} />
+                LIVE
+              </span>
+            </div>
+          }
+          subtitle={
+            <div className="flex items-center gap-3 mt-0.5">
+              <span className="text-[10px] font-mono text-muted-foreground/60">PLAN / TOTAL ·</span>
+              {planDistribution.map((p) => (
+                <span key={p.name} className="text-[10px] font-mono" style={{ color: p.fill }}>
+                  {p.name.toUpperCase()} {p.value > 0 ? `+${p.value}` : "—"}
+                </span>
+              ))}
+            </div>
+          }
+        >
+          <div
+            className="relative rounded-lg overflow-hidden"
+            style={{
+              background: "linear-gradient(180deg, hsl(222 28% 4%) 0%, hsl(222 24% 3%) 100%)",
+              border: "1px solid hsl(217 30% 11%)",
+            }}
+          >
+            {/* Horizontal grid lines overlay */}
+            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 30% 13% / 0.35) 0px, transparent 1px, transparent 36px, hsl(217 30% 13% / 0.35) 37px)", backgroundSize: "100% 37px" }} />
+
+            {/* Ticker header bar */}
+            <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "hsl(217 30% 11%)" }}>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-mono text-muted-foreground/50">ROBINOS:PLANS</span>
+                <span className="text-[10px] font-mono" style={{ color: "hsl(217 91% 60%)" }}>
+                  TOTAL {planDistribution.reduce((s, p) => s + p.value, 0)}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground/40">
+                <span>1D</span>
+                <span className="text-primary/80">7D</span>
+                <span>30D</span>
+              </div>
+            </div>
+
+            {/* Chart */}
+            <div className="h-56 px-1 pt-2 pb-1">
+              {planDistributionTrend.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={planDistributionTrend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="gradCreator" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(217 91% 60%)" stopOpacity={0.18} />
+                        <stop offset="95%" stopColor="hsl(217 91% 60%)" stopOpacity={0.0} />
+                      </linearGradient>
+                      <linearGradient id="gradPro" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(38 92% 50%)" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="hsl(38 92% 50%)" stopOpacity={0.0} />
+                      </linearGradient>
+                      <linearGradient id="gradAgency" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(142 70% 45%)" stopOpacity={0.12} />
+                        <stop offset="95%" stopColor="hsl(142 70% 45%)" stopOpacity={0.0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid
+                      vertical={false}
+                      stroke="hsl(217 30% 13% / 0.0)"
+                      strokeDasharray="0"
+                    />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }}
+                      axisLine={{ stroke: "hsl(217 30% 13%)" }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.4)" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: "hsl(222 28% 6% / 0.97)",
+                        border: "1px solid hsl(217 30% 16%)",
+                        borderRadius: "6px",
+                        fontSize: "11px",
+                        fontFamily: "monospace",
+                        boxShadow: "0 8px 24px hsl(0 0% 0% / 0.5)",
+                      }}
+                      labelStyle={{ color: "hsl(var(--muted-foreground))", marginBottom: "4px" }}
+                      cursor={{ stroke: "hsl(217 91% 60% / 0.3)", strokeWidth: 1, strokeDasharray: "4 4" }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="creator"
+                      name="Creator"
+                      stroke="hsl(217 91% 60%)"
+                      strokeWidth={1.5}
+                      fill="url(#gradCreator)"
+                      dot={false}
+                      activeDot={{ r: 3, fill: "hsl(217 91% 60%)", strokeWidth: 0 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="pro"
+                      name="Pro"
+                      stroke="hsl(38 92% 50%)"
+                      strokeWidth={1.5}
+                      fill="url(#gradPro)"
+                      dot={false}
+                      activeDot={{ r: 3, fill: "hsl(38 92% 50%)", strokeWidth: 0 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="agency"
+                      name="Agency"
+                      stroke="hsl(142 70% 45%)"
+                      strokeWidth={1.5}
+                      fill="url(#gradAgency)"
+                      dot={false}
+                      activeDot={{ r: 3, fill: "hsl(142 70% 45%)", strokeWidth: 0 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center gap-2">
+                  <p className="text-[10px] font-mono text-muted-foreground/40 tracking-widest uppercase">Awaiting market data</p>
+                  <p className="text-[9px] font-mono text-muted-foreground/25">Chart populates after subscriptions are recorded</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer legend bar */}
+            <div className="flex items-center gap-4 px-4 py-2 border-t" style={{ borderColor: "hsl(217 30% 11%)" }}>
+              {[
+                { label: "Creator", color: "hsl(217 91% 60%)", val: planDistribution.find((p) => p.name === "Creator")?.value ?? 0 },
+                { label: "Pro",     color: "hsl(38 92% 50%)",   val: planDistribution.find((p) => p.name === "Pro")?.value ?? 0 },
+                { label: "Agency",  color: "hsl(142 70% 45%)",  val: planDistribution.find((p) => p.name === "Agency")?.value ?? 0 },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center gap-1.5">
+                  <span className="w-4 h-[2px] rounded-full" style={{ background: item.color }} />
+                  <span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-wider">{item.label}</span>
+                  <span className="text-[10px] font-mono" style={{ color: item.color }}>{item.val}</span>
+                </div>
+              ))}
+              <span className="ml-auto text-[9px] font-mono text-muted-foreground/25">RobinOS Analytics v1</span>
+            </div>
+          </div>
+        </SectionCard>
         <SectionCard title="Active Subscription Table" subtitle="email, plan, billing cycle, renewal date, amount, status"><DataTable headers={["email", "plan", "billing cycle", "renewal date", "amount", "status"]} colSpan={6} empty={!usersEnriched.filter((u) => u.status === "active").length}>{usersEnriched.filter((u) => u.status === "active").slice(0, 10).map((u) => <tr key={u.user_id} className="border-t border-border/40"><td className="p-3 text-foreground">{u.email}</td><td className="p-3 uppercase text-muted-foreground">{u.plan}</td><td className="p-3 text-muted-foreground">{u.billing_cycle}</td><td className="p-3 text-muted-foreground">{u.renewal_date ? new Date(u.renewal_date).toLocaleDateString() : "—"}</td><td className="p-3 font-mono text-foreground">{formatCurrency(u.amount)}</td><td className="p-3 text-muted-foreground">{u.status}</td></tr>)}</DataTable></SectionCard>
       </section>
 
