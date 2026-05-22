@@ -105,6 +105,8 @@ type SubscriptionRow = {
   amount: number;
   status: string;
   currency: string;
+  subscription_source: string;
+  is_revenue_eligible: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -196,6 +198,7 @@ type UserEnriched = {
   billing_cycle: string;
   amount: number;
   renewal_date: string | null;
+  subscriptionSource: string;
 };
 
 type SparkPoint = { v: number };
@@ -398,7 +401,7 @@ const AdminDashboard = () => {
   const subscriptionsQuery = useQuery({
     queryKey: ["admin-subscriptions-v2"],
     queryFn: async (): Promise<SubscriptionRow[]> => {
-      const { data, error } = await db.from("user_subscriptions").select("id,user_id,plan,amount,status,currency,created_at,updated_at").order("created_at", { ascending: false });
+      const { data, error } = await db.from("user_subscriptions").select("id,user_id,plan,amount,status,currency,subscription_source,is_revenue_eligible,created_at,updated_at").order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as SubscriptionRow[];
     },
@@ -548,6 +551,7 @@ const AdminDashboard = () => {
         billing_cycle: "—",
         amount: Number(sub?.amount || 0),
         renewal_date: null,
+        subscriptionSource: sub?.subscription_source ?? "manual_admin",
       };
     });
   }, [profiles, subscriptionMap, affiliateProfileMap]);
@@ -576,7 +580,7 @@ const AdminDashboard = () => {
 
   const monthlyRevenue = useMemo(() => {
     return subscriptions
-      .filter((s) => asSubscriptionStatus(s.status) === "active")
+      .filter((s) => s.is_revenue_eligible && asSubscriptionStatus(s.status) === "active")
       .reduce((sum, s) => sum + Number(s.amount || 0), 0);
   }, [subscriptions]);
 
@@ -584,7 +588,7 @@ const AdminDashboard = () => {
     const now = Date.now();
     const month = 30 * 24 * 60 * 60 * 1000;
     return subscriptions
-      .filter((s) => asSubscriptionStatus(s.status) === "active" && new Date(s.created_at).getTime() < now - month)
+      .filter((s) => s.is_revenue_eligible && asSubscriptionStatus(s.status) === "active" && new Date(s.created_at).getTime() < now - month)
       .reduce((sum, s) => sum + Number(s.amount || 0), 0);
   }, [subscriptions]);
 
@@ -596,7 +600,7 @@ const AdminDashboard = () => {
     return ((monthlyRevenue - previousMonthlyRevenue) / previousMonthlyRevenue) * 100;
   }, [monthlyRevenue, previousMonthlyRevenue]);
 
-  const activeSubscribers = useMemo(() => subscriptions.filter((s) => asSubscriptionStatus(s.status) === "active").length, [subscriptions]);
+  const activeSubscribers = useMemo(() => subscriptions.filter((s) => s.is_revenue_eligible && asSubscriptionStatus(s.status) === "active").length, [subscriptions]);
   const pendingWithdrawals = useMemo(() => withdrawals.filter((w) => asWithdrawStatus(w.status) === "pending"), [withdrawals]);
   const totalAffiliateEarnings = useMemo(() => affiliateCommissions.reduce((s, c) => s + Number(c.amount || 0), 0), [affiliateCommissions]);
   const scriptsGenerated = useMemo(() => aiGenerations.filter((g) => (g.generation_type || "").toLowerCase() === "script").length, [aiGenerations]);
@@ -607,9 +611,11 @@ const AdminDashboard = () => {
   const videoGenerations = useMemo(() => aiGenerations.filter((g) => (g.generation_type || "").toLowerCase() === "video").length, [aiGenerations]);
   // ── Free vs paid classification ───────────────────────────
   // Source of truth: user_subscriptions table ONLY.
-  // A user is paid ONLY when they have an active/trialing subscription
-  // on a non-free plan. Every new signup gets a seeded free-plan row —
-  // that must NEVER count as paid.
+  // A user is "paid" ONLY when:
+  //   1. They have an active/trialing subscription on a non-free plan AND
+  //   2. is_revenue_eligible = true (backed by a real verified payment)
+  // Manual admin upgrades set is_revenue_eligible = false and must never
+  // count toward paid user or revenue totals.
   const paidUserIds = useMemo(() => {
     const ids = new Set<string>();
     subscriptions.forEach((s) => {
@@ -617,7 +623,7 @@ const AdminDashboard = () => {
       const normalizedStatus = (s.status ?? "").toLowerCase();
       const isPaidPlan = normalizedPlan !== "free" && normalizedPlan !== "";
       const isActiveBilling = normalizedStatus === "active" || normalizedStatus === "trialing";
-      if (isPaidPlan && isActiveBilling) ids.add(s.user_id);
+      if (isPaidPlan && isActiveBilling && s.is_revenue_eligible) ids.add(s.user_id);
     });
     return ids;
   }, [subscriptions]);
@@ -646,7 +652,7 @@ const AdminDashboard = () => {
   const dailySeries = useMemo(() => {
     const revenueByDate = new Map<string, number>();
     subscriptions
-      .filter((s) => asSubscriptionStatus(s.status) === "active")
+      .filter((s) => s.is_revenue_eligible && asSubscriptionStatus(s.status) === "active")
       .forEach((s) => {
       const key = dateKey(s.created_at);
       revenueByDate.set(key, (revenueByDate.get(key) ?? 0) + Number(s.amount || 0));
@@ -668,7 +674,7 @@ const AdminDashboard = () => {
     });
 
     const subsByDate = new Map<string, number>();
-    subscriptions.filter((s) => asSubscriptionStatus(s.status) === "active").forEach((s) => {
+    subscriptions.filter((s) => s.is_revenue_eligible && asSubscriptionStatus(s.status) === "active").forEach((s) => {
       const key = dateKey(s.created_at);
       subsByDate.set(key, (subsByDate.get(key) ?? 0) + 1);
     });
@@ -809,6 +815,9 @@ const AdminDashboard = () => {
         amount: plan === "agency" ? settingsDraft.agency_price : plan === "pro" ? settingsDraft.pro_price : settingsDraft.creator_price,
         currency: "USD",
         status: row.status === "suspended" ? "past_due" : row.status,
+        // Manual admin upgrades/downgrades are entitlement-only — not revenue-generating
+        subscription_source: "manual_admin" as const,
+        is_revenue_eligible: false,
       };
 
       if (row.subscription_id) {
@@ -1200,7 +1209,7 @@ const AdminDashboard = () => {
 
         <div className="overflow-auto rounded-lg border border-border/50">
           <table className="w-full min-w-[1080px] text-xs">
-            <thead className="bg-secondary/40 text-[10px] uppercase tracking-[0.08em] text-muted-foreground"><tr><th className="p-3 text-left">avatar</th><th className="p-3 text-left">email</th><th className="p-3 text-left">current plan</th><th className="p-3 text-left">scripts used</th><th className="p-3 text-left">trend scans</th><th className="p-3 text-left">joined date</th><th className="p-3 text-left">affiliate enabled</th><th className="p-3 text-left">status</th><th className="p-3 text-left">actions</th></tr></thead>
+            <thead className="bg-secondary/40 text-[10px] uppercase tracking-[0.08em] text-muted-foreground"><tr><th className="p-3 text-left">avatar</th><th className="p-3 text-left">email</th><th className="p-3 text-left">current plan</th><th className="p-3 text-left">scripts used</th><th className="p-3 text-left">trend scans</th><th className="p-3 text-left">joined date</th><th className="p-3 text-left">affiliate enabled</th><th className="p-3 text-left">status</th><th className="p-3 text-left">source</th><th className="p-3 text-left">actions</th></tr></thead>
             <tbody>
               {pagedUsers.map((row) => {
                 const planLadder: UserPlan[] = ["creator", "pro", "agency"];
@@ -1230,6 +1239,27 @@ const AdminDashboard = () => {
                             ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
                             : "bg-secondary/50 text-muted-foreground border-border/50"
                       }`}>{row.status}</span>
+                    </td>
+                    <td className="p-3">
+                      {/* Source badge */}
+                      {(() => {
+                        const src = (row.subscriptionSource ?? "manual_admin").toLowerCase();
+                        const cfg: Record<string, { label: string; cls: string }> = {
+                          creem:            { label: "Paid",       cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25" },
+                          dodo:             { label: "Paid",       cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25" },
+                          stripe:           { label: "Paid",       cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25" },
+                          manual_admin:     { label: "Manual",     cls: "bg-amber-500/10 text-amber-400 border-amber-500/25" },
+                          promo:            { label: "Promo",      cls: "bg-purple-500/10 text-purple-400 border-purple-500/25" },
+                          internal:         { label: "Internal",   cls: "bg-purple-500/10 text-purple-400 border-purple-500/25" },
+                          affiliate_reward: { label: "Affiliate",  cls: "bg-blue-500/10 text-blue-400 border-blue-500/25" },
+                          migration:        { label: "Migration",  cls: "bg-secondary/50 text-muted-foreground border-border/50" },
+                          trial:            { label: "Trial",      cls: "bg-secondary/50 text-muted-foreground border-border/50" },
+                        };
+                        const { label, cls } = cfg[src] ?? cfg.manual_admin;
+                        return (
+                          <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] ${cls}`}>{label}</span>
+                        );
+                      })()}
                     </td>
                     <td className="p-3">
                       <div className="flex flex-wrap gap-1.5">
@@ -1266,7 +1296,7 @@ const AdminDashboard = () => {
                   </tr>
                 );
               })}
-              {!pagedUsers.length ? <tr><td colSpan={9} className="p-0"><EmptyState title="No users found" description="Try adjusting filters or search query." /></td></tr> : null}
+              {!pagedUsers.length ? <tr><td colSpan={10} className="p-0"><EmptyState title="No users found" description="Try adjusting filters or search query." /></td></tr> : null}
             </tbody>
           </table>
           <PaginationControls page={userPage} totalPages={totalUserPages} setPage={setUserPage} />
