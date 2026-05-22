@@ -114,3 +114,20 @@ Always verify:
 - Never disable existing security checks or validation
 - Prefer extracting components over rewriting existing systems
 - If uncertain about architectural intent, ask before implementing
+
+# ENTITLEMENT RULES
+
+- Never implement plan or quota logic inside individual edge functions.
+- All feature access must go through checkAndIncrementUsage() in _shared/entitlement.ts.
+- All entitlement RPCs must have SECURITY DEFINER and set search_path = public.
+- All entitlement RPC calls from edge functions must use createServiceClient(), not createUserClient().
+- resolve_user_plan must always return a non-null plan string — 'free' is the minimum default.
+- Never read profiles.free_scripts_used or profiles.free_scans_used for quota display.
+- All usage display in the frontend must query get_usage_status_v2 via supabase.rpc().
+- PLAN_ENTITLEMENTS in src/lib/pricing.ts must exactly mirror the plan_entitlements database table.
+- New features must be seeded in plan_entitlements for all plans before any edge function uses them.
+- New migrations must never modify existing migration files — additive only.
+- Edge functions must respond with structured JSON errors containing code + message — never raw exception messages or stack traces.
+- AI provider fetch calls in edge functions must use AbortController with a timeout (45s max).
+- AI provider persistence (script_generations, script_history) must be non-fatal — log errors but never throw.
+- Frontend must never use quota data to block feature execution — backend enforcement is canonical.

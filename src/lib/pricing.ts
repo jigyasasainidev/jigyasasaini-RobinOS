@@ -64,7 +64,7 @@ export const PLAN_ENTITLEMENTS: Record<string, Record<FeatureKey, EntitlementCon
     script_generation: { limit: 2, enabled: true, period: "24h" },
     caption_generation: { limit: 2, enabled: true, period: "day" },
     trend_scan: { limit: 1, enabled: true, period: "lifetime" },
-    hashtag_scan: { limit: 0, enabled: false, period: "day" },
+    hashtag_scan: { limit: 3, enabled: true, period: "day" },
     tts_generation: { limit: 0, enabled: false, period: "day" },
     video_generation: { limit: 0, enabled: false, period: "day" },
     byok_access: { limit: 0, enabled: false, period: "day" },
