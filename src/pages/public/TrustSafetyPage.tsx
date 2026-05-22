@@ -387,14 +387,14 @@ export function TrustSafetyPage() {
                   RobinOS provides a reporting mechanism for users who encounter policy violations, abuse, or safety concerns. All reports are taken seriously and reviewed by our Trust & Safety team.
                 </Paragraph>
                 <BulletList items={[
-                  "Report abuse or safety concerns: support@tryrobin.xyz",
+                  "Report abuse or safety concerns: trust@tryrobin.xyz",
                   "Reports are triaged based on severity within 72 business hours",
                   "Reporters may remain anonymous — personal information is not disclosed",
                   "Confirmed violations result in immediate action and are logged to our audit system",
                   "Serial false reporters may be subject to account review",
                 ]} />
                 <div className="mt-5 flex flex-wrap gap-3">
-                  <a href="mailto:support@tryrobin.xyz" className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-medium text-primary transition-all hover:opacity-90" style={{ background: "hsl(217 91% 60% / 0.1)", border: "1px solid hsl(217 91% 60% / 0.2)" }}>
+                  <a href="mailto:trust@tryrobin.xyz" className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-medium text-primary transition-all hover:opacity-90" style={{ background: "hsl(217 91% 60% / 0.1)", border: "1px solid hsl(217 91% 60% / 0.2)" }}>
                     <Flag className="w-3.5 h-3.5" /> Report Abuse
                   </a>
                   <a href="mailto:support@tryrobin.xyz" className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-medium text-muted-foreground transition-all hover:text-foreground" style={{ border: "1px solid hsl(217 28% 14%)" }}>
@@ -463,7 +463,7 @@ export function TrustSafetyPage() {
                 <SectionHeader icon={FileText} title="Trust & Safety Contact" />
                 <div className="grid gap-4 sm:grid-cols-3">
                   {[
-                    { label: "Abuse Reports", email: "support@tryrobin.xyz", desc: "Safety violations, abuse, harmful content reports" },
+                    { label: "Abuse Reports", email: "trust@tryrobin.xyz", desc: "Safety violations, abuse, harmful content reports" },
                     { label: "Legal Inquiries", email: "support@tryrobin.xyz", desc: "DMCA, copyright, law enforcement requests" },
                     { label: "General Support", email: "support@tryrobin.xyz", desc: "Account issues, appeals, policy questions" },
                   ].map((contact) => (
