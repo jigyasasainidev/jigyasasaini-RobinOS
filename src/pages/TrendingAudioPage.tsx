@@ -17,6 +17,9 @@ interface TrendingAudio {
   uses: string;
   trend: "up" | "stable" | "new";
   tip: string;
+  // Phase 1 additive fields — may be absent on cached pre-v2 records
+  velocity?: "rising" | "hot" | "exploding" | "stable";
+  confidence?: number;
 }
 
 interface TrendingHashtag {
@@ -25,6 +28,9 @@ interface TrendingHashtag {
   posts: string;
   trend: "up" | "stable" | "new";
   tip: string;
+  // Phase 1 additive fields
+  velocity?: "rising" | "hot" | "exploding" | "stable";
+  confidence?: number;
 }
 
 const platforms: { id: Platform; label: string }[] = [
@@ -340,12 +346,27 @@ const TrendingAudioPage = () => {
                         {copiedIdx === i ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                       </button>
                     </div>
-                    <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
                       <Badge variant="outline" className={`text-[9px] font-mono ${categoryColor(audio.category)}`}>{audio.category}</Badge>
                       <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                         {trendIcon(audio.trend)}
                         <span>{audio.uses} uses</span>
                       </div>
+                      {audio.velocity && (
+                        <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded-full border ${
+                          audio.velocity === "exploding" ? "border-red-500/30 text-red-400 bg-red-500/8" :
+                          audio.velocity === "hot"       ? "border-amber-500/30 text-amber-400 bg-amber-500/8" :
+                          audio.velocity === "rising"    ? "border-primary/30 text-primary bg-primary/8" :
+                                                          "border-border/50 text-muted-foreground/60"
+                        }`}>
+                          {audio.velocity === "exploding" ? "🔥" : audio.velocity === "hot" ? "⚡" : audio.velocity === "rising" ? "↑" : "~"} {audio.velocity}
+                        </span>
+                      )}
+                      {audio.confidence && (
+                        <span className="text-[8px] font-mono text-muted-foreground/40 border border-border/30 px-1.5 py-0.5 rounded-full">
+                          {audio.confidence}% conf
+                        </span>
+                      )}
                     </div>
                     <p className="text-[11px] text-muted-foreground leading-relaxed">{audio.tip}</p>
                   </motion.div>
@@ -394,12 +415,27 @@ const TrendingAudioPage = () => {
                         {copiedHashIdx === i ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                       </button>
                     </div>
-                    <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
                       <Badge variant="outline" className={`text-[9px] font-mono ${categoryColor(tag.category)}`}>{tag.category}</Badge>
                       <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                         {trendIcon(tag.trend)}
                         <span>{tag.posts} posts</span>
                       </div>
+                      {tag.velocity && (
+                        <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded-full border ${
+                          tag.velocity === "exploding" ? "border-red-500/30 text-red-400 bg-red-500/8" :
+                          tag.velocity === "hot"       ? "border-amber-500/30 text-amber-400 bg-amber-500/8" :
+                          tag.velocity === "rising"    ? "border-primary/30 text-primary bg-primary/8" :
+                                                        "border-border/50 text-muted-foreground/60"
+                        }`}>
+                          {tag.velocity === "exploding" ? "🔥" : tag.velocity === "hot" ? "⚡" : tag.velocity === "rising" ? "↑" : "~"} {tag.velocity}
+                        </span>
+                      )}
+                      {tag.confidence && (
+                        <span className="text-[8px] font-mono text-muted-foreground/40 border border-border/30 px-1.5 py-0.5 rounded-full">
+                          {tag.confidence}% conf
+                        </span>
+                      )}
                     </div>
                     <p className="text-[11px] text-muted-foreground leading-relaxed">{tag.tip}</p>
                   </motion.div>
