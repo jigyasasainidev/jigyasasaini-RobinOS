@@ -160,7 +160,12 @@ export async function checkAndIncrementUsage(
     return { result: { success: false, code: "AUTH_REQUIRED", feature: featureKey, plan: "" }, error: authError };
   }
 
-  const supabase = createUserClient(authHeader);
+  // Use service client for the RPC call.
+  // verifyAuth() has already verified the JWT and extracted the real userId.
+  // The service client bypasses RLS so usage_tracking writes succeed
+  // regardless of per-user INSERT/UPDATE policies on that table.
+  // p_user_id is always the verified user's UUID — never caller-supplied without auth.
+  const supabase = createServiceClient();
 
   const { data, error: rpcError } = await supabase.rpc("check_and_increment_usage", {
     p_user_id: userId,
@@ -199,7 +204,8 @@ export async function getUsageStatus(
     return { status: null, error: authError };
   }
 
-  const supabase = createUserClient(authHeader);
+  // Use service client — see comment in checkAndIncrementUsage above.
+  const supabase = createServiceClient();
 
   const { data, error: rpcError } = await supabase.rpc("get_usage_status_v2", {
     p_user_id: userId,
