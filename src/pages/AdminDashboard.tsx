@@ -795,6 +795,8 @@ const AdminDashboard = () => {
       toast.success("User status updated");
       queryClient.invalidateQueries({ queryKey: ["admin-profiles-v2"] });
       queryClient.invalidateQueries({ queryKey: ["admin-subscriptions-v2"] });
+      // Invalidate the affected user's own profile cache so suspension propagates immediately
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
     },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Could not update status"),
   });
@@ -829,6 +831,8 @@ const AdminDashboard = () => {
       toast.success("Plan updated");
       queryClient.invalidateQueries({ queryKey: ["admin-subscriptions-v2"] });
       queryClient.invalidateQueries({ queryKey: ["admin-profiles-v2"] });
+      // Invalidate the affected user's own profile/entitlement cache so changes propagate
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
     },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Could not update plan"),
   });
@@ -1199,8 +1203,16 @@ const AdminDashboard = () => {
             <thead className="bg-secondary/40 text-[10px] uppercase tracking-[0.08em] text-muted-foreground"><tr><th className="p-3 text-left">avatar</th><th className="p-3 text-left">email</th><th className="p-3 text-left">current plan</th><th className="p-3 text-left">scripts used</th><th className="p-3 text-left">trend scans</th><th className="p-3 text-left">joined date</th><th className="p-3 text-left">affiliate enabled</th><th className="p-3 text-left">status</th><th className="p-3 text-left">actions</th></tr></thead>
             <tbody>
               {pagedUsers.map((row) => {
-                const upgradePlan: UserPlan = row.plan === "creator" ? "pro" : "agency";
-                const downgradePlan: UserPlan = row.plan === "agency" ? "pro" : "creator";
+                const planLadder: UserPlan[] = ["creator", "pro", "agency"];
+                const currentIdx = planLadder.indexOf(row.plan);
+                const upgradePlan: UserPlan = currentIdx < planLadder.length - 1 ? planLadder[currentIdx + 1] : "agency";
+                const downgradePlan: UserPlan = currentIdx > 0 ? planLadder[currentIdx - 1] : "creator";
+                const canUpgrade = row.plan !== "agency";
+                // Free users (plan === "creator" because asPlan maps free→creator) with no subscription can be downgraded
+                // to free, but we prevent downgrade from creator when they're already on the seeded free plan
+                const canDowngrade = !(row.plan === "creator" && row.amount === 0);
+                const isSuspendPending = userStatusMutation.isPending && (userStatusMutation.variables as any)?.row?.user_id === row.user_id;
+                const isPlanPending = userPlanMutation.isPending && (userPlanMutation.variables as any)?.row?.user_id === row.user_id;
                 return (
                   <tr key={row.user_id} className="border-t border-border/40 hover:bg-secondary/20">
                     <td className="p-3"><span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/60 bg-secondary/40 text-[10px] text-foreground">{row.email.slice(0, 1).toUpperCase()}</span></td>
@@ -1210,8 +1222,47 @@ const AdminDashboard = () => {
                     <td className="p-3 font-mono text-foreground">{formatNumber(row.trendScans)}</td>
                     <td className="p-3 text-muted-foreground">{new Date(row.created_at).toLocaleDateString()}</td>
                     <td className="p-3 text-muted-foreground">{row.is_affiliate ? "Yes" : "No"}</td>
-                    <td className="p-3 text-muted-foreground">{row.status}</td>
-                    <td className="p-3"><div className="flex flex-wrap gap-1.5">{row.status === "suspended" ? <button className="h-7 rounded border border-border/60 px-2 text-[10px]" onClick={() => userStatusMutation.mutate({ row, suspended: false })}>activate</button> : <button className="h-7 rounded border border-border/60 px-2 text-[10px]" onClick={() => userStatusMutation.mutate({ row, suspended: true })}>suspend</button>}<button className="h-7 rounded border border-border/60 px-2 text-[10px]" onClick={() => userPlanMutation.mutate({ row, plan: upgradePlan })} disabled={row.plan === "agency"}>upgrade</button><button className="h-7 rounded border border-border/60 px-2 text-[10px]" onClick={() => userPlanMutation.mutate({ row, plan: downgradePlan })} disabled={row.plan === "creator"}>downgrade</button></div></td>
+                    <td className="p-3">
+                      <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] uppercase ${
+                        row.status === "suspended"
+                          ? "bg-red-500/10 text-red-400 border-red-500/25"
+                          : row.status === "active"
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
+                            : "bg-secondary/50 text-muted-foreground border-border/50"
+                      }`}>{row.status}</span>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex flex-wrap gap-1.5">
+                        {/* Suspend / Activate */}
+                        <button
+                          className={`h-7 rounded border px-2 text-[10px] transition-colors disabled:opacity-50 ${
+                            row.status === "suspended"
+                              ? "border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                              : "border-red-500/30 text-red-400 hover:bg-red-500/10"
+                          }`}
+                          disabled={isSuspendPending}
+                          onClick={() => userStatusMutation.mutate({ row, suspended: row.status !== "suspended" })}
+                        >
+                          {isSuspendPending ? "…" : row.status === "suspended" ? "activate" : "suspend"}
+                        </button>
+                        {/* Upgrade */}
+                        <button
+                          className="h-7 rounded border border-primary/30 px-2 text-[10px] text-primary hover:bg-primary/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          disabled={!canUpgrade || isPlanPending}
+                          onClick={() => userPlanMutation.mutate({ row, plan: upgradePlan })}
+                        >
+                          {isPlanPending ? "…" : "upgrade"}
+                        </button>
+                        {/* Downgrade */}
+                        <button
+                          className="h-7 rounded border border-border/60 px-2 text-[10px] text-muted-foreground hover:text-foreground hover:border-border transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          disabled={!canDowngrade || isPlanPending}
+                          onClick={() => userPlanMutation.mutate({ row, plan: downgradePlan })}
+                        >
+                          {isPlanPending ? "…" : "downgrade"}
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 );
               })}

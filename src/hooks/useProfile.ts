@@ -23,6 +23,7 @@ export interface Profile {
   free_trial_started_at: string;
   free_trial_expired: boolean;
   subscription_expires_at: string | null;
+  is_suspended: boolean;
 }
 
 export type TierLevel = "free" | "creator" | "pro_creator" | "agency" | "scale_agency";

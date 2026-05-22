@@ -2,20 +2,21 @@ import { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
-import { useFreeTrialStatus, useSubscriptionExpiry } from "@/hooks/useProfile";
+import { useFreeTrialStatus, useProfile, useSubscriptionExpiry } from "@/hooks/useProfile";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { OnboardingPopup } from "@/components/OnboardingPopup";
 import { db } from "@/lib/cloudDb";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import robinosLogo from "@/assets/robinos-logo.png";
-import { AlertTriangle, X } from "lucide-react";
+import { AlertTriangle, ShieldX, X } from "lucide-react";
 import { subscribePostgresChanges } from "@/lib/realtime/channelManager";
 
 const DashboardLayout = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
   const { expired: freeExpired, isFree } = useFreeTrialStatus();
   const { expired: subExpired, tier } = useSubscriptionExpiry();
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -130,6 +131,67 @@ const DashboardLayout = () => {
   }
 
   if (!user) return null;
+
+  // ── Suspension screen — shown to suspended users before anything else ──
+  if (profile && profile.is_suspended) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background grain px-4">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(0_72%_51%/0.06),transparent_60%)] pointer-events-none" />
+        <motion.div
+          initial={{ opacity: 0, y: 16, filter: "blur(8px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="relative z-10 w-full max-w-sm"
+          style={{
+            background: "hsl(0 0% 6% / 0.9)",
+            border: "1px solid hsl(0 72% 51% / 0.2)",
+            borderRadius: "1rem",
+            backdropFilter: "blur(24px)",
+            boxShadow: "0 0 48px hsl(0 72% 51% / 0.08), inset 0 1px 0 hsl(0 0% 100% / 0.04)",
+          }}
+        >
+          <div className="p-7 text-center">
+            <div className="flex justify-center mb-5">
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center"
+                style={{ background: "hsl(0 72% 51% / 0.1)", border: "1px solid hsl(0 72% 51% / 0.25)" }}
+              >
+                <ShieldX className="w-5 h-5" style={{ color: "hsl(0 72% 64%)" }} />
+              </div>
+            </div>
+            <p className="text-[10px] font-mono uppercase tracking-[0.24em] mb-3" style={{ color: "hsl(0 72% 64% / 0.7)" }}>
+              Account Suspended
+            </p>
+            <h1 className="text-chrome text-lg font-semibold mb-3 leading-snug">
+              Your account has been suspended
+            </h1>
+            <p className="text-xs text-muted-foreground leading-relaxed mb-6">
+              Access to the RobinOS platform has been restricted due to a violation of our platform policies. If you believe this is an error, please contact support.
+            </p>
+            <div className="space-y-2">
+              <a
+                href="mailto:support@tryrobin.xyz"
+                className="w-full flex items-center justify-center h-10 rounded-lg text-xs font-medium transition-all"
+                style={{
+                  background: "hsl(0 72% 51% / 0.12)",
+                  border: "1px solid hsl(0 72% 51% / 0.3)",
+                  color: "hsl(0 72% 74%)",
+                }}
+              >
+                Contact Support → support@tryrobin.xyz
+              </a>
+              <button
+                onClick={() => { void signOut(); navigate("/login", { replace: true }); }}
+                className="w-full h-10 rounded-lg text-xs font-medium text-muted-foreground border border-border/60 hover:text-foreground hover:border-border transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex bg-background grain select-none-all">
