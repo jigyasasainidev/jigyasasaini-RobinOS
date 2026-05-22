@@ -13,8 +13,9 @@ type Platform = "TikTok" | "Instagram" | "Facebook" | "YouTube";
 interface TrendingAudio {
   title: string;
   artist: string;
+  image_url?: string;   // artwork from Apple Music / Deezer
   category: string;
-  uses: string;        // kept for backward compat — not displayed
+  uses: string;         // kept for backward compat — not displayed
   trend: "up" | "stable" | "new";
   tip: string;
   velocity?: "rising" | "hot" | "exploding" | "stable";
@@ -285,44 +286,63 @@ const TrendingAudioPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
                 {audios.map((audio, i) => {
                   const sig = velocityLabel(audio.velocity, audio.trend);
+                  const artwork = audio.image_url || "https://placehold.co/300x300/0a0a0a/3b82f6?text=RobinOS";
                   return (
                     <motion.div
                       key={i}
                       initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                      className="rounded-xl border border-border bg-card p-4 hover:border-primary/20 transition-colors group"
+                      className="rounded-xl border border-border bg-card overflow-hidden hover:border-primary/25 transition-all group"
                     >
-                      {/* Title + copy */}
-                      <div className="flex items-start justify-between mb-3">
+                      {/* Artwork row — Spotify-like */}
+                      <div className="flex items-center gap-3 p-3.5 pb-0">
+                        <div className="relative shrink-0 w-14 h-14 rounded-xl overflow-hidden border border-border/60"
+                          style={{ boxShadow: "0 4px 16px hsl(0 0% 0% / 0.5)" }}>
+                          <img
+                            src={artwork}
+                            alt={`${audio.title} artwork`}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src =
+                                "https://placehold.co/300x300/0a0a0a/3b82f6?text=RobinOS";
+                            }}
+                          />
+                          {/* Subtle glow overlay on hover */}
+                          <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/8 transition-colors rounded-xl" />
+                        </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-medium text-foreground truncate">{audio.title}</h3>
-                          <p className="text-[10px] text-muted-foreground font-mono mt-0.5">{audio.artist}</p>
+                          <h3 className="text-sm font-medium text-foreground truncate leading-tight">{audio.title}</h3>
+                          <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5 truncate">{audio.artist}</p>
                         </div>
                         <button
                           onClick={() => copyText(audio.title, i)}
-                          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors ml-2 shrink-0"
+                          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0"
                           title="Copy audio name"
                         >
                           {copiedIdx === i ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                         </button>
                       </div>
 
-                      {/* Signal metadata — compact premium inline row */}
-                      <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-                        <Badge variant="outline" className={`text-[9px] font-mono shrink-0 ${categoryColor(audio.category)}`}>
-                          {audio.category}
-                        </Badge>
-                        <span className={`inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded-full border shrink-0 ${velocityBadgeClass(audio.velocity)}`}>
-                          {sig.icon}
-                          <span className="leading-none">{sig.text}</span>
-                        </span>
-                        {audio.confidence != null && (
-                          <span className="text-[9px] font-mono text-muted-foreground/40 shrink-0">
-                            · {audio.confidence}% conf
+                      {/* Signal metadata */}
+                      <div className="px-3.5 pt-3 pb-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Badge variant="outline" className={`text-[9px] font-mono shrink-0 ${categoryColor(audio.category)}`}>
+                            {audio.category}
+                          </Badge>
+                          <span className={`inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded-full border shrink-0 ${velocityBadgeClass(audio.velocity)}`}>
+                            {sig.icon}
+                            <span className="leading-none">{sig.text}</span>
                           </span>
-                        )}
+                          {audio.confidence != null && (
+                            <span className="text-[9px] font-mono text-muted-foreground/40 shrink-0">
+                              · {audio.confidence}% conf
+                            </span>
+                          )}
+                        </div>
                       </div>
 
-                      <p className="text-[11px] text-muted-foreground leading-relaxed">{audio.tip}</p>
+                      {/* Tip */}
+                      <p className="px-3.5 pt-2 pb-3.5 text-[11px] text-muted-foreground leading-relaxed">{audio.tip}</p>
                     </motion.div>
                   );
                 })}
