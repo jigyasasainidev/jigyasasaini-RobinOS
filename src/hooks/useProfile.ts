@@ -1,7 +1,30 @@
+// ============================================================
+// useProfile — profile data (API keys, display name, usage fields)
+// ============================================================
+// IMPORTANT: Plan/tier data is NOT authoritative here.
+// useProfile() returns the profiles table row — useful for
+// API keys, display info, and free-trial usage fields.
+//
+// For plan access, feature gates, and quota decisions:
+//   → use useEntitlements() / usePlanKey() from useEntitlements.ts
+//   → those delegate to get_user_entitlements RPC (backend auth)
+//
+// useTierLevel() remains for legacy compatibility but now
+// delegates to usePlanKey() so there is exactly ONE source.
+// ============================================================
+
 import { useQuery } from "@tanstack/react-query";
 import { db } from "@/lib/cloudDb";
 import { useAuth } from "@/contexts/AuthContext";
-import { normalizeTier, getLimitsForTier } from "@/lib/pricing";
+import { getLimitsForTier } from "@/lib/pricing";
+import {
+  useEntitlements,
+  usePlanKey,
+  useIsProOrAbove,
+  useIsAgency,
+  useIsByokEnabled,
+  useIsFree,
+} from "@/hooks/useEntitlements";
 
 export interface Profile {
   id: string;
@@ -47,8 +70,14 @@ export function useProfile() {
       const fallbackProfile = {
         user_id: user.id,
         email: user.email ?? null,
-        display_name: (user.user_metadata as Record<string, unknown> | undefined)?.display_name as string | undefined ?? user.email ?? null,
-        full_name: (user.user_metadata as Record<string, unknown> | undefined)?.display_name as string | undefined ?? user.email ?? null,
+        display_name:
+          (user.user_metadata as Record<string, unknown> | undefined)?.display_name as string | undefined ??
+          user.email ??
+          null,
+        full_name:
+          (user.user_metadata as Record<string, unknown> | undefined)?.display_name as string | undefined ??
+          user.email ??
+          null,
       };
 
       const { data: created, error: createError } = await db
@@ -77,49 +106,59 @@ export function useProfile() {
   });
 }
 
+// ── Plan selectors — all delegate to useEntitlements() ───────
+// This is the fix for the split-brain issue.
+// Previously useTierLevel() read profiles.subscription_tier,
+// which could be stale or differ from the entitlement resolver.
+// Now everything reads the same backend-resolved entitlement.
+
+/**
+ * @deprecated Prefer usePlanKey() from useEntitlements.ts.
+ * Kept for compatibility with pages not yet migrated.
+ * Delegates to usePlanKey() — same source, no split-brain.
+ */
 export function useTierLevel(): TierLevel {
-  const { data: profile } = useProfile();
-  // Prefer current_plan which is synced by admin mutations.
-  // Fall back to subscription_tier for compatibility.
-  const raw = (profile as any)?.current_plan || profile?.subscription_tier;
-  const normalized = normalizeTier(raw);
-  if (["agency", "scale_agency", "pro_creator", "creator"].includes(normalized)) return normalized as TierLevel;
+  const plan = usePlanKey();
+  // Validate it's a known tier; unknown → free
+  if (["agency", "scale_agency", "pro_creator", "creator"].includes(plan)) {
+    return plan as TierLevel;
+  }
   return "free";
 }
 
-export function useIsProUser() {
-  const tier = useTierLevel();
-  return tier === "pro_creator" || tier === "agency" || tier === "scale_agency";
+/**
+ * @deprecated Use useIsProOrAbove() from useEntitlements.ts
+ */
+export function useIsProUser(): boolean {
+  return useIsProOrAbove();
 }
 
-export function useIsAgencyUser() {
-  const tier = useTierLevel();
-  return tier === "agency" || tier === "scale_agency";
+/**
+ * @deprecated Use useIsAgency() from useEntitlements.ts
+ */
+export function useIsAgencyUser(): boolean {
+  return useIsAgency();
 }
 
+/**
+ * @deprecated Use useIsByokEnabled() from useEntitlements.ts
+ * Kept as a query wrapper for components that need the old shape.
+ */
 export function useByokAccess() {
-  const { user } = useAuth();
-  const tier = useTierLevel();
-  const tierFallback = tier === "pro_creator" || tier === "agency" || tier === "scale_agency";
-
-  return useQuery({
-    queryKey: ["byok-access", user?.id],
-    queryFn: async () => {
-      if (!user) return tierFallback;
-      const { data, error } = await db.rpc("get_usage_status", { p_feature_name: "scripts" });
-      if (error) return tierFallback;
-      return Boolean((data as any)?.byok_enabled ?? tierFallback);
-    },
-    enabled: !!user,
-    staleTime: 30 * 1000,
-  });
+  const isByok = useIsByokEnabled();
+  // Return query-like shape for backward compatibility
+  return { data: isByok, isLoading: false };
 }
 
+/**
+ * Free trial status — reads from profile table for free users.
+ * For feature gating, prefer useIsFree() from useEntitlements.ts.
+ */
 export function useFreeTrialStatus() {
   const { data: profile } = useProfile();
-  const tier = useTierLevel();
+  const isFree = useIsFree();
 
-  if (tier !== "free") {
+  if (!isFree) {
     return { expired: false, scansLeft: 999, scriptsLeft: 999, isFree: false };
   }
 
@@ -127,7 +166,9 @@ export function useFreeTrialStatus() {
   const scansUsed = profile?.free_scans_used ?? 0;
   const scriptsUsed = profile?.free_scripts_used ?? 0;
 
-  const trialStart = profile?.free_trial_started_at ? new Date(profile.free_trial_started_at) : new Date();
+  const trialStart = profile?.free_trial_started_at
+    ? new Date(profile.free_trial_started_at)
+    : new Date();
   const now = new Date();
   const hoursElapsed = (now.getTime() - trialStart.getTime()) / (1000 * 60 * 60);
   const timeExpired = hoursElapsed >= 24;
@@ -140,31 +181,33 @@ export function useFreeTrialStatus() {
   };
 }
 
+/**
+ * Subscription expiry — now delegates to entitlements RPC result.
+ * The entitlement resolver checks expires_at server-side.
+ */
 export function useSubscriptionExpiry() {
-  const { data: profile } = useProfile();
-  const tier = useTierLevel();
-
-  // Only relevant for paid users
-  if (tier === "free" || !profile?.subscription_expires_at) {
-    return { expired: false, expiresAt: null, tier };
-  }
-
-  const expiresAt = new Date(profile.subscription_expires_at);
-  const now = new Date();
-  const expired = now >= expiresAt;
-
-  return { expired, expiresAt, tier };
+  const { data: entitlements } = useEntitlements();
+  const plan = usePlanKey();
+  const expiresAtStr = (entitlements as any)?.expires_at as string | null | undefined;
+  const expiresAt = expiresAtStr ? new Date(expiresAtStr) : null;
+  const expired = expiresAt ? new Date() >= expiresAt : false;
+  return { expired, expiresAt, tier: plan };
 }
 
+/**
+ * @deprecated Script limits from profile table.
+ * The new quota system uses get_usage_status_v2 RPC.
+ * This remains for legacy display in StudioPage.
+ */
 export function useScriptLimits() {
   const { data: profile } = useProfile();
-  const tier = useTierLevel();
-  const limits = getLimitsForTier(profile?.subscription_tier);
-  const isProOrAbove = tier === "pro_creator" || tier === "agency" || tier === "scale_agency";
-  const isAgencyTier = tier === "agency" || tier === "scale_agency";
+  const plan = usePlanKey();
+  const isProOrAbove = useIsProOrAbove();
+  const isAgencyTier = useIsAgency();
+  const limits = getLimitsForTier(plan);
 
   const limit = limits.monthlyCap;
-  const used = tier === "free"
+  const used = plan === "free"
     ? (profile?.free_scripts_used ?? 0)
     : (profile?.scripts_used_this_month ?? 0);
   const remaining = Math.max(0, limit - used);
@@ -173,7 +216,7 @@ export function useScriptLimits() {
   return {
     isPro: isProOrAbove,
     isAgency: isAgencyTier,
-    tier,
+    tier: plan,
     limit,
     used,
     remaining,

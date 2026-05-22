@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/cloudDb";
 import { useTierLevel } from "@/hooks/useProfile";
+import { usePlanKey } from "@/hooks/useEntitlements";
 import { getCaptionLimitText } from "@/lib/pricing";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 
@@ -45,7 +46,8 @@ const styleOptions: Array<{ value: GenerationStyle; label: string }> = [
 
 const CaptionEnginePage = () => {
   const { user } = useAuth();
-  const tier = useTierLevel();
+  const plan = usePlanKey();
+  const tier = plan; // getCaptionLimitText expects a tier string
   const [platform, setPlatform] = useState<Platform>("youtube");
   const [style, setStyle] = useState<GenerationStyle>("seo_optimized");
   const [prompt, setPrompt] = useState("");

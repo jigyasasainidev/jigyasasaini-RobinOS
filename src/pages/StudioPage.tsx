@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/cloudDb";
 import { useTierLevel, useFreeTrialStatus } from "@/hooks/useProfile";
+import { usePlanKey, useIsAgency, useAvailableScriptLengths } from "@/hooks/useEntitlements";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
@@ -30,9 +31,10 @@ const StudioPage = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const currentTier = useTierLevel();
+  const plan = usePlanKey();
   const { expired, scriptsLeft, isFree } = useFreeTrialStatus();
-  const isAgencyTier = currentTier === "agency" || currentTier === "scale_agency";
-  const availableLengths = isFree ? freeLengths : (currentTier === "creator" ? starterLengths : allLengths);
+  const isAgencyTier = useIsAgency();
+  const availableLengths = useAvailableScriptLengths(allLengths, freeLengths, starterLengths);
 
   const [topic, setTopic] = useState(() => sessionStorage.getItem("studio_topic") || "");
   const [selectedTone, setSelectedTone] = useState(() => sessionStorage.getItem("studio_tone") || "Casual");

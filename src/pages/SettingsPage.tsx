@@ -15,7 +15,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useCurrency } from "@/hooks/useCurrency";
-import { getPlans, getCurrencySymbol, getTierDisplayName, normalizeTier } from "@/lib/pricing";
+import { getPlans, getCurrencySymbol, getTierDisplayName } from "@/lib/pricing";
 import { BrandMark } from "@/components/BrandMark";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
@@ -56,6 +56,9 @@ const SettingsPage = () => {
   const isAgency = plan === "agency" || plan === "scale_agency";
   const isProOrAbove = plan === "pro_creator" || plan === "agency" || plan === "scale_agency";
 
+  // For pricing card "Current Plan" detection — use entitlement plan, not profile cache
+  const normalizedCurrent = plan;
+
   const [elevenLabsKey, setElevenLabsKey] = useState(profile?.elevenlabs_api_key || "");
   const [videoApiKey, setVideoApiKey] = useState((profile as any)?.video_api_key || "");
   const [saving, setSaving] = useState(false);
@@ -85,8 +88,6 @@ const SettingsPage = () => {
     const planLabel = planTier === "pro_creator" ? "Pro Creator" : planTier === "agency" ? "Agency" : "Creator";
     toast.info(`${planLabel} subscriptions are coming soon. Billing will be enabled here directly.`);
   };
-
-  const normalizedCurrent = normalizeTier(profile?.subscription_tier || "free");
 
   const handleSaveKeys = async () => {
     if (!user) return;

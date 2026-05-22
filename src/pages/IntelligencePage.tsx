@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/cloudDb";
 import { useTierLevel, useFreeTrialStatus } from "@/hooks/useProfile";
+import { usePlanKey, useIsProOrAbove, useIsAgency, useMaxTrendTopics, useIsFree } from "@/hooks/useEntitlements";
 import { Badge } from "@/components/ui/badge";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 
@@ -37,11 +38,11 @@ const scanIcons = [Zap, Radio, Globe, Wifi, Sparkles, Search, TrendingUp];
 const IntelligencePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const tier = useTierLevel();
+  const plan = usePlanKey();
   const { expired, scansLeft, isFree } = useFreeTrialStatus();
-  const isAgency = tier === "agency" || tier === "scale_agency";
-  const isPro = tier === "pro_creator";
-  const maxTopics = isAgency ? 999 : isPro ? 5 : isFree ? 1 : 3;
+  const isAgency = useIsAgency();
+  const isPro = plan === "pro_creator";
+  const maxTopics = useMaxTrendTopics();
 
   const [niche, setNiche] = useState("");
   const [state, setState] = useState<ScanState>("idle");

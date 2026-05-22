@@ -2,7 +2,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Zap, PenTool, Settings, LogOut, Clock, Link2, Crown, Mic, Film, Music, BarChart3, Type } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTierLevel } from "@/hooks/useProfile";
+import { usePlanKey, useIsProOrAbove, useIsAgency } from "@/hooks/useEntitlements";
 import { Badge } from "@/components/ui/badge";
 import { BrandMark } from "@/components/BrandMark";
 import { prefetchRoute } from "@/lib/routePrefetch";
@@ -58,10 +58,12 @@ const bottomNavItems = [
 export function DashboardSidebar() {
   const { signOut } = useAuth();
   const location = useLocation();
-  const tier = useTierLevel();
-  const showBadge = tier === "pro_creator" || tier === "agency" || tier === "scale_agency";
-  const badgeLabel = tier === "agency" || tier === "scale_agency" ? "AGENCY" : tier === "pro_creator" ? "PRO" : "";
-  const badgeClass = tier === "agency" || tier === "scale_agency"
+  const plan = usePlanKey();
+  const isAgency = useIsAgency();
+  const isProOrAbove = useIsProOrAbove();
+  const showBadge = isProOrAbove;
+  const badgeLabel = isAgency ? "AGENCY" : plan === "pro_creator" ? "PRO" : "";
+  const badgeClass = isAgency
     ? "text-[8px] font-mono border-amber-500/40 text-amber-400 py-0 px-1.5"
     : "text-[8px] font-mono border-primary/30 text-primary py-0 px-1.5";
 

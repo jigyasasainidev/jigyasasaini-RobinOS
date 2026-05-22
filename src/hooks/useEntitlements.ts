@@ -1,26 +1,20 @@
 // ============================================================
 // ROBINOS CENTRALIZED ENTITLEMENT HOOK
-// useEntitlements() — single source of truth for all feature access
+// useEntitlements() — SINGLE source of truth for all feature access
 // ============================================================
 // Rules:
-//   1. Frontend NEVER decides access — this hook displays only
-//   2. Backend is authoritative — values come from get_user_entitlements RPC
-//   3. Edge functions enforce — this hook is for UI display only
-//   4. No scattered plan === 'pro_creator' checks anywhere
-//   5. Every feature check goes through this hook
-//
-// Usage:
-//   const { plan, isVoiceEnabled, isByokEnabled, scriptLimit } = useEntitlements();
-//
-// Admin upgrade propagation:
-//   When admin changes a user's plan, the profiles table is updated.
-//   Supabase realtime broadcasts the change, which invalidates the
-//   ["entitlements", userId] query key, causing an automatic refetch
-//   so the user's dashboard reflects the new plan instantly.
+//   1. Frontend NEVER decides access — this hook is display-only
+//   2. Backend is authoritative — get_user_entitlements RPC
+//   3. Edge functions enforce — this hook drives UI only
+//   4. ZERO scattered plan === 'pro_creator' checks anywhere
+//   5. useTierLevel() DELEGATES here — not to profile cache
+//   6. Split-brain is structurally impossible because every
+//      component reads the same cached query key.
 // ============================================================
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { subscribeMultiTable } from "@/lib/realtime/channelManager";
 import type { FeatureKey } from "@/lib/pricing";
@@ -233,4 +227,50 @@ export function useHashtagScanLimit(): number {
   const ent = useFeatureEntitlement("hashtag_scan");
   if (ent.fair_usage || ent.unlimited) return -1;
   return ent.limit;
+}
+
+// ── Additional selectors used across the app ─────────────────
+
+/** True if subscription is currently active (non-expired) */
+export function useSubscriptionActive(): boolean {
+  const { data } = useEntitlements();
+  return data?.subscription_active ?? false;
+}
+
+/** True if user is on free plan */
+export function useIsFree(): boolean {
+  return usePlanKey() === "free";
+}
+
+/** Script generation limit as a display string */
+export function useScriptLimitDisplay(): string {
+  const plan = usePlanKey();
+  const ent = useFeatureEntitlement("script_generation");
+  if (ent.fair_usage) return "Unlimited (fair usage)";
+  if (ent.unlimited) return "Unlimited";
+  if (ent.limit <= 0) return "0";
+  return `${ent.limit}/day`;
+}
+
+/** Max trend scan topics to show in UI (not backend enforcement) */
+export function useMaxTrendTopics(): number {
+  const plan = usePlanKey();
+  if (plan === "agency" || plan === "scale_agency") return 999;
+  if (plan === "pro_creator") return 5;
+  if (plan === "creator") return 3;
+  return 1; // free
+}
+
+/** Script lengths available for the Studio page */
+export function useAvailableScriptLengths(
+  allLengths: string[],
+  freeLengths: string[],
+  creatorLengths: string[]
+): string[] {
+  const plan = usePlanKey();
+  const isFree = plan === "free";
+  const isCreator = plan === "creator";
+  if (isFree) return freeLengths;
+  if (isCreator) return creatorLengths;
+  return allLengths;
 }
