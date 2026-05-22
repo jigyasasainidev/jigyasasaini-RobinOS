@@ -57,29 +57,24 @@ const VideoStudioPage = () => {
     }, 3000);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
-      // Build a concise prompt from script + style
       const prompt = `${bgStyle} style video: ${script.slice(0, 400)}`;
 
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-video`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({ prompt, aspect_ratio: aspectRatio }),
-        }
-      );
+      // ─── Use supabase.functions.invoke() — handles session auth automatically ───
+      const { data, error: invokeError } = await supabase.functions.invoke("generate-video", {
+        body: { prompt, aspect_ratio: aspectRatio },
+      });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Video generation failed");
+      if (invokeError) {
+        clearInterval(progressInterval);
+        let parsed: Record<string, unknown> = {};
+        try {
+          const raw = (invokeError as any)?.context?.responseText ?? (invokeError as any)?.message ?? "";
+          parsed = typeof raw === "string" && raw.startsWith("{") ? JSON.parse(raw) : {};
+        } catch { /* keep empty */ }
+        throw new Error(String(parsed.message ?? parsed.error ?? invokeError.message ?? "Video generation failed"));
+      }
 
-      if (data.status === "succeeded" && data.video_url) {
+      if (data?.status === "succeeded" && data?.video_url) {
         clearInterval(progressInterval);
         setProgress(100);
         setVideoUrl(data.video_url);
@@ -89,23 +84,19 @@ const VideoStudioPage = () => {
       }
 
       // Poll for completion
-      if (data.prediction_id) {
+      if (data?.prediction_id) {
         pollRef.current = setInterval(async () => {
           try {
-            const pollRes = await fetch(
-              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/poll-video`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                  apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                },
-                body: JSON.stringify({ prediction_id: data.prediction_id }),
-              }
-            );
-            const pollData = await pollRes.json();
-
+            const { data: pollData, error: pollError } = await supabase.functions.invoke("poll-video", {
+              body: { prediction_id: data.prediction_id },
+            });
+            if (pollError || !pollData) {
+              clearInterval(pollRef.current!);
+              clearInterval(progressInterval);
+              toast.error("Polling failed");
+              setGenerating(false);
+              return;
+            }
             if (pollData.status === "succeeded" && pollData.video_url) {
               clearInterval(pollRef.current!);
               clearInterval(progressInterval);

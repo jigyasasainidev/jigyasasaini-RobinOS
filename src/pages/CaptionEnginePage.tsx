@@ -112,35 +112,35 @@ const CaptionEnginePage = () => {
 
     setGenerating(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const session = sessionData.session;
       const requestId = crypto.randomUUID();
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-caption`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ platform, generationStyle: style, prompt, requestId }),
+
+      // ─── Use supabase.functions.invoke() — handles session auth automatically ───
+      const { data: payload, error: invokeError } = await supabase.functions.invoke("generate-caption", {
+        body: { platform, generationStyle: style, prompt, requestId },
       });
 
-      const payload = await resp.json();
-      if (!resp.ok) {
-        if (payload?.usage) {
+      if (invokeError) {
+        const status = (invokeError as any)?.context?.status ?? (invokeError as any)?.status;
+        let parsed: Record<string, unknown> = {};
+        try {
+          const raw = (invokeError as any)?.context?.responseText ?? (invokeError as any)?.message ?? "";
+          parsed = typeof raw === "string" && raw.startsWith("{") ? JSON.parse(raw) : {};
+        } catch { /* keep empty */ }
+
+        const usageBlock = parsed.usage as Record<string, unknown> | undefined;
+        if (usageBlock) {
           setUsage({
-            used: Number(payload.usage.used ?? 0),
-            quota: Number(payload.usage.quota ?? 0),
-            remaining: Number(payload.usage.remaining ?? 0),
-            allowed: Boolean(payload.usage.allowed),
-            near_limit: Boolean(payload.usage.near_limit),
-            fair_usage: Boolean(payload.usage.fair_usage),
-            message: String(payload.usage.message ?? ""),
+            used: Number(usageBlock.used ?? 0),
+            quota: Number(usageBlock.quota ?? 0),
+            remaining: Number(usageBlock.remaining ?? 0),
+            allowed: Boolean(usageBlock.allowed),
+            near_limit: Boolean(usageBlock.near_limit),
+            fair_usage: Boolean(usageBlock.fair_usage),
+            message: String(usageBlock.message ?? ""),
           });
         }
-        if (resp.status === 403) {
-          setShowUpgrade(true);
-        }
-        toast.error(payload?.error || "Caption generation failed.");
+        if (status === 403) setShowUpgrade(true);
+        toast.error(String(parsed.message ?? parsed.error ?? "Caption generation failed."));
         await loadUsage();
         return;
       }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Mic, Play, Pause, Download, Loader2, Lock, Volume2 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { useByokAccess, useProfile, useTierLevel } from "@/hooks/useProfile";
 import { Badge } from "@/components/ui/badge";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
@@ -43,27 +44,24 @@ const VoiceOverStudioPage = () => {
     setAudioUrl(null);
 
     try {
-      const { data: { session } } = await (await import("@/integrations/supabase/client")).supabase.auth.getSession();
+      // ─── Use supabase.functions.invoke() for binary (audio) response ───
+      const { data, error: invokeError } = await supabase.functions.invoke("elevenlabs-tts", {
+        body: { text: script, voiceId: selectedVoice },
+      });
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({ text: script, voiceId: selectedVoice }),
-        }
-      );
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: "Generation failed" }));
-        throw new Error(err.error || "Voice generation failed");
+      if (invokeError) {
+        let parsed: Record<string, unknown> = {};
+        try {
+          const raw = (invokeError as any)?.context?.responseText ?? (invokeError as any)?.message ?? "";
+          parsed = typeof raw === "string" && raw.startsWith("{") ? JSON.parse(raw) : {};
+        } catch { /* keep empty */ }
+        throw new Error(String(parsed.message ?? parsed.error ?? invokeError.message ?? "Voice generation failed"));
       }
 
-      const blob = await response.blob();
+      if (!data) throw new Error("No audio data returned");
+
+      // functions.invoke returns the raw body — convert to blob URL
+      const blob = data instanceof Blob ? data : new Blob([data], { type: "audio/mpeg" });
       const url = URL.createObjectURL(blob);
       setAudioUrl(url);
       toast.success("Voice over generated!");

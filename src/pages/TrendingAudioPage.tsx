@@ -106,16 +106,22 @@ const TrendingAudioPage = () => {
 
         if (audioResult.data && !audioResult.error) {
           const d = audioResult.data as any;
+          const backendQuota = Number(d.quota ?? 0);
           setAudioUsage({
             used: Number(d.used ?? 0),
-            limit: d.unlimited || d.fair_usage ? audioLimit : Number(d.quota ?? audioLimit),
+            limit: d.unlimited || d.fair_usage
+              ? audioLimit
+              : backendQuota > 0 ? backendQuota : audioLimit,
           });
         }
         if (hashtagResult.data && !hashtagResult.error) {
           const d = hashtagResult.data as any;
+          const backendQuota = Number(d.quota ?? 0);
           setHashtagUsage({
             used: Number(d.used ?? 0),
-            limit: d.unlimited || d.fair_usage ? hashtagLimit : Number(d.quota ?? hashtagLimit),
+            limit: d.unlimited || d.fair_usage
+              ? hashtagLimit
+              : backendQuota > 0 ? backendQuota : hashtagLimit,
           });
         }
       } catch {
@@ -171,22 +177,24 @@ const TrendingAudioPage = () => {
       if (isHashtag) {
         setHashtags(data?.hashtags ?? []);
         if (data?.usage) {
+          const bq = Number(data.usage.quota ?? 0);
           setHashtagUsage({
             used: Number(data.usage.used ?? 0),
             limit: data.usage.unlimited || data.usage.fair_usage
               ? hashtagLimit
-              : Number(data.usage.quota ?? hashtagLimit),
+              : bq > 0 ? bq : hashtagLimit,
           });
         }
         if (!data?.hashtags?.length) toast.error("No hashtags found. Try again.");
       } else {
         setAudios(data?.audios ?? []);
         if (data?.usage) {
+          const bq = Number(data.usage.quota ?? 0);
           setAudioUsage({
             used: Number(data.usage.used ?? 0),
             limit: data.usage.unlimited || data.usage.fair_usage
               ? audioLimit
-              : Number(data.usage.quota ?? audioLimit),
+              : bq > 0 ? bq : audioLimit,
           });
         }
         if (!data?.audios?.length) toast.error("No results found. Try again.");
