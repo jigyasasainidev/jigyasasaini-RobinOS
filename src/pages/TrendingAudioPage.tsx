@@ -69,6 +69,35 @@ const velocityBadgeClass = (v?: string) => {
   return                        "border-border/30 text-muted-foreground/45";
 };
 
+// ── Platform colors for artwork fallback ─────────────────
+const PLATFORM_GLOW: Record<Platform, { bg: string; glow: string; note: string }> = {
+  Instagram: { bg: "linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)", glow: "hsl(300 60% 50% / 0.35)", note: "♪" },
+  TikTok:    { bg: "linear-gradient(135deg, #010101, #69c9d0, #ee1d52)", glow: "hsl(185 55% 50% / 0.35)", note: "♫" },
+  YouTube:   { bg: "linear-gradient(135deg, #282828, #ff0000, #282828)", glow: "hsl(0 100% 50% / 0.35)",  note: "▶" },
+  Facebook:  { bg: "linear-gradient(135deg, #1877f2, #0a4a8a, #1877f2)", glow: "hsl(215 90% 55% / 0.35)", note: "♪" },
+};
+
+/** Premium platform-colored artwork fallback — shown when image_url is null or broken */
+function ArtworkFallback({ platform, size = 56 }: { platform: Platform; size?: number }) {
+  const cfg = PLATFORM_GLOW[platform];
+  return (
+    <div
+      className="w-full h-full flex items-center justify-center rounded-xl shrink-0"
+      style={{
+        background: cfg.bg,
+        boxShadow: `0 0 16px ${cfg.glow}`,
+        width: size, height: size,
+        fontSize: size * 0.38,
+      }}
+      aria-hidden="true"
+    >
+      <span style={{ filter: "drop-shadow(0 0 4px rgba(255,255,255,0.5))", color: "rgba(255,255,255,0.9)" }}>
+        {cfg.note}
+      </span>
+    </div>
+  );
+}
+
 // ── Format helpers ────────────────────────────────────────
 function fmtCount(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
@@ -301,7 +330,6 @@ const TrendingAudioPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
                 {audios.map((audio, i) => {
                   const sig = velocityLabel(audio.velocity, audio.trend);
-                  const artwork = audio.image_url || "https://placehold.co/300x300/0a0a0a/3b82f6?text=RobinOS";
                   return (
                     <motion.div
                       key={i}
@@ -310,20 +338,29 @@ const TrendingAudioPage = () => {
                     >
                       {/* Artwork row — Spotify-like */}
                       <div className="flex items-center gap-3 p-3.5 pb-0">
-                        <div className="relative shrink-0 w-14 h-14 rounded-xl overflow-hidden border border-border/60"
-                          style={{ boxShadow: "0 4px 16px hsl(0 0% 0% / 0.5)" }}>
-                          <img
-                            src={artwork}
-                            alt={`${audio.title} artwork`}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                            onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src =
-                                "https://placehold.co/300x300/0a0a0a/3b82f6?text=RobinOS";
-                            }}
-                          />
-                          {/* Subtle glow overlay on hover */}
-                          <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/8 transition-colors rounded-xl" />
+                        <div
+                          className="relative shrink-0 rounded-xl overflow-hidden border border-border/60"
+                          style={{ width: 56, height: 56, boxShadow: "0 4px 16px hsl(0 0% 0% / 0.5)" }}
+                        >
+                          {audio.image_url?.startsWith("http") ? (
+                            <img
+                              src={audio.image_url}
+                              alt={`${audio.title} artwork`}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                              onError={(e) => {
+                                // Replace broken img with fallback gradient in-place
+                                const parent = e.currentTarget.parentElement;
+                                if (parent) {
+                                  e.currentTarget.style.display = "none";
+                                  parent.setAttribute("data-fallback", "true");
+                                }
+                              }}
+                            />
+                          ) : (
+                            <ArtworkFallback platform={platform} size={56} />
+                          )}
+                          <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/8 transition-colors rounded-xl pointer-events-none" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-sm font-medium text-foreground truncate leading-tight">{audio.title}</h3>

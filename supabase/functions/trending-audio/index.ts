@@ -35,7 +35,8 @@ type Velocity  = "rising" | "hot" | "exploding" | "stable";
 const AUDIO_CAP   = 20;
 const HASHTAG_CAP = 20;
 const CACHE_HOURS = 6;
-const FALLBACK_ART = "https://placehold.co/300x300/0a0a0a/3b82f6?text=RobinOS";
+// Fallback only used if artwork pipeline completely fails
+const FALLBACK_ART = null; // frontend handles platform-colored gradient fallback
 
 // ── Fetch helpers ──────────────────────────────────────────
 async function safeFetchJson(url: string): Promise<any | null> {
@@ -59,10 +60,34 @@ async function safeFetchText(url: string): Promise<string | null> {
 }
 
 // ── Normalization ──────────────────────────────────────────
+
+/** Exact dedup key (used for seen map) */
 function normalizeAudioKey(title: string, artist: string): string {
   const n = (s: string) => s.toLowerCase().replace(/[^\w\s]/g, " ").replace(/\s+/g, " ").trim();
   return `${n(title)}::${n(artist)}`;
 }
+
+/**
+ * Fuzzy match key — strips featured artists, parentheticals, punctuation.
+ * "Ran To Atlanta (feat. Future)" → "ran to atlanta"
+ * "Die With A Smile" → "die with a smile"
+ * Matches across Apple / Deezer title variants.
+ */
+function fuzzyTrackKey(title: string, artist: string): string {
+  const clean = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/\(feat\.?[^)]*\)/gi, "")   // (feat. Future)
+      .replace(/feat\.?.+/gi, "")            // feat. Future (trailing)
+      .replace(/\[.*?\]/g, "")              // [Remix], [Official Audio]
+      .replace(/[^a-z0-9\s]/g, "")          // strip punctuation
+      .replace(/\s+/g, " ")
+      .trim();
+  // artist first word only (handles "Drake" vs "Drake & Future")
+  const artistFirst = clean(artist).split(" ")[0] ?? "";
+  return `${clean(title)} ${artistFirst}`.trim();
+}
+
 function normalizeText(s: string): string {
   return s.replace(/\s+/g, " ").trim();
 }
@@ -77,18 +102,29 @@ function normalizeHashtag(raw: string): { display: string; key: string } | null 
 }
 
 // ── Artwork URL extraction ─────────────────────────────────
-/** Clean Apple artwork URL to 300x300 */
+/** Clean Apple artwork URL → upgrade to 600x600 for crisp display */
 function appleArtwork(raw: string | undefined): string | null {
   if (!raw) return null;
-  // Apple returns e.g. "https://...300x300bb.jpg" or with {w}x{h} placeholders
-  return raw.replace(/\{w\}x\{h\}/g, "300x300") || null;
+  // Replace size tokens: {w}x{h}bb → 600x600bb, or existing 100x100 → 600x600
+  return raw
+    .replace(/\{w\}x\{h\}/g, "600x600")
+    .replace(/\d+x\d+bb/g, "600x600bb")
+    || null;
 }
-/** Best available Deezer cover URL */
+
+/** Best available Deezer cover URL — prefer big for quality */
 function deezerArtwork(track: any): string | null {
-  return track?.album?.cover_medium
-    || track?.album?.cover_big
+  return track?.album?.cover_big          // 500x500 — best
+    || track?.album?.cover_xl             // even larger if available
+    || track?.album?.cover_medium         // 250x250 fallback
+    || track?.artist?.picture_big
     || track?.artist?.picture_medium
     || null;
+}
+
+/** Validate image URL is a real http URL */
+function isValidUrl(url: string | null | undefined): url is string {
+  return typeof url === "string" && url.startsWith("http");
 }
 
 // ── Scoring ────────────────────────────────────────────────
@@ -273,28 +309,58 @@ async function fetchAudios(platform: Platform) {
     }
   }
 
-  // Merge with cross-source tracking
-  const seen = new Map<string, number>(); // key → index in merged
-  const merged: Array<RawTrack & { crossSource: boolean }> = [];
-  for (const item of applePool) {
-    const key = normalizeAudioKey(item.title, item.artist);
-    seen.set(key, merged.length);
-    merged.push({ ...item, crossSource: false });
+  // ── Fuzzy cross-source merge ────────────────────────────
+  // Build a Deezer lookup keyed by fuzzyTrackKey for O(1) artwork lookup
+  const deezerArtMap = new Map<string, string | null>(); // fuzzyKey → image_url
+  for (const d of deezerPool) {
+    const fk = fuzzyTrackKey(d.title, d.artist);
+    if (!deezerArtMap.has(fk)) deezerArtMap.set(fk, d.image_url);
   }
+
+  // Merge with cross-source tracking
+  const seen = new Map<string, number>(); // exactKey → index in merged
+  const merged: Array<RawTrack & { crossSource: boolean }> = [];
+
+  for (const item of applePool) {
+    const exactKey = normalizeAudioKey(item.title, item.artist);
+    seen.set(exactKey, merged.length);
+
+    // Try to get artwork from Deezer via fuzzy match
+    const fk = fuzzyTrackKey(item.title, item.artist);
+    const deezerArt = deezerArtMap.get(fk);
+    const bestArt = isValidUrl(item.image_url)
+      ? item.image_url
+      : isValidUrl(deezerArt)
+        ? deezerArt
+        : null;
+
+    merged.push({
+      title:       item.title,
+      artist:      item.artist,
+      image_url:   bestArt,
+      crossSource: deezerArtMap.has(fk), // counted as cross-source if fuzzy match found
+    });
+  }
+
+  // Add Deezer-only tracks (not in Apple pool) — they carry their own artwork
   for (const item of deezerPool) {
-    const key = normalizeAudioKey(item.title, item.artist);
-    if (!seen.has(key)) {
-      seen.set(key, merged.length);
-      merged.push({ ...item, crossSource: false });
-    } else {
-      const idx = seen.get(key)!;
-      // Prefer Deezer artwork if Apple had none
-      if (!merged[idx].image_url && item.image_url) {
-        merged[idx] = { ...merged[idx], image_url: item.image_url, crossSource: true };
-      } else {
-        merged[idx] = { ...merged[idx], crossSource: true };
-      }
-    }
+    const exactKey = normalizeAudioKey(item.title, item.artist);
+    const fk       = fuzzyTrackKey(item.title, item.artist);
+    // Already in merged? Skip (we handled it above with fuzzy artwork injection)
+    if (seen.has(exactKey)) continue;
+    // Check if any apple item fuzzy-matched this Deezer track
+    const alreadyMatched = merged.some(
+      (m) => fuzzyTrackKey(m.title, m.artist) === fk
+    );
+    if (alreadyMatched) continue;
+
+    seen.set(exactKey, merged.length);
+    merged.push({
+      title:       item.title,
+      artist:      item.artist,
+      image_url:   isValidUrl(item.image_url) ? item.image_url : null,
+      crossSource: false,
+    });
   }
 
   // Platform rotation + cross-source bubbling
@@ -326,7 +392,7 @@ async function fetchAudios(platform: Platform) {
     const adjScore   = applyPlatformBonus(baseScore, category, baseVel, profile);
     const velocity   = deriveVelocity(adjScore, trend, idx + 1);
     const confidence = deriveConfidence(adjScore, item.crossSource, idx + 1);
-    const image_url  = item.image_url || FALLBACK_ART;
+    const image_url  = isValidUrl(item.image_url) ? item.image_url : null;
 
     // ── Phase 2: Signal Depth fields ──────────────────────
     const creatorCount  = deriveCreatorCount(adjScore, idx + 1, item.crossSource);
