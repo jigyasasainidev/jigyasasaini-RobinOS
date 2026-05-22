@@ -364,7 +364,7 @@ export function PrivacyPolicyPage() {
           title: "Privacy Contact",
           body: [
             "For privacy questions, data rights requests, or concerns: support@tryrobin.xyz",
-            "For trust and safety, abuse reports, compliance inquiries, and moderation appeals: trust@tryrobin.xyz",
+            "For trust and safety, abuse reports, compliance inquiries, and moderation appeals: support@tryrobin.xyz or submit a report at /report-abuse",
             "For legal inquiries and law enforcement requests: support@tryrobin.xyz",
           ],
         },

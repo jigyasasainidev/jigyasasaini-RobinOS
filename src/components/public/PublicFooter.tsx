@@ -27,6 +27,7 @@ const legalLinks = [
   { label: "AI Transparency", to: "/ai-transparency" },
   { label: "Acceptable Use Policy", to: "/acceptable-use-policy" },
   { label: "Trust & Safety", to: "/trust-safety" },
+  { label: "Report Abuse", to: "/report-abuse" },
   { label: "Disclaimer", to: "/disclaimer" },
 ];
 
@@ -129,14 +130,14 @@ export function PublicFooter() {
           <div className="flex flex-wrap items-center justify-between w-full gap-3 mt-1">
             <p className="text-sm text-muted-foreground">© 2026 RobinOS. All rights reserved.</p>
             <div className="flex flex-wrap items-center gap-3">
-              <a
-                href="mailto:trust@tryrobin.xyz"
+              <Link
+                to="/report-abuse"
                 className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-all hover:opacity-90"
                 style={{ background: "hsl(0 72% 55% / 0.08)", border: "1px solid hsl(0 72% 55% / 0.18)", color: "hsl(0 72% 65%)" }}
               >
                 <span className="w-1 h-1 rounded-full bg-red-400" />
                 Report Abuse
-              </a>
+              </Link>
               <Link to="/trust-safety" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Trust & Safety</Link>
               <Link to="/acceptable-use-policy" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Acceptable Use</Link>
               <Link to="/privacy" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Privacy</Link>

@@ -269,7 +269,7 @@ export function AcceptableUsePolicyPage() {
                 If you observe content or behavior that violates this Acceptable Use Policy, we encourage you to report it immediately. RobinOS investigates all reports and takes appropriate action.
               </Para>
               <Para>
-                To report a violation: <a href="mailto:trust@tryrobin.xyz" className="text-primary hover:underline font-mono">trust@tryrobin.xyz</a>
+                To report a violation: <Link to="/report-abuse" className="text-primary hover:underline font-mono">/report-abuse</Link>
               </Para>
               <BulletList items={[
                 "Reports are triaged by severity within 72 business hours",
@@ -281,7 +281,7 @@ export function AcceptableUsePolicyPage() {
 
             <Section id="appeals" title="Appeals Process" icon={Scale}>
               <Para>
-                If you believe an enforcement action taken against your account was in error, you may submit an appeal to <a href="mailto:trust@tryrobin.xyz" className="text-primary hover:underline font-mono">trust@tryrobin.xyz</a> within 14 days of the enforcement action.
+                If you believe an enforcement action taken against your account was in error, you may submit an appeal via <Link to="/report-abuse" className="text-primary hover:underline font-mono">our reporting form</Link> or <a href="mailto:support@tryrobin.xyz" className="text-primary hover:underline font-mono">support@tryrobin.xyz</a> within 14 days of the enforcement action.
               </Para>
               <BulletList items={[
                 "Appeals are reviewed by a senior trust & safety team member",

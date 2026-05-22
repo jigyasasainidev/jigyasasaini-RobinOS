@@ -187,7 +187,7 @@ export function DashboardSidebar() {
 
         <div className="p-3 border-t border-border">
           <a
-            href="mailto:trust@tryrobin.xyz"
+            href="/report-abuse"
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm border border-red-500/15 bg-red-500/5 text-red-400/70 hover:text-red-400 hover:border-red-500/25 w-full transition-colors mb-2"
           >
             <Flag className="w-4 h-4 shrink-0" />

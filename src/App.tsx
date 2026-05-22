@@ -51,6 +51,7 @@ const RoadmapPage = lazy(() => import("./pages/public/PublicInfoPages").then((m)
 const SupportPage = lazy(() => import("./pages/public/PublicInfoPages").then((m) => ({ default: m.SupportPage })));
 const TrustSafetyPage = lazy(() => import("./pages/public/TrustSafetyPage").then((m) => ({ default: m.TrustSafetyPage })));
 const AcceptableUsePolicyPage = lazy(() => import("./pages/public/AcceptableUsePolicyPage").then((m) => ({ default: m.AcceptableUsePolicyPage })));
+const ReportAbusePage = lazy(() => import("./pages/public/ReportAbusePage").then((m) => ({ default: m.ReportAbusePage })));
 const AdminAuthPage = lazy(() => import("./pages/AdminAuthPage"));
 const AdminAuthCallbackPage = lazy(() => import("./pages/AdminAuthCallbackPage"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
@@ -176,6 +177,7 @@ const App = () => (
               <Route path="/disclaimer" element={<DisclaimerPolicyPage />} />
               <Route path="/trust-safety" element={<TrustSafetyPage />} />
               <Route path="/acceptable-use-policy" element={<AcceptableUsePolicyPage />} />
+              <Route path="/report-abuse" element={<ReportAbusePage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
