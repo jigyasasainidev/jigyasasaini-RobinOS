@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Music, TrendingUp, ArrowUp, Sparkles, Loader2, Search, Copy, Check, Lock, Hash } from "lucide-react";
@@ -88,6 +88,43 @@ const TrendingAudioPage = () => {
   const hashtagLimit = HASHTAG_LIMITS[tier] || 3;
   const isAgency = tier === "agency" || tier === "scale_agency";
 
+  // ─── Fetch persisted usage on mount (backend as source of truth) ───
+  useEffect(() => {
+    if (!user?.id) return;
+    const loadUsage = async () => {
+      try {
+        const [audioResult, hashtagResult] = await Promise.all([
+          supabase.rpc("get_usage_status_v2" as any, {
+            p_user_id: user.id,
+            p_feature_key: "trend_scan",
+          }),
+          supabase.rpc("get_usage_status_v2" as any, {
+            p_user_id: user.id,
+            p_feature_key: "hashtag_scan",
+          }),
+        ]);
+
+        if (audioResult.data && !audioResult.error) {
+          const d = audioResult.data as any;
+          setAudioUsage({
+            used: Number(d.used ?? 0),
+            limit: d.unlimited || d.fair_usage ? audioLimit : Number(d.quota ?? audioLimit),
+          });
+        }
+        if (hashtagResult.data && !hashtagResult.error) {
+          const d = hashtagResult.data as any;
+          setHashtagUsage({
+            used: Number(d.used ?? 0),
+            limit: d.unlimited || d.fair_usage ? hashtagLimit : Number(d.quota ?? hashtagLimit),
+          });
+        }
+      } catch {
+        // Non-fatal: badge falls back to local limits
+      }
+    };
+    void loadUsage();
+  }, [user?.id]);
+
   const fetchData = async (type: "audio" | "hashtags") => {
     if (!allowedPlatforms.includes(platform)) {
       toast.error(`${platform} requires Pro Creator or higher plan`);
@@ -104,48 +141,54 @@ const TrendingAudioPage = () => {
     }
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
+      // ─── Use supabase.functions.invoke() — handles auth automatically ───
+      const { data, error } = await supabase.functions.invoke("trending-audio", {
+        body: { platform, type: isHashtag ? "hashtags" : "audio" },
+      });
 
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trending-audio`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({ platform, type: isHashtag ? "hashtags" : "audio" }),
-        }
-      );
+      if (error) {
+        // FunctionsHttpError carries status; check for 403 limit/plan errors
+        const status = (error as any)?.context?.status ?? (error as any)?.status;
+        let parsed: Record<string, unknown> = {};
+        try {
+          const raw = (error as any)?.context?.responseText ?? (error as any)?.message ?? "";
+          parsed = typeof raw === "string" && raw.startsWith("{") ? JSON.parse(raw) : {};
+        } catch { /* keep empty */ }
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        if (data.error === "limit_reached") {
-          toast.error(data.message);
-          if (tier === "free") {
-            setTimeout(() => navigate("/dashboard/settings"), 1500);
-          }
+        const code = String(parsed.code ?? "");
+        if (status === 403 || code === "USAGE_LIMIT_EXCEEDED" || code === "FEATURE_DISABLED") {
+          const msg = String(parsed.message ?? "Limit reached. Upgrade your plan.");
+          toast.error(msg);
+          if (tier === "free") setTimeout(() => navigate("/dashboard/settings"), 1500);
           isHashtag ? setHashtagLoading(false) : setLoading(false);
           return;
         }
-        if (data.error === "platform_locked") {
-          toast.error(data.message);
-          isHashtag ? setHashtagLoading(false) : setLoading(false);
-          return;
-        }
-        throw new Error(data.error || "Failed to fetch");
+        throw new Error(String(parsed.message ?? error.message ?? "Failed to fetch"));
       }
+
+      if (!data) throw new Error("No data returned");
 
       if (isHashtag) {
         setHashtags(data?.hashtags ?? []);
-        if (data?.usage) setHashtagUsage(data.usage);
+        if (data?.usage) {
+          setHashtagUsage({
+            used: Number(data.usage.used ?? 0),
+            limit: data.usage.unlimited || data.usage.fair_usage
+              ? hashtagLimit
+              : Number(data.usage.quota ?? hashtagLimit),
+          });
+        }
         if (!data?.hashtags?.length) toast.error("No hashtags found. Try again.");
       } else {
         setAudios(data?.audios ?? []);
-        if (data?.usage) setAudioUsage(data.usage);
+        if (data?.usage) {
+          setAudioUsage({
+            used: Number(data.usage.used ?? 0),
+            limit: data.usage.unlimited || data.usage.fair_usage
+              ? audioLimit
+              : Number(data.usage.quota ?? audioLimit),
+          });
+        }
         if (!data?.audios?.length) toast.error("No results found. Try again.");
       }
     } catch (err: any) {
@@ -187,10 +230,10 @@ const TrendingAudioPage = () => {
         {/* Usage Badge */}
         <div className="flex items-center gap-3 mb-6 flex-wrap">
           <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary">
-            {isAgency ? "Unlimited" : `Audio: ${audioUsage ? audioUsage.used : 0}/${audioLimit}`}
+            {isAgency ? "Unlimited" : `Audio: ${audioUsage ? audioUsage.used : 0}/${audioUsage ? audioUsage.limit : audioLimit}`}
           </Badge>
           <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary">
-            {isAgency ? "Unlimited" : `Hashtags: ${hashtagUsage ? hashtagUsage.used : 0}/${hashtagLimit}`}
+            {isAgency ? "Unlimited" : `Hashtags: ${hashtagUsage ? hashtagUsage.used : 0}/${hashtagUsage ? hashtagUsage.limit : hashtagLimit}`}
           </Badge>
           <Badge variant="outline" className="text-[10px] font-mono border-border text-muted-foreground">
             {tier === "free" ? "Free Plan" : tier === "creator" ? "Creator" : tier === "pro_creator" ? "Pro Creator" : "Agency"}

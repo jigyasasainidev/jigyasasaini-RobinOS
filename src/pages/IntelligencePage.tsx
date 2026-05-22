@@ -61,38 +61,34 @@ const IntelligencePage = () => {
     }, 1200);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scan-trends`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ niche, user_id: user?.id }),
-        }
-      );
+      // ─── Use supabase.functions.invoke() — handles session auth automatically ───
+      const { data, error } = await supabase.functions.invoke("scan-trends", {
+        body: { niche },
+      });
 
       clearInterval(interval);
 
-      if (resp.status === 403) {
-        const err = await resp.json().catch(() => ({}));
-        toast.error(err.error || "Limit reached. Upgrade your plan!");
-        setShowUpgrade(true);
+      if (error) {
+        const status = (error as any)?.context?.status ?? (error as any)?.status;
+        let parsed: Record<string, unknown> = {};
+        try {
+          const raw = (error as any)?.context?.responseText ?? (error as any)?.message ?? "";
+          parsed = typeof raw === "string" && raw.startsWith("{") ? JSON.parse(raw) : {};
+        } catch { /* keep empty */ }
+
+        const code = String(parsed.code ?? "");
+        if (status === 403 || code === "USAGE_LIMIT_EXCEEDED" || code === "FEATURE_DISABLED") {
+          toast.error(String(parsed.message ?? "Limit reached. Upgrade your plan!"));
+          setShowUpgrade(true);
+          setState("idle");
+          return;
+        }
+        toast.error(String(parsed.message ?? error.message ?? "Scan failed"));
         setState("idle");
         return;
       }
 
-      if (!resp.ok) {
-        const err = await resp.json();
-        toast.error(err.error || "Scan failed");
-        setState("idle");
-        return;
-      }
-
-      const data = await resp.json();
-      let fetchedTopics = data.topics || [];
+      let fetchedTopics = (data?.topics ?? []) as TrendTopic[];
 
       if (!isAgency && fetchedTopics.length > maxTopics) {
         fetchedTopics = fetchedTopics.slice(0, maxTopics);
