@@ -21,6 +21,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { CORS_HEADERS, createServiceClient } from "../_shared/entitlement.ts";
+import {
+  validateAIConfig,
+  callAI,
+  AI_MODEL_DEFAULT,
+} from "../_shared/ai-provider.ts";
 
 // ============================================================
 // TYPES
@@ -194,97 +199,72 @@ const fetchDeezerChart = async (): Promise<AppleMusicTrack[]> => {
 // ============================================================
 // AI ENRICHMENT — CLASSIFY + SCORE TOPICS BY NICHE
 // ============================================================
-const GROQ_API_KEY = () => Deno.env.get("GROQ_API_KEY") || "";
-
-interface AIEnrichmentInput {
-  niche: string;
-  googleTrends: GoogleTrendItem[];
-}
-
-interface AIEnrichmentOutput {
-  topics: TopicRecord[];
-}
-
 const aiEnrichTopics = async (input: AIEnrichmentInput): Promise<TopicRecord[]> => {
-  const apiKey = GROQ_API_KEY();
-  if (!apiKey) {
-    console.warn("[collect-trends] GROQ_API_KEY not configured — skipping AI enrichment");
-    return [];
-  }
-
+  // validateAIConfig() is called at handler startup — key is guaranteed here
   const trendTitles = input.googleTrends
     .slice(0, 10)
     .map((t) => `- ${t.title}${t.approxTraffic ? ` (${t.approxTraffic})` : ""}`)
     .join("\n");
 
-  try {
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
+  const aiResult = await callAI({
+    model: AI_MODEL_DEFAULT,
+    messages: [
+      {
+        role: "system",
+        content: `You are an expert viral content analyst. Given a niche and current Google Trends data, identify 3-5 trending topics. Return as JSON with EXACT schema. Each topic must have: title, description, platforms, heat (70-99), hook_types (array), volume ("High"|"Medium"|"Emerging").`,
       },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          {
-            role: "system",
-            content: `You are an expert viral content analyst. Given a niche and current Google Trends data, identify 3-5 trending topics. Return as JSON with EXACT schema. Each topic must have: title, description, platforms, heat (70-99), hook_types (array), volume ("High"|"Medium"|"Emerging").`,
-          },
-          {
-            role: "user",
-            content: `Niche: ${input.niche}\n\nCurrent Google Trends:\n${trendTitles || "No real-time data available — use pattern analysis."}\n\nReturn 3-5 trending topics for this niche.`,
-          },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "return_trending_topics",
-              description: "Return 3-5 trending topics for the given niche",
-              parameters: {
-                type: "object",
-                properties: {
-                  topics: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        title: { type: "string" },
-                        description: { type: "string" },
-                        platforms: { type: "string" },
-                        heat: { type: "number" },
-                        hook_types: { type: "array", items: { type: "string" } },
-                        volume: { type: "string", enum: ["High", "Medium", "Emerging"] },
-                      },
-                      required: ["title", "description", "platforms", "heat", "hook_types", "volume"],
-                      additionalProperties: false,
-                    },
+      {
+        role: "user",
+        content: `Niche: ${input.niche}\n\nCurrent Google Trends:\n${trendTitles || "No real-time data available — use pattern analysis."}\n\nReturn 3-5 trending topics for this niche.`,
+      },
+    ],
+    tools: [
+      {
+        type: "function",
+        function: {
+          name: "return_trending_topics",
+          description: "Return 3-5 trending topics for the given niche",
+          parameters: {
+            type: "object",
+            properties: {
+              topics: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    title: { type: "string" },
+                    description: { type: "string" },
+                    platforms: { type: "string" },
+                    heat: { type: "number" },
+                    hook_types: { type: "array", items: { type: "string" } },
+                    volume: { type: "string", enum: ["High", "Medium", "Emerging"] },
                   },
+                  required: ["title", "description", "platforms", "heat", "hook_types", "volume"],
+                  additionalProperties: false,
                 },
-                required: ["topics"],
-                additionalProperties: false,
               },
             },
+            required: ["topics"],
+            additionalProperties: false,
           },
-        ],
-        tool_choice: { type: "function", function: { name: "return_trending_topics" } },
-      }),
-    });
+        },
+      },
+    ],
+    tool_choice: { type: "function", function: { name: "return_trending_topics" } },
+  });
 
-    if (!response.ok) {
-      console.warn(`[collect-trends] AI enrichment failed for ${input.niche}: ${response.status}`);
-      return [];
-    }
+  if (!aiResult.ok) {
+    console.warn(`[collect-trends] AI enrichment failed for ${input.niche}: ${aiResult.code}`);
+    return [];
+  }
 
-    const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+  try {
+    const toolCall = aiResult.data?.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) return [];
-
     const parsed = JSON.parse(toolCall.function.arguments);
     return parsed.topics || [];
   } catch (err) {
-    console.error(`[collect-trends] AI enrichment error for ${input.niche}:`, err);
+    console.error(`[collect-trends] AI response parse error for ${input.niche}:`, err);
     return [];
   }
 };
@@ -688,6 +668,10 @@ async function runFullCollection(supabase: ReturnType<typeof createClient>): Pro
 // ============================================================
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
+
+  // ── Startup: validate AI provider config ──────────────────
+  const configError = validateAIConfig();
+  if (configError) return configError;
 
   // Only allow authenticated internal calls (service_role or cron trigger)
   const authHeader = req.headers.get("authorization");

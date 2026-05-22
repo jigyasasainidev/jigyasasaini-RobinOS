@@ -1,3 +1,9 @@
+import {
+  validateAIConfig,
+  callAI,
+  AI_MODEL_FAST,
+} from "../_shared/ai-provider.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -8,6 +14,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // ── Startup: validate AI provider config ──────────────────
+  const configError = validateAIConfig();
+  if (configError) return configError;
 
   try {
     const { script } = await req.json();
@@ -25,21 +35,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
-    if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not configured");
-
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${GROQ_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
-        messages: [
-          {
-            role: "system",
-            content: `You are a script simplifier for content creators. Your job is to take a detailed AI-generated script and convert it into a simple, easy-to-read format that ANYONE can understand — even a 10-year-old.
+    const aiResult = await callAI({
+      model: AI_MODEL_FAST,
+      messages: [
+        {
+          role: "system",
+          content: `You are a script simplifier for content creators. Your job is to take a detailed AI-generated script and convert it into a simple, easy-to-read format that ANYONE can understand — even a 10-year-old.
 
 Rules:
 1. Remove ALL markdown formatting (no ##, **, etc)
@@ -51,26 +52,23 @@ Rules:
 7. Remove jargon like "pattern interrupt", "retention", "B-roll"
 8. Output should be clean plain text — no markdown, no special symbols
 9. Keep it SHORT — maximum 60% of original length`,
-          },
-          {
-            role: "user",
-            content: `Simplify this script:\n\n${script}`,
-          },
-        ],
-        stream: false,
-      }),
+        },
+        {
+          role: "user",
+          content: `Simplify this script:\n\n${script}`,
+        },
+      ],
     });
 
-    if (!response.ok) {
-      console.error("AI error:", response.status);
-      return new Response(JSON.stringify({ error: "Simplification failed" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!aiResult.ok) {
+      console.error("simplify-script AI error:", aiResult.code);
+      return new Response(
+        JSON.stringify({ success: false, code: aiResult.code, error: aiResult.message }),
+        { status: aiResult.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
-    const data = await response.json();
-    const simplified = data.choices?.[0]?.message?.content || "";
+    const simplified = aiResult.data?.choices?.[0]?.message?.content || "";
 
     return new Response(JSON.stringify({ simplified }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

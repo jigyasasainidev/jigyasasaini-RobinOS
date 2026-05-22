@@ -6,6 +6,12 @@ import {
   FEATURES,
   createServiceClient,
 } from "../_shared/entitlement.ts";
+import {
+  validateAIConfig,
+  callAI,
+  aiErrorResponse,
+  AI_MODEL_DEFAULT,
+} from "../_shared/ai-provider.ts";
 
 type Platform = "youtube" | "instagram" | "tiktok" | "facebook";
 type Style = "viral" | "seo_optimized" | "storytelling" | "educational" | "bold" | "conversational";
@@ -19,6 +25,10 @@ const platformGuidance: Record<Platform, string> = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
+
+  // ── Startup: validate AI provider config ──────────────────
+  const configError = validateAIConfig();
+  if (configError) return configError;
 
   try {
     const authHeader = req.headers.get("authorization");
@@ -93,9 +103,6 @@ serve(async (req) => {
     // ============================================================
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const groqApiKey = Deno.env.get("GROQ_API_KEY");
-
-    if (!groqApiKey) throw new Error("GROQ_API_KEY is not configured");
 
     const supabase = createClient(supabaseUrl, serviceRole);
 
@@ -109,15 +116,9 @@ serve(async (req) => {
       });
     }
 
-    const aiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${groqApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        response_format: { type: "json_object" },
+    const aiResponse = await callAI({
+      model: AI_MODEL_DEFAULT,
+      response_format: { type: "json_object" },
         messages: [
           {
             role: "system",
@@ -147,19 +148,13 @@ Output constraints:
             content: `Platform: ${normalizedPlatform}\nStyle: ${normalizedStyle}\nContent idea: ${normalizedPrompt}`,
           },
         ],
-      }),
     });
 
     if (!aiResponse.ok) {
-      const errText = await aiResponse.text().catch(() => "");
-      console.error("generate-caption AI error:", aiResponse.status, errText);
-      return new Response(JSON.stringify({ error: "Caption generation failed" }), {
-        status: aiResponse.status === 429 || aiResponse.status === 402 ? aiResponse.status : 500,
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      });
+      return aiErrorResponse(aiResponse);
     }
 
-    const raw = await aiResponse.json();
+    const raw = aiResponse.data;
     const content = raw?.choices?.[0]?.message?.content || "{}";
 
     let parsed: { generated_caption?: string; generated_hashtags?: string[]; generated_keywords?: string[] } = {};
