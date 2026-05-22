@@ -21,8 +21,8 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { subscribeMultiTable } from "@/lib/realtime/channelManager";
 import type { FeatureKey } from "@/lib/pricing";
 
 // ── Types ──────────────────────────────────────────────────
@@ -76,38 +76,32 @@ export function useEntitlements() {
   useEffect(() => {
     if (!user?.id) return;
 
-    const channel = supabase
-      .channel(`entitlements:${user.id}`)
-      .on(
-        "postgres_changes",
+    // Single channel, all listeners registered before .subscribe()
+    // Using subscribeMultiTable ensures correct Supabase lifecycle order.
+    const unsub = subscribeMultiTable({
+      channelName: `entitlements-sync-${user.id}`,
+      listeners: [
         {
-          event: "UPDATE",
-          schema: "public",
           table: "profiles",
+          event: "UPDATE",
           filter: `user_id=eq.${user.id}`,
+          callback: () => {
+            void queryClient.invalidateQueries({ queryKey: ["entitlements", user.id] });
+            void queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
+          },
         },
-        () => {
-          // Invalidate both entitlements and profile caches
-          void queryClient.invalidateQueries({ queryKey: ["entitlements", user.id] });
-          void queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
-        }
-      )
-      .on(
-        "postgres_changes",
         {
-          event: "*",
-          schema: "public",
           table: "user_subscriptions",
+          event: "*",
           filter: `user_id=eq.${user.id}`,
+          callback: () => {
+            void queryClient.invalidateQueries({ queryKey: ["entitlements", user.id] });
+          },
         },
-        () => {
-          // Subscription change also invalidates entitlements
-          void queryClient.invalidateQueries({ queryKey: ["entitlements", user.id] });
-        }
-      )
-      .subscribe();
+      ],
+    });
 
-    return () => { void supabase.removeChannel(channel); };
+    return unsub;
   }, [user?.id, queryClient]);
 
   return useQuery({

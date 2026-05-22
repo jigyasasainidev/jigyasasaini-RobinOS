@@ -4,8 +4,8 @@
 // ============================================================
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { subscribeMultiTable } from "@/lib/realtime/channelManager";
 
 export interface SubscriptionLifecycle {
   // Resolved plan (expires_at enforced)
@@ -72,21 +72,29 @@ export function useSubscriptionLifecycle() {
   useEffect(() => {
     if (!user?.id) return;
 
-    const channel = supabase
-      .channel(`lifecycle:${user.id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "user_subscriptions", filter: `user_id=eq.${user.id}` },
-        () => { void queryClient.invalidateQueries({ queryKey: ["subscription-lifecycle", user.id] }); }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "profiles", filter: `user_id=eq.${user.id}` },
-        () => { void queryClient.invalidateQueries({ queryKey: ["subscription-lifecycle", user.id] }); }
-      )
-      .subscribe();
+    const unsub = subscribeMultiTable({
+      channelName: `lifecycle-sync-${user.id}`,
+      listeners: [
+        {
+          table: "user_subscriptions",
+          event: "*",
+          filter: `user_id=eq.${user.id}`,
+          callback: () => {
+            void queryClient.invalidateQueries({ queryKey: ["subscription-lifecycle", user.id] });
+          },
+        },
+        {
+          table: "profiles",
+          event: "UPDATE",
+          filter: `user_id=eq.${user.id}`,
+          callback: () => {
+            void queryClient.invalidateQueries({ queryKey: ["subscription-lifecycle", user.id] });
+          },
+        },
+      ],
+    });
 
-    return () => { void supabase.removeChannel(channel); };
+    return unsub;
   }, [user?.id, queryClient]);
 
   return useQuery({

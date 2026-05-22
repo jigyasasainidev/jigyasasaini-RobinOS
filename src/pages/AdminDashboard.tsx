@@ -41,7 +41,6 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import { db } from "@/lib/cloudDb";
-import { supabase } from "@/integrations/supabase/client";
 import { logAdminAction } from "@/lib/adminAudit";
 import type { AdminAuditAction } from "@/types/admin";
 import { PLATFORM_SETTINGS_DEFAULTS, validateSettingsDraft } from "@/types/platform-config";
@@ -49,6 +48,7 @@ import type { PlatformSettingsDraft } from "@/types/platform-config";
 import { BrandMark } from "@/components/BrandMark";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { subscribeMultiTable } from "@/lib/realtime/channelManager";
 import {
   Sidebar,
   SidebarContent,
@@ -809,22 +809,43 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (!isAdmin) return;
-    const channel = supabase
-      .channel("admin-live-v2")
-      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => queryClient.invalidateQueries({ queryKey: ["admin-profiles-v2"] }))
-      .on("postgres_changes", { event: "*", schema: "public", table: "user_subscriptions" }, () => queryClient.invalidateQueries({ queryKey: ["admin-subscriptions-v2"] }))
-      .on("postgres_changes", { event: "*", schema: "public", table: "withdrawal_requests" }, () => queryClient.invalidateQueries({ queryKey: ["admin-withdrawals-v2"] }))
-      .on("postgres_changes", { event: "*", schema: "public", table: "affiliate_commissions" }, () => queryClient.invalidateQueries({ queryKey: ["admin-affiliate-commissions-v2"] }))
-      .on("postgres_changes", { event: "*", schema: "public", table: "ai_generations" }, () => queryClient.invalidateQueries({ queryKey: ["admin-ai-generations-v2"] }))
-      .on("postgres_changes", { event: "*", schema: "public", table: "platform_settings" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["admin-platform-settings-v2"] });
-        queryClient.invalidateQueries({ queryKey: ["platform-settings-live-v1"] });
-      })
-      .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    // All listeners registered before the single .subscribe() call.
+    // subscribeMultiTable enforces correct Supabase lifecycle order.
+    const unsub = subscribeMultiTable({
+      channelName: "admin-live-v2",
+      listeners: [
+        {
+          table: "profiles",
+          callback: () => queryClient.invalidateQueries({ queryKey: ["admin-profiles-v2"] }),
+        },
+        {
+          table: "user_subscriptions",
+          callback: () => queryClient.invalidateQueries({ queryKey: ["admin-subscriptions-v2"] }),
+        },
+        {
+          table: "withdrawal_requests",
+          callback: () => queryClient.invalidateQueries({ queryKey: ["admin-withdrawals-v2"] }),
+        },
+        {
+          table: "affiliate_commissions",
+          callback: () => queryClient.invalidateQueries({ queryKey: ["admin-affiliate-commissions-v2"] }),
+        },
+        {
+          table: "ai_generations",
+          callback: () => queryClient.invalidateQueries({ queryKey: ["admin-ai-generations-v2"] }),
+        },
+        {
+          table: "platform_settings",
+          callback: () => {
+            void queryClient.invalidateQueries({ queryKey: ["admin-platform-settings-v2"] });
+            void queryClient.invalidateQueries({ queryKey: ["platform-settings-live-v1"] });
+          },
+        },
+      ],
+    });
+
+    return unsub;
   }, [isAdmin, queryClient]);
 
   const profileMap = useMemo(() => {

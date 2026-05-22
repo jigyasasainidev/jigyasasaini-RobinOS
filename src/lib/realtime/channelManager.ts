@@ -1,131 +1,196 @@
-// Centralized Realtime Channel Manager
-// Prevents duplicate subscriptions, stale listener attachment, and lifecycle leaks.
-// Singleton pattern: same channel name = same instance across the app.
+// ============================================================
+// ROBINOS CENTRALIZED REALTIME CHANNEL MANAGER
+// Production-safe lifecycle model for Supabase channels.
+// ============================================================
+// Rules enforced here:
+//   1. ALL .on() listeners registered BEFORE .subscribe()
+//   2. Every channel gets a UNIQUE name — no singleton reuse
+//   3. Cleanup calls supabase.removeChannel() synchronously
+//   4. React Strict Mode safe — fresh channel per effect mount
+//   5. Supabase never sees .on() called after .subscribe()
+//
+// Why no singleton / channel reuse?
+//   supabase.removeChannel() is async. If a React cleanup fires
+//   and an effect re-runs (Strict Mode, fast nav), calling
+//   supabase.channel(sameName) may return the *existing*
+//   subscribed instance before removal completes.
+//   Calling .on() on that subscribed instance throws:
+//   "Cannot call .on() after .subscribe()"
+//
+//   Solution: append a unique ID to every channel name.
+//   Each subscription instance owns its own channel object.
+//   Cleanup removes it; the next mount creates a fresh one.
+// ============================================================
 
-import { RealtimeChannel, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import { type RealtimeChannel } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type PostgresChangeHandler = (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void;
+// ── Types ──────────────────────────────────────────────────
+
+export type PostgresEvent = "*" | "INSERT" | "UPDATE" | "DELETE";
+
+export interface SingleTableConfig {
+  table: string;
+  schema?: string;
+  filter?: string;
+  event?: PostgresEvent;
+  callback: () => void;
+}
 
 export interface ChannelConfig {
+  /** Human-readable label — used in dev logs and as prefix for unique name */
   channelName: string;
   table: string;
   schema?: string;
   filter?: string;
-  event?: "*" | "INSERT" | "UPDATE" | "DELETE";
-  callback: PostgresChangeHandler;
+  event?: PostgresEvent;
+  callback: () => void;
 }
 
-interface ManagedChannel {
-  channel: RealtimeChannel;
-  refCount: number;
-  isSubscribed: boolean;
+export interface MultiListenerConfig {
+  /** Human-readable label */
+  channelName: string;
+  listeners: SingleTableConfig[];
 }
 
-const channelRegistry = new Map<string, ManagedChannel>();
+// ── Unique ID helper ────────────────────────────────────────
 
-function getOrCreateManagedChannel(channelName: string): ManagedChannel {
-  let managed = channelRegistry.get(channelName);
-  if (!managed) {
-    const channel = supabase.channel(channelName);
-    managed = { channel, refCount: 0, isSubscribed: false };
-    channelRegistry.set(channelName, managed);
-
-    if (import.meta.env.DEV) {
-      console.log(`[RealtimeManager] Created channel: ${channelName}`);
-    }
-  }
-  return managed;
+let _counter = 0;
+function uniqueChannelName(base: string): string {
+  _counter = (_counter + 1) % 999999;
+  // crypto.randomUUID not available in all environments; counter is sufficient
+  return `${base}:${_counter}`;
 }
 
-/**
- * Subscribe to a postgres_changes event with singleton protection.
- * Returns an unsubscribe function. Call on cleanup.
- * NOT a React hook — safe to call inside useEffect callbacks.
- */
-export function subscribePostgresChanges(config: ChannelConfig): () => void {
-  const { channelName, table, schema = "public", filter, event = "*", callback } = config;
+// ── Core: build channel with all listeners then subscribe ───
 
-  const managed = getOrCreateManagedChannel(channelName);
+function buildAndSubscribe(
+  uniqueName: string,
+  listeners: SingleTableConfig[]
+): RealtimeChannel {
+  // Start with a fresh channel object
+  let ch = supabase.channel(uniqueName);
 
-  // Attach listener BEFORE subscribe (correct Supabase lifecycle order)
-  if (!managed.isSubscribed) {
-    const handler = (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
-      try {
-        callback(payload);
-      } catch (err) {
-        if (import.meta.env.DEV) {
-          console.warn(`[RealtimeManager] Listener error on ${channelName}:`, err);
+  // Register ALL listeners BEFORE subscribe — this is the critical contract
+  for (const { table, schema = "public", filter, event = "*", callback } of listeners) {
+    ch = ch.on(
+      // Using type assertion because the TS overload union is complex
+      "postgres_changes" as Parameters<typeof ch.on>[0],
+      {
+        event: event as any,
+        schema,
+        table,
+        ...(filter ? { filter } : {}),
+      } as any,
+      () => {
+        try {
+          callback();
+        } catch (err) {
+          if (import.meta.env.DEV) {
+            console.warn(`[Realtime] Listener error on ${uniqueName}:`, err);
+          }
         }
       }
-    };
-
-    const channelDef = managed.channel.on(
-      "postgres_changes" as any,
-      { event, schema, table, filter },
-      handler as any,
     );
-
-    managed.channel = channelDef;
-    managed.channel.subscribe();
-    managed.isSubscribed = true;
-
-    if (import.meta.env.DEV) {
-      console.log(`[RealtimeManager] Subscribed: ${channelName} -> ${schema}.${table}`);
-    }
   }
 
-  managed.refCount++;
+  // subscribe() is ALWAYS last — never before all .on() calls
+  ch.subscribe((status) => {
+    if (import.meta.env.DEV && status !== "SUBSCRIBED") {
+      console.debug(`[Realtime] ${uniqueName} → ${status}`);
+    }
+  });
+
+  return ch;
+}
+
+// ── Public API ─────────────────────────────────────────────
+
+/**
+ * Subscribe to a single postgres_changes event.
+ * Returns a cleanup function — always call it on unmount.
+ *
+ * Usage inside useEffect:
+ *   const unsub = subscribePostgresChanges({ channelName, table, callback });
+ *   return unsub;
+ */
+export function subscribePostgresChanges(config: ChannelConfig): () => void {
+  const { channelName, table, schema, filter, event, callback } = config;
+
+  const uniqueName = uniqueChannelName(channelName);
+  const channel = buildAndSubscribe(uniqueName, [
+    { table, schema, filter, event, callback },
+  ]);
+
+  if (import.meta.env.DEV) {
+    console.debug(`[Realtime] subscribed: ${uniqueName} → ${schema ?? "public"}.${table}`);
+  }
 
   return () => {
-    managed.refCount--;
-    if (managed.refCount <= 0) {
-      try {
-        supabase.removeChannel(managed.channel);
-      } catch {
-        // Channel may already be removed by Supabase internals
-      }
-      channelRegistry.delete(channelName);
-      managed.isSubscribed = false;
-
-      if (import.meta.env.DEV) {
-        console.log(`[RealtimeManager] Removed channel: ${channelName}`);
-      }
+    try {
+      void supabase.removeChannel(channel);
+    } catch {
+      // Channel may already be cleaned up — safe to ignore
+    }
+    if (import.meta.env.DEV) {
+      console.debug(`[Realtime] removed: ${uniqueName}`);
     }
   };
 }
 
 /**
- * Force-remove a channel by name. Used for aggressive cleanup.
+ * Subscribe to MULTIPLE tables on a SINGLE channel.
+ * All listeners are registered before the single .subscribe() call.
+ * This is the recommended pattern when you need to watch several
+ * tables in one hook — avoids multiple channels for the same user.
+ *
+ * Usage inside useEffect:
+ *   const unsub = subscribeMultiTable({
+ *     channelName: 'user-sync',
+ *     listeners: [
+ *       { table: 'profiles', filter: `user_id=eq.${userId}`, callback: refresh },
+ *       { table: 'user_subscriptions', filter: `user_id=eq.${userId}`, callback: refresh },
+ *     ],
+ *   });
+ *   return unsub;
  */
-export function forceRemoveChannel(channelName: string): void {
-  const managed = channelRegistry.get(channelName);
-  if (managed) {
-    try {
-      supabase.removeChannel(managed.channel);
-    } catch {
-      // ignore
-    }
-    channelRegistry.delete(channelName);
-    managed.isSubscribed = false;
+export function subscribeMultiTable(config: MultiListenerConfig): () => void {
+  const { channelName, listeners } = config;
+  if (!listeners.length) return () => {};
+
+  const uniqueName = uniqueChannelName(channelName);
+  const channel = buildAndSubscribe(uniqueName, listeners);
+
+  if (import.meta.env.DEV) {
+    const tables = listeners.map((l) => l.table).join(", ");
+    console.debug(`[Realtime] multi-subscribed: ${uniqueName} → [${tables}]`);
   }
+
+  return () => {
+    try {
+      void supabase.removeChannel(channel);
+    } catch {
+      // safe to ignore
+    }
+    if (import.meta.env.DEV) {
+      console.debug(`[Realtime] multi-removed: ${uniqueName}`);
+    }
+  };
 }
 
 /**
- * Remove all managed channels. Used on auth logout.
+ * Remove all channels immediately. Call on auth logout to
+ * ensure no zombie subscriptions remain after sign-out.
  */
-export function removeAllChannels(): void {
-  for (const [name, managed] of channelRegistry.entries()) {
-    try {
-      supabase.removeChannel(managed.channel);
-    } catch {
-      // ignore
-    }
-    managed.isSubscribed = false;
-  }
-  channelRegistry.clear();
-
+export async function removeAllUserChannels(): Promise<void> {
+  const channels = supabase.getChannels();
+  await Promise.allSettled(channels.map((ch) => supabase.removeChannel(ch)));
   if (import.meta.env.DEV) {
-    console.log("[RealtimeManager] All channels removed");
+    console.debug(`[Realtime] removeAllUserChannels — removed ${channels.length} channels`);
   }
 }
+
+// Keep old name for backward compatibility with DashboardLayout.tsx
+export const forceRemoveChannel = (_name: string) => {
+  // no-op — channels are now instance-scoped, not name-scoped
+};
