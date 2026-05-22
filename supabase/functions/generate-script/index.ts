@@ -32,7 +32,7 @@ async function fetchAICompletion(
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       signal: controller.signal,
       headers: {
@@ -40,7 +40,7 @@ async function fetchAICompletion(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "llama-3.3-70b-versatile",
         messages: [
           {
             role: "system",
@@ -163,9 +163,9 @@ serve(async (req) => {
   });
 
   // ── PHASE 3: User resolution ──────────────────────────────
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) {
-    logError("ENV_MISSING", { var: "LOVABLE_API_KEY" });
+  const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+  if (!GROQ_API_KEY) {
+    logError("ENV_MISSING", { var: "GROQ_API_KEY" });
     return createErrorResponse("INTERNAL_ERROR", "AI provider not configured", 503);
   }
 
@@ -181,11 +181,11 @@ serve(async (req) => {
   log("AUTH_VERIFIED", { user_id: user.id, elapsed_ms: Date.now() - startMs });
 
   // ── PHASE 4: AI generation (with timeout) ─────────────────
-  log("AI_REQUEST_STARTED", { model: "google/gemini-3-flash-preview", topic_length: topic.length });
+  log("AI_REQUEST_STARTED", { model: "llama-3.3-70b-versatile", topic_length: topic.length });
 
   const aiStart = Date.now();
   const { content, error: aiError, status: aiStatus } = await fetchAICompletion(
-    LOVABLE_API_KEY,
+    GROQ_API_KEY,
     topic,
     tone,
     length,
@@ -226,7 +226,7 @@ serve(async (req) => {
   }
 
   if (!content) {
-    logError("AI_EMPTY_CONTENT", { model: "google/gemini-3-flash-preview", elapsed_ms: aiElapsed });
+    logError("AI_EMPTY_CONTENT", { model: "llama-3.3-70b-versatile", elapsed_ms: aiElapsed });
     // Non-fatal persist of empty result for debugging
     await supabase.from("script_generations").insert({
       user_id: user.id,
