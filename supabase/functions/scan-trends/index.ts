@@ -28,6 +28,7 @@ import {
   callAI,
   AI_MODEL_DEFAULT,
 } from "../_shared/ai-provider.ts";
+import { trackFeatureUsage } from "../_shared/feature-usage.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
@@ -87,6 +88,14 @@ serve(async (req) => {
     const supabase = createServiceClient();
     const now = new Date().toISOString();
 
+    // Resolve userId for analytics (non-fatal if this fails)
+    let analyticsUserId = "";
+    try {
+      const token = authHeader!.replace("Bearer ", "");
+      const { data: { user } } = await supabase.auth.getUser(token);
+      analyticsUserId = user?.id ?? "";
+    } catch { /* non-fatal */ }
+
     // ============================================================
     // CACHE LOOKUP — Check if we have fresh cached trends for this niche
     // ============================================================
@@ -108,6 +117,8 @@ serve(async (req) => {
         hook_types: t.hook_types || [],
         volume: t.volume || "Medium",
       }));
+
+      if (analyticsUserId) trackFeatureUsage({ supabase, userId: analyticsUserId, feature: FEATURES.TREND_SCAN });
 
       return new Response(
         JSON.stringify({
@@ -236,6 +247,8 @@ Focus ONLY on verifiable, current trends. Be specific with numbers and platform 
         );
       }
     }
+
+    if (analyticsUserId) trackFeatureUsage({ supabase, userId: analyticsUserId, feature: FEATURES.TREND_SCAN });
 
     return new Response(
       JSON.stringify({

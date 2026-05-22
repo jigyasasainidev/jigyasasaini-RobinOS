@@ -12,6 +12,7 @@ import {
   aiErrorResponse,
   AI_MODEL_DEFAULT,
 } from "../_shared/ai-provider.ts";
+import { trackFeatureUsage } from "../_shared/feature-usage.ts";
 
 type Platform = "youtube" | "instagram" | "tiktok" | "facebook";
 type Style = "viral" | "seo_optimized" | "storytelling" | "educational" | "bold" | "conversational";
@@ -207,6 +208,9 @@ Output constraints:
         headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
+
+    // Analytics — silent, never blocks response
+    trackFeatureUsage({ supabase, userId: user.id, feature: FEATURES.CAPTION_GENERATION });
 
     return new Response(
       JSON.stringify({ generation, usage: entitlement }),

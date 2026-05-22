@@ -23,6 +23,7 @@ import {
   FEATURES,
   createServiceClient,
 } from "../_shared/entitlement.ts";
+import { trackFeatureUsage } from "../_shared/feature-usage.ts";
 
 type Platform = "TikTok" | "Instagram" | "Facebook" | "YouTube";
 
@@ -221,6 +222,14 @@ serve(async (req) => {
     const supabase = createServiceClient();
     const now = new Date().toISOString();
 
+    // Resolve userId for analytics (non-fatal)
+    let analyticsUserId = "";
+    try {
+      const token = (authHeader || "").replace("Bearer ", "");
+      const { data: { user } } = await supabase.auth.getUser(token);
+      analyticsUserId = user?.id ?? "";
+    } catch { /* non-fatal */ }
+
     if (type === "hashtags") {
       // ============================================================
       // HASHTAGS — CACHE LOOKUP
@@ -234,6 +243,7 @@ serve(async (req) => {
         .limit(15);
 
       if (!cacheError && cachedHashtags && cachedHashtags.length > 0) {
+        if (analyticsUserId) trackFeatureUsage({ supabase, userId: analyticsUserId, feature: FEATURES.HASHTAG_SCAN });
         return new Response(
           JSON.stringify({
             hashtags: cachedHashtags,
@@ -275,6 +285,7 @@ serve(async (req) => {
         );
       }
 
+      if (analyticsUserId) trackFeatureUsage({ supabase, userId: analyticsUserId, feature: FEATURES.HASHTAG_SCAN });
       return new Response(
         JSON.stringify({
           hashtags: liveHashtags,
@@ -296,6 +307,7 @@ serve(async (req) => {
         .limit(12);
 
       if (!cacheError && cachedAudios && cachedAudios.length > 0) {
+        if (analyticsUserId) trackFeatureUsage({ supabase, userId: analyticsUserId, feature: FEATURES.TREND_SCAN });
         return new Response(
           JSON.stringify({
             audios: cachedAudios,
@@ -338,6 +350,7 @@ serve(async (req) => {
         );
       }
 
+      if (analyticsUserId) trackFeatureUsage({ supabase, userId: analyticsUserId, feature: FEATURES.TREND_SCAN });
       return new Response(
         JSON.stringify({
           audios: liveAudios,

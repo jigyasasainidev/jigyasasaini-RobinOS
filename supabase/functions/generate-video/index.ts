@@ -5,6 +5,7 @@ import {
   FEATURES,
   createServiceClient,
 } from "../_shared/entitlement.ts";
+import { trackFeatureUsage } from "../_shared/feature-usage.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -140,6 +141,8 @@ Deno.serve(async (req) => {
     // If prediction completed (Prefer: wait header)
     if (prediction.status === "succeeded" && prediction.output) {
       const videoUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output;
+      // Analytics — silent, never blocks response
+      trackFeatureUsage({ supabase, userId: user.id, feature: FEATURES.VIDEO_GENERATION });
       return new Response(
         JSON.stringify({ status: "succeeded", video_url: videoUrl, usage: entitlement }),
         { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }

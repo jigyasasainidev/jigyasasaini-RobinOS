@@ -12,6 +12,7 @@ import {
   aiErrorResponse,
   AI_MODEL_DEFAULT,
 } from "../_shared/ai-provider.ts";
+import { trackFeatureUsage } from "../_shared/feature-usage.ts";
 
 // ============================================================
 // STRUCTURED LOGGER — no secrets, no tokens, no API keys
@@ -174,7 +175,7 @@ Format the output clearly with markdown headers. Be specific, actionable, and ru
 
   log("AI_RESPONSE_OK", { content_length: content.length, elapsed_ms: aiElapsed });
 
-  // ── PHASE 5: Persistence (non-fatal fire-and-forget) ──────
+  // ── PHASE 5: Persistence + analytics (non-fatal fire-and-forget) ──
   Promise.all([
     supabase.from("script_generations").insert({
       user_id: user.id,
@@ -197,6 +198,9 @@ Format the output clearly with markdown headers. Be specific, actionable, and ru
     if (histResult.error) logError("PERSISTENCE_ERROR", { table: "script_history", error_code: histResult.error.code });
     else log("PERSISTENCE_DONE", { request_id: requestId });
   });
+
+  // Analytics — silent, never blocks response
+  trackFeatureUsage({ supabase, userId: user.id, feature: FEATURES.SCRIPT_GENERATION });
 
   // ── PHASE 6: Response ────────────────────────────────────
   const totalElapsed = Date.now() - startMs;

@@ -5,6 +5,7 @@ import {
   FEATURES,
   createServiceClient,
 } from "../_shared/entitlement.ts";
+import { trackFeatureUsage } from "../_shared/feature-usage.ts";
 
 // Per-voice tuned settings for distinct sound
 const voiceSettings: Record<string, { stability: number; similarity_boost: number; style: number; use_speaker_boost: boolean }> = {
@@ -113,6 +114,9 @@ Deno.serve(async (req) => {
     }
 
     const audioBuffer = await response.arrayBuffer();
+
+    // Analytics — silent, never blocks response
+    trackFeatureUsage({ supabase, userId: user.id, feature: FEATURES.TTS_GENERATION });
 
     return new Response(audioBuffer, {
       headers: {
