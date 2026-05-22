@@ -91,6 +91,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
 
   const startMs = Date.now();
+
+  try {
   log("REQUEST_RECEIVED", { method: req.method });
 
   // ── PHASE 1: Auth + request parsing ──────────────────────
@@ -280,4 +282,12 @@ serve(async (req) => {
   return new Response(streamPayload, {
     headers: { ...CORS_HEADERS, "Content-Type": "text/event-stream" },
   });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown runtime error";
+    logError("FATAL_ERROR", { category: "INTERNAL_RUNTIME_ERROR", message });
+    return new Response(
+      JSON.stringify({ success: false, code: "INTERNAL_RUNTIME_ERROR", error: "An unexpected error occurred. Please try again." }),
+      { status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
+    );
+  }
 });
