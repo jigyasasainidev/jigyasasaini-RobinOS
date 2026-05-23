@@ -11,6 +11,7 @@
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
+import { createClient } from "@supabase/supabase-js";
 
 // ════════════════════════════════════════════════════════════
 // AUTH + RATE LIMITER
@@ -83,11 +84,11 @@ const ScanRequestSchema = z.object({
 });
 
 // ════════════════════════════════════════════════════════════
-// ERROR HELPERS
+// ERROR HELPERS — always include requestId
 // ════════════════════════════════════════════════════════════
 
-function err(code: string, message: string, extra?: Record<string, unknown>) {
-  return { success: false, error: { code, message, ...extra } };
+function err(code: string, message: string, requestId: string, extra?: Record<string, unknown>) {
+  return { success: false, requestId, error: { code, message, ...extra } };
 }
 
 // ════════════════════════════════════════════════════════════
@@ -339,10 +340,83 @@ function fallbackTrends(topic: string) {
 }
 
 // ════════════════════════════════════════════════════════════
-// SCAN ENGINE
+// SUPABASE TREND MEMORY — non-fatal write after scan
+// Upserts each opportunity into trend_topics (niche_key = topic).
+// Uses service role — bypasses RLS. Non-fatal: never throws.
 // ════════════════════════════════════════════════════════════
 
-async function runScan(topic: string, platforms: string[], requestId: string) {
+interface TrendOpportunity {
+  cleanTitle:      string;
+  momentumScore:   number;
+  freshness:       string;
+  maturityStage:   string;
+  confidenceScore: number;
+  whyTrending:     string;
+  creatorAngle:    string;
+  opportunityType: string;
+  signalPlatforms: string[];
+  firstSeen:       string;
+  sourcesCount:    number;
+}
+
+async function persistTrendMemory(topic: string, opportunities: TrendOpportunity[], requestId: string, isFallback: boolean, sourceSpread: number, avgConf: number): Promise<void> {
+  const url     = process.env.SUPABASE_URL;
+  const roleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  // Silently skip if Supabase is not configured — keeps endpoint functional
+  if (!url || !roleKey) return;
+
+  try {
+    const supabase = createClient(url, roleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const nicheKey  = topic.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "").slice(0, 80);
+    const now       = new Date().toISOString();
+    const expiresAt = new Date(Date.now() + 6 * 3600_000).toISOString();
+
+    // ── 1. Upsert each opportunity into trend_topics ───────
+    const records = opportunities.map((o) => ({
+      niche_key:      nicheKey,
+      title:          o.cleanTitle,
+      description:    o.whyTrending,
+      platforms:      o.signalPlatforms.join(", "),
+      heat:           Math.min(Math.round(o.momentumScore * 0.99), 99),
+      hook_types:     JSON.stringify([o.opportunityType]),
+      volume:         o.momentumScore >= 65 ? "High" : o.momentumScore >= 40 ? "Medium" : "Emerging",
+      virality_score: o.momentumScore,
+      trend_velocity: o.confidenceScore / 10,
+      source:         "trend_radar_api",
+      expires_at:     expiresAt,
+      collected_at:   now,
+    }));
+
+    await Promise.allSettled(
+      records.map((record) =>
+        supabase
+          .from("trend_topics")
+          .upsert(record, { onConflict: "niche_key, title", ignoreDuplicates: false })
+      )
+    );
+
+    // ── 2. Write scan audit row ────────────────────────────
+    await supabase.from("trend_radar_scans").upsert({
+      request_id:        requestId,
+      topic,
+      source_spread:     sourceSpread,
+      confidence:        avgConf,
+      opportunity_count: opportunities.length,
+      is_fallback:       isFallback,
+      scanned_at:        now,
+    }, { onConflict: "request_id", ignoreDuplicates: true });
+
+    console.log(`[trend-radar] persisted ${records.length} trend memories + scan audit for "${topic}"`);
+  } catch (e) {
+    console.warn("[trend-radar] persistTrendMemory failed (non-fatal):", e instanceof Error ? e.message : e);
+  }
+}
+
+async function runScan(topic: string, _platforms: string[], requestId: string) {
   const now = new Date();
 
   const [yt, reddit, gnews] = await Promise.allSettled([
@@ -390,7 +464,11 @@ async function runScan(topic: string, platforms: string[], requestId: string) {
     .map(({ _rank, ...t }) => t);
 
   const opportunities = scored.length >= 1 ? scored : fallbackTrends(topic);
+  const isFallback = scored.length < 1;
   const avgConf = Math.round(opportunities.reduce((a, o) => a + o.confidenceScore, 0) / opportunities.length);
+
+  // Persist to Supabase — non-fatal, fire-and-forget
+  void persistTrendMemory(topic, opportunities, requestId, isFallback, sourcesHealthy, avgConf);
 
   return {
     success:   true,
@@ -457,10 +535,13 @@ function setHeaders(res: VercelResponse): void {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setHeaders(res);
 
+  // Generate once — used in both success and error responses
+  const requestId = makeRequestId();
+
   if (req.method === "OPTIONS") { res.status(204).end(); return; }
 
   if (req.method !== "GET" && req.method !== "POST") {
-    return res.status(405).json(err("METHOD_NOT_ALLOWED", "Only GET and POST are supported."));
+    return res.status(405).json(err("METHOD_NOT_ALLOWED", "Only GET and POST are supported.", requestId));
   }
 
   // ── GET ──────────────────────────────────────────────────
@@ -475,22 +556,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (auth.code === "rate_limited") {
         return res.status(429)
           .setHeader("Retry-After", String(auth.retryAfterSeconds ?? 60))
-          .json(err("RATE_LIMITED", "Rate limit exceeded.", { retryAfterSeconds: auth.retryAfterSeconds }));
+          .json(err("RATE_LIMITED", "Rate limit exceeded.", requestId, { retryAfterSeconds: auth.retryAfterSeconds }));
       }
-      return res.status(401).json(err("UNAUTHORIZED", "Invalid or missing API key."));
+      return res.status(401).json(err("UNAUTHORIZED", "Invalid or missing API key.", requestId));
     }
 
     const parsed = ScanRequestSchema.safeParse({ topic: topicStr });
     if (!parsed.success) {
       const msg = parsed.error.errors[0]?.message ?? "Invalid topic";
-      return res.status(400).json(err("INVALID_PAYLOAD", msg));
+      return res.status(400).json(err("INVALID_PAYLOAD", msg, requestId));
     }
 
     try {
-      return res.status(200).json(await runScan(parsed.data.topic, parsed.data.platforms, makeRequestId()));
+      return res.status(200).json(await runScan(parsed.data.topic, parsed.data.platforms, requestId));
     } catch (e) {
       console.error("[trend-radar] GET error:", e);
-      return res.status(503).json(err("TEMPORARY_UNAVAILABLE", "Scan failed. Please retry."));
+      return res.status(503).json(err("TEMPORARY_UNAVAILABLE", "Scan failed. Please retry.", requestId));
     }
   }
 
@@ -500,30 +581,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (auth.code === "rate_limited") {
       return res.status(429)
         .setHeader("Retry-After", String(auth.retryAfterSeconds ?? 60))
-        .json(err("RATE_LIMITED", "Rate limit exceeded.", { retryAfterSeconds: auth.retryAfterSeconds }));
+        .json(err("RATE_LIMITED", "Rate limit exceeded.", requestId, { retryAfterSeconds: auth.retryAfterSeconds }));
     }
-    return res.status(401).json(err("UNAUTHORIZED", "Invalid or missing API key."));
+    return res.status(401).json(err("UNAUTHORIZED", "Invalid or missing API key.", requestId));
   }
 
   const ct = (req.headers["content-type"] ?? "").toLowerCase();
   if (!ct.includes("application/json")) {
-    return res.status(400).json(err("INVALID_PAYLOAD", "Content-Type must be application/json."));
+    return res.status(400).json(err("INVALID_PAYLOAD", "Content-Type must be application/json.", requestId));
   }
 
   let body: unknown;
   try { body = req.body ?? {}; }
-  catch { return res.status(400).json(err("INVALID_PAYLOAD", "Request body is not valid JSON.")); }
+  catch { return res.status(400).json(err("INVALID_PAYLOAD", "Request body is not valid JSON.", requestId)); }
 
   const parsed = ScanRequestSchema.safeParse(body);
   if (!parsed.success) {
     const msg = parsed.error.errors[0]?.message ?? "Validation failed";
-    return res.status(400).json(err("INVALID_PAYLOAD", msg));
+    return res.status(400).json(err("INVALID_PAYLOAD", msg, requestId));
   }
 
   try {
-    return res.status(200).json(await runScan(parsed.data.topic, parsed.data.platforms, makeRequestId()));
+    return res.status(200).json(await runScan(parsed.data.topic, parsed.data.platforms, requestId));
   } catch (e) {
     console.error("[trend-radar] POST error:", e);
-    return res.status(503).json(err("TEMPORARY_UNAVAILABLE", "Scan failed. Please retry."));
+    return res.status(503).json(err("TEMPORARY_UNAVAILABLE", "Scan failed. Please retry.", requestId));
   }
 }
