@@ -102,29 +102,39 @@ function normalizeHashtag(raw: string): { display: string; key: string } | null 
 }
 
 // ── Artwork URL extraction ─────────────────────────────────
-/** Clean Apple artwork URL → upgrade to 600x600 for crisp display */
+/**
+ * Apple RSS artwork URL.
+ * Apple Music RSS returns these in the feed results:
+ *   artworkUrl100 — 100x100 (most reliable)
+ *   artworkUrl   — varies
+ * We upgrade to 600x600 for crisp display.
+ */
 function appleArtwork(raw: string | undefined): string | null {
-  if (!raw) return null;
-  // Replace size tokens: {w}x{h}bb → 600x600bb, or existing 100x100 → 600x600
-  return raw
+  if (!raw || typeof raw !== "string") return null;
+  // Upgrade size tokens if present
+  const upgraded = raw
     .replace(/\{w\}x\{h\}/g, "600x600")
-    .replace(/\d+x\d+bb/g, "600x600bb")
-    || null;
+    .replace(/\d+x\d+bb/g, "600x600bb");
+  return upgraded.startsWith("http") ? upgraded : null;
 }
 
-/** Best available Deezer cover URL — prefer big for quality */
+/**
+ * Deezer album/artist artwork.
+ * Priority: cover_big (500px) > cover_xl > cover_medium (250px) > artist picture
+ */
 function deezerArtwork(track: any): string | null {
-  return track?.album?.cover_big          // 500x500 — best
-    || track?.album?.cover_xl             // even larger if available
-    || track?.album?.cover_medium         // 250x250 fallback
+  const url =
+    track?.album?.cover_big
+    || track?.album?.cover_xl
+    || track?.album?.cover_medium
     || track?.artist?.picture_big
-    || track?.artist?.picture_medium
-    || null;
+    || track?.artist?.picture_medium;
+  return url && String(url).startsWith("http") ? String(url) : null;
 }
 
-/** Validate image URL is a real http URL */
+/** Validate image URL is a real http URL — rejects null, undefined, relative paths */
 function isValidUrl(url: string | null | undefined): url is string {
-  return typeof url === "string" && url.startsWith("http");
+  return typeof url === "string" && url.startsWith("http") && url.length > 12;
 }
 
 // ── Scoring ────────────────────────────────────────────────
@@ -280,88 +290,72 @@ async function fetchAudios(platform: Platform) {
     safeFetchJson("https://api.deezer.com/chart/0/tracks?limit=100"),
   ]);
 
-  // Build pools with image_url from each source
+  // ── Build Deezer pool — PRIMARY ARTWORK SOURCE ─────────
+  // Deezer always has album artwork (cover_big = 500px).
+  // Apple RSS artworkUrl100 is unreliable across environments.
   interface RawTrack { title: string; artist: string; image_url: string | null }
-  const applePool: RawTrack[] = [];
-  const appleSeen = new Set<string>();
-  if (Array.isArray(appleData?.feed?.results)) {
-    for (const x of appleData.feed.results) {
-      const title  = normalizeText(String(x?.name || ""));
-      const artist = normalizeText(String(x?.artistName || ""));
-      if (!title || !artist) continue;
-      const key = normalizeAudioKey(title, artist);
-      if (appleSeen.has(key)) continue;
-      appleSeen.add(key);
-      applePool.push({
-        title, artist,
-        image_url: appleArtwork(x?.artworkUrl100 || x?.artworkUrl60),
-      });
-    }
-  }
 
   const deezerPool: RawTrack[] = [];
+  const deezerFuzzyMap = new Map<string, string | null>(); // fuzzyKey → image_url
+
   if (Array.isArray(deezerData?.data)) {
     for (const x of deezerData.data) {
       const title  = normalizeText(String(x?.title || ""));
       const artist = normalizeText(String(x?.artist?.name || ""));
       if (!title || !artist) continue;
-      deezerPool.push({ title, artist, image_url: deezerArtwork(x) });
+      const img = deezerArtwork(x);
+      deezerPool.push({ title, artist, image_url: img });
+      // Index by fuzzy key for Apple matching
+      const fk = fuzzyTrackKey(title, artist);
+      if (!deezerFuzzyMap.has(fk)) deezerFuzzyMap.set(fk, img);
     }
   }
 
-  // ── Fuzzy cross-source merge ────────────────────────────
-  // Build a Deezer lookup keyed by fuzzyTrackKey for O(1) artwork lookup
-  const deezerArtMap = new Map<string, string | null>(); // fuzzyKey → image_url
-  for (const d of deezerPool) {
-    const fk = fuzzyTrackKey(d.title, d.artist);
-    if (!deezerArtMap.has(fk)) deezerArtMap.set(fk, d.image_url);
+  // ── Build Apple pool — TITLE/ARTIST SOURCE ────────────
+  // Apple RSS gives the most-played charts; we use Deezer artwork for them.
+  const applePool: RawTrack[] = [];
+  const appleSeenFuzzy = new Set<string>();
+
+  if (Array.isArray(appleData?.feed?.results)) {
+    for (const x of appleData.feed.results) {
+      const title  = normalizeText(String(x?.name || ""));
+      const artist = normalizeText(String(x?.artistName || ""));
+      if (!title || !artist) continue;
+      const fk = fuzzyTrackKey(title, artist);
+      if (appleSeenFuzzy.has(fk)) continue;
+      appleSeenFuzzy.add(fk);
+
+      // Primary artwork: Deezer fuzzy match. Fallback: Apple own artwork URL.
+      const deezerArt = deezerFuzzyMap.get(fk);
+      const appleArt  = appleArtwork(x?.artworkUrl100 || x?.artworkUrl60 || x?.artwork?.url);
+      const bestArt   = isValidUrl(deezerArt) ? deezerArt : isValidUrl(appleArt) ? appleArt : null;
+
+      applePool.push({ title, artist, image_url: bestArt });
+    }
   }
 
-  // Merge with cross-source tracking
-  const seen = new Map<string, number>(); // exactKey → index in merged
-  const merged: Array<RawTrack & { crossSource: boolean }> = [];
+  // ── Merge: Apple first, then Deezer-only tracks ────────
+  const mergedMap = new Map<string, RawTrack & { crossSource: boolean }>();
 
   for (const item of applePool) {
-    const exactKey = normalizeAudioKey(item.title, item.artist);
-    seen.set(exactKey, merged.length);
-
-    // Try to get artwork from Deezer via fuzzy match
     const fk = fuzzyTrackKey(item.title, item.artist);
-    const deezerArt = deezerArtMap.get(fk);
-    const bestArt = isValidUrl(item.image_url)
-      ? item.image_url
-      : isValidUrl(deezerArt)
-        ? deezerArt
-        : null;
-
-    merged.push({
-      title:       item.title,
-      artist:      item.artist,
-      image_url:   bestArt,
-      crossSource: deezerArtMap.has(fk), // counted as cross-source if fuzzy match found
-    });
+    if (!mergedMap.has(fk)) {
+      mergedMap.set(fk, {
+        ...item,
+        crossSource: deezerFuzzyMap.has(fk), // Apple + Deezer match = cross-source
+      });
+    }
   }
 
-  // Add Deezer-only tracks (not in Apple pool) — they carry their own artwork
+  // Add Deezer-only tracks (not in Apple charts) — they definitely have artwork
   for (const item of deezerPool) {
-    const exactKey = normalizeAudioKey(item.title, item.artist);
-    const fk       = fuzzyTrackKey(item.title, item.artist);
-    // Already in merged? Skip (we handled it above with fuzzy artwork injection)
-    if (seen.has(exactKey)) continue;
-    // Check if any apple item fuzzy-matched this Deezer track
-    const alreadyMatched = merged.some(
-      (m) => fuzzyTrackKey(m.title, m.artist) === fk
-    );
-    if (alreadyMatched) continue;
-
-    seen.set(exactKey, merged.length);
-    merged.push({
-      title:       item.title,
-      artist:      item.artist,
-      image_url:   isValidUrl(item.image_url) ? item.image_url : null,
-      crossSource: false,
-    });
+    const fk = fuzzyTrackKey(item.title, item.artist);
+    if (!mergedMap.has(fk)) {
+      mergedMap.set(fk, { ...item, crossSource: false });
+    }
   }
+
+  const merged = Array.from(mergedMap.values());
 
   // Platform rotation + cross-source bubbling
   let rotated = rotateSlice(merged, profile.rotationOffset, AUDIO_CAP * 2);

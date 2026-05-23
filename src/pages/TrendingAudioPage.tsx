@@ -71,7 +71,112 @@ const velocityBadgeClass = (v?: string) => {
   return                        "border-border/30 text-muted-foreground/45";
 };
 
-// ── Platform colors for artwork fallback ─────────────────
+// ── AudioCard — handles artwork state correctly ───────────
+function AudioCard({
+  audio, i, platform, copiedIdx, onCopy,
+}: {
+  audio: TrendingAudio;
+  i: number;
+  platform: Platform;
+  copiedIdx: number | null;
+  onCopy: (text: string, idx: number) => void;
+}) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const sig = velocityLabel(audio.velocity, audio.trend);
+  const showArt = !imgFailed && isValidArtUrl(audio.image_url);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+      className="rounded-xl border border-border bg-card overflow-hidden hover:border-primary/25 transition-all group"
+    >
+      {/* Artwork row */}
+      <div className="flex items-center gap-3 p-3.5 pb-0">
+        <div
+          className="relative shrink-0 rounded-xl overflow-hidden border border-border/60"
+          style={{ width: 56, height: 56, boxShadow: "0 4px 16px hsl(0 0% 0% / 0.5)" }}
+        >
+          {showArt ? (
+            <img
+              src={audio.image_url as string}
+              alt={`${audio.title} artwork`}
+              className="w-full h-full object-cover"
+              loading="lazy"
+              onError={() => setImgFailed(true)}
+            />
+          ) : (
+            <ArtworkFallback platform={platform} size={56} />
+          )}
+          <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/8 transition-colors rounded-xl pointer-events-none" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-medium text-foreground truncate leading-tight">{audio.title}</h3>
+          <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5 truncate">{audio.artist}</p>
+        </div>
+        <button
+          onClick={() => onCopy(audio.title, i)}
+          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0"
+          title="Copy audio name"
+        >
+          {copiedIdx === i ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+        </button>
+      </div>
+
+      {/* Signal metadata */}
+      <div className="px-3.5 pt-3 pb-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <Badge variant="outline" className={`text-[9px] font-mono shrink-0 ${categoryColor(audio.category)}`}>
+            {audio.category}
+          </Badge>
+          <span className={`inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded-full border shrink-0 ${velocityBadgeClass(audio.velocity)}`}>
+            {sig.icon}
+            <span className="leading-none">{sig.text}</span>
+          </span>
+          {audio.confidence != null && (
+            <span className="text-[9px] font-mono text-muted-foreground/40 shrink-0">
+              · {audio.confidence}% conf
+            </span>
+          )}
+        </div>
+
+        {/* Signal Depth */}
+        {audio.creator_count != null && audio.creator_count > 0 && (
+          <div className="flex items-center gap-3 mt-2 flex-wrap">
+            <div className="flex items-center gap-1">
+              <Users className="w-3 h-3 text-muted-foreground/40 shrink-0" />
+              <span className="text-[9px] font-mono text-muted-foreground/55">
+                {fmtCount(audio.creator_count)} creator uses
+              </span>
+            </div>
+            {audio.repost_count != null && audio.repost_count > 0 && (
+              <div className="flex items-center gap-1">
+                <RefreshCw className="w-3 h-3 text-muted-foreground/30 shrink-0" />
+                <span className="text-[9px] font-mono text-muted-foreground/40">
+                  {fmtCount(audio.repost_count)}+ reposts today
+                </span>
+              </div>
+            )}
+            {audio.window_label && (() => {
+              const mom = audio.momentum ?? audio.momentum_direction;
+              return (
+                <span className={`text-[9px] font-mono shrink-0 ${mom === "up" ? "text-emerald-400/60" : "text-muted-foreground/30"}`}>
+                  {mom === "up" ? "↑" : "◎"} {audio.window_label}
+                </span>
+              );
+            })()}
+          </div>
+        )}
+      </div>
+
+      <p className="px-3.5 pt-2 pb-3.5 text-[11px] text-muted-foreground leading-relaxed">{audio.tip}</p>
+    </motion.div>
+  );
+}
+
+// ── URL guard helper ──────────────────────────────────────
+function isValidArtUrl(url?: string | null): url is string {
+  return typeof url === "string" && url.startsWith("http") && url.length > 12;
+}
 const PLATFORM_GLOW: Record<Platform, { bg: string; glow: string; note: string }> = {
   Instagram: { bg: "linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)", glow: "hsl(300 60% 50% / 0.35)", note: "♪" },
   TikTok:    { bg: "linear-gradient(135deg, #010101, #69c9d0, #ee1d52)", glow: "hsl(185 55% 50% / 0.35)", note: "♫" },
@@ -330,104 +435,16 @@ const TrendingAudioPage = () => {
                 )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
-                {audios.map((audio, i) => {
-                  const sig = velocityLabel(audio.velocity, audio.trend);
-                  return (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                      className="rounded-xl border border-border bg-card overflow-hidden hover:border-primary/25 transition-all group"
-                    >
-                      {/* Artwork row — Spotify-like */}
-                      <div className="flex items-center gap-3 p-3.5 pb-0">
-                        <div
-                          className="relative shrink-0 rounded-xl overflow-hidden border border-border/60"
-                          style={{ width: 56, height: 56, boxShadow: "0 4px 16px hsl(0 0% 0% / 0.5)" }}
-                        >
-                          {audio.image_url?.startsWith("http") ? (
-                            <img
-                              src={audio.image_url}
-                              alt={`${audio.title} artwork`}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                              onError={(e) => {
-                                // Replace broken img with fallback gradient in-place
-                                const parent = e.currentTarget.parentElement;
-                                if (parent) {
-                                  e.currentTarget.style.display = "none";
-                                  parent.setAttribute("data-fallback", "true");
-                                }
-                              }}
-                            />
-                          ) : (
-                            <ArtworkFallback platform={platform} size={56} />
-                          )}
-                          <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/8 transition-colors rounded-xl pointer-events-none" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-medium text-foreground truncate leading-tight">{audio.title}</h3>
-                          <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5 truncate">{audio.artist}</p>
-                        </div>
-                        <button
-                          onClick={() => copyText(audio.title, i)}
-                          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0"
-                          title="Copy audio name"
-                        >
-                          {copiedIdx === i ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
-
-                      {/* Signal metadata */}
-                      <div className="px-3.5 pt-3 pb-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <Badge variant="outline" className={`text-[9px] font-mono shrink-0 ${categoryColor(audio.category)}`}>
-                            {audio.category}
-                          </Badge>
-                          <span className={`inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded-full border shrink-0 ${velocityBadgeClass(audio.velocity)}`}>
-                            {sig.icon}
-                            <span className="leading-none">{sig.text}</span>
-                          </span>
-                          {audio.confidence != null && (
-                            <span className="text-[9px] font-mono text-muted-foreground/40 shrink-0">
-                              · {audio.confidence}% conf
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Signal Depth row */}
-                        {audio.creator_count != null && audio.creator_count > 0 && (
-                          <div className="flex items-center gap-3 mt-2.5 flex-wrap">
-                            <div className="flex items-center gap-1">
-                              <Users className="w-3 h-3 text-muted-foreground/40 shrink-0" />
-                              <span className="text-[9px] font-mono text-muted-foreground/55">
-                                {fmtCount(audio.creator_count)} creator uses
-                              </span>
-                            </div>
-                            {audio.repost_count != null && audio.repost_count > 0 && (
-                              <div className="flex items-center gap-1">
-                                <RefreshCw className="w-3 h-3 text-muted-foreground/30 shrink-0" />
-                                <span className="text-[9px] font-mono text-muted-foreground/40">
-                                  {fmtCount(audio.repost_count)}+ reposts today
-                                </span>
-                              </div>
-                            )}
-                            {audio.window_label && (() => {
-                              const mom = audio.momentum ?? audio.momentum_direction;
-                              return (
-                                <span className={`text-[9px] font-mono shrink-0 ${mom === "up" ? "text-emerald-400/60" : "text-muted-foreground/30"}`}>
-                                  {mom === "up" ? "↑" : "◎"} {audio.window_label}
-                                </span>
-                              );
-                            })()}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Tip */}
-                      <p className="px-3.5 pt-2 pb-3.5 text-[11px] text-muted-foreground leading-relaxed">{audio.tip}</p>
-                    </motion.div>
-                  );
-                })}
+                {audios.map((audio, i) => (
+                  <AudioCard
+                    key={i}
+                    audio={audio}
+                    i={i}
+                    platform={platform}
+                    copiedIdx={copiedIdx}
+                    onCopy={copyText}
+                  />
+                ))}
               </div>
             </motion.div>
           ) : searched && !loading ? (
