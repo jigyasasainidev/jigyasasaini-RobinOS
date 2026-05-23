@@ -3,6 +3,7 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { useFreeTrialStatus, useProfile, useSubscriptionExpiry } from "@/hooks/useProfile";
+import { useEntitlementsLoading, useIsFree } from "@/hooks/useEntitlements";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { OnboardingPopup } from "@/components/OnboardingPopup";
 import { db } from "@/lib/cloudDb";
@@ -19,6 +20,8 @@ const DashboardLayout = () => {
   const { data: profile } = useProfile();
   const { expired: freeExpired, isFree } = useFreeTrialStatus();
   const { expired: subExpired, tier } = useSubscriptionExpiry();
+  const isEntitlementsLoading = useEntitlementsLoading();
+  const isFreeEntitlement = useIsFree();
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [maintenanceDismissed, setMaintenanceDismissed] = useState(false);
@@ -44,16 +47,31 @@ const DashboardLayout = () => {
     }
   }, [user, loading, navigate]);
 
-  // Free trial expired → show upgrade
+  // Free trial expired → show upgrade.
+  // Guard: only evaluate AFTER entitlements have resolved from the backend.
+  // Without this guard, placeholderData (plan: "free") would fire the
+  // paywall immediately on mount, before the RPC returns the real plan.
   useEffect(() => {
-    if (isFree && freeExpired) {
+    if (!isEntitlementsLoading && isFree && freeExpired) {
       setShowUpgrade(true);
     }
-  }, [isFree, freeExpired]);
+  }, [isEntitlementsLoading, isFree, freeExpired]);
 
-  // Paid subscription expired → downgrade to free and show upgrade
+  // Reverse-dismiss: if entitlements resolve to a paid plan, close the
+  // paywall unconditionally. This handles the admin-upgrade case where
+  // the user was briefly shown the paywall during the loading window.
   useEffect(() => {
-    if (subExpired && user && tier !== "free") {
+    if (!isEntitlementsLoading && !isFreeEntitlement) {
+      setShowUpgrade(false);
+    }
+  }, [isEntitlementsLoading, isFreeEntitlement]);
+
+  // Paid subscription expired → downgrade to free and show upgrade.
+  // Guard: only runs after entitlements loaded AND user is confirmed free tier.
+  // Without this guard, a briefly-loading placeholder could trigger a spurious
+  // downgrade write against a valid paid profile row.
+  useEffect(() => {
+    if (!isEntitlementsLoading && subExpired && user && tier !== "free") {
       const downgrade = async () => {
         await db
           .from("profiles")
@@ -68,7 +86,7 @@ const DashboardLayout = () => {
       };
       downgrade();
     }
-  }, [subExpired, user, tier, queryClient]);
+  }, [isEntitlementsLoading, subExpired, user, tier, queryClient]);
 
   // Show onboarding for new users
   useEffect(() => {
