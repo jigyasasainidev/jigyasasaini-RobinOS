@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Zap, PenTool, Settings, LogOut, Clock, Link2, Crown, Mic, Film, Music, BarChart3, Type, Flag } from "lucide-react";
+import { Zap, PenTool, Settings, LogOut, Clock, Link2, Crown, Mic, Film, BarChart3, Type, Flag } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlanKey, useIsProOrAbove, useIsAgency } from "@/hooks/useEntitlements";
 import { Badge } from "@/components/ui/badge";
@@ -16,8 +16,6 @@ const sidebarSections = [
   {
     label: "CREATE",
     items: [
-      { to: "/dashboard/trending",       label: "Idea Stream",        icon: Music },
-      { to: "/dashboard/intelligence",   label: "Trend Radar",        icon: Zap },
       { to: "/dashboard/studio",         label: "Script Engine",      icon: PenTool },
       { to: "/dashboard/voice",          label: "Voice Studio",       icon: Mic },
       { to: "/dashboard/video",          label: "Video Studio",       icon: Film },
@@ -27,27 +25,27 @@ const sidebarSections = [
   {
     label: "GROW",
     items: [
-      { to: "/dashboard/analytics",  label: "Analytics",  icon: BarChart3 },
-      { to: "/dashboard/referrals",  label: "Referrals",  icon: Link2 },
+      { to: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+      { to: "/dashboard/referrals",  label: "Referrals", icon: Link2 },
     ],
   },
   {
     label: "SYSTEM",
     items: [
-      { to: "/dashboard/history",  label: "History",   icon: Clock },
-      { to: "/dashboard/settings", label: "Settings",  icon: Settings },
+      { to: "/dashboard/history",  label: "History",  icon: Clock },
+      { to: "/dashboard/settings", label: "Settings", icon: Settings },
     ],
   },
 ];
 
-// Mobile bottom nav — workflow order, most-used 7
+// Mobile bottom nav — 7 most-used in workflow order
 const bottomNavItems = [
-  { to: "/dashboard/trending",       label: "Discover",  icon: Music },
+  { to: "/dashboard/caption-engine", label: "Publish",   icon: Type },
   { to: "/dashboard/studio",         label: "Script",    icon: PenTool },
   { to: "/dashboard/voice",          label: "Voice",     icon: Mic },
   { to: "/dashboard/video",          label: "Video",     icon: Film },
-  { to: "/dashboard/caption-engine", label: "Caption",   icon: Type },
   { to: "/dashboard/analytics",      label: "Analytics", icon: BarChart3 },
+  { to: "/dashboard/referrals",      label: "Referrals", icon: Link2 },
   { to: "/dashboard/settings",       label: "Settings",  icon: Settings },
 ];
 

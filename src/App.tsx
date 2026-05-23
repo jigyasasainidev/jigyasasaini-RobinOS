@@ -133,7 +133,9 @@ const App = () => (
               <Route path="/auth" element={<Navigate to="/login" replace />} />
               <Route path="/auth/callback" element={<AuthCallbackPage />} />
               <Route path="/dashboard" element={<DashboardLayout />}>
-                <Route index element={<Navigate to="intelligence" replace />} />
+                <Route index element={<Navigate to="caption-engine" replace />} />
+                <Route path="intelligence" element={<Navigate to="caption-engine" replace />} />
+                <Route path="trending"     element={<Navigate to="caption-engine" replace />} />
                 <Route path="intelligence" element={<IntelligencePage />} />
                 <Route path="studio" element={<StudioPage />} />
                 <Route path="caption-engine" element={<CaptionEnginePage />} />
