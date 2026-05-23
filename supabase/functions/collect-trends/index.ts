@@ -23,26 +23,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { CORS_HEADERS, createServiceClient } from "../_shared/entitlement.ts";
-import {
-  validateAIConfig,
-  callAI,
-  AI_MODEL_DEFAULT,
-} from "../_shared/ai-provider.ts";
 
 // ============================================================
 // TYPES
 // ============================================================
 type Platform = "TikTok" | "Instagram" | "Facebook" | "YouTube";
 type Velocity  = "rising" | "hot" | "exploding" | "stable";
-
-interface TopicRecord {
-  title: string;
-  description: string;
-  platforms: string;
-  heat: number;
-  hook_types: string[];
-  volume: string;
-}
 
 interface AudioRecord {
   title: string;
@@ -82,27 +68,8 @@ interface HashtagRecord {
 // ============================================================
 // CONFIGURATION
 // ============================================================
-const COLLECTION_NICHES = [
-  "ai_tools",
-  "fitness",
-  "luxury",
-  "finance",
-  "motivation",
-  "ecommerce",
-  "productivity",
-  "gaming",
-  "travel",
-  "food",
-  "beauty",
-  "education",
-  "technology",
-  "music",
-  "fashion",
-];
-
 const PLATFORMS: Platform[] = ["TikTok", "Instagram", "Facebook", "YouTube"];
 
-const TOPICS_TTL_HOURS   = 4;
 const AUDIOS_TTL_HOURS   = 6; // aligned with trending-audio cache TTL
 const HASHTAGS_TTL_HOURS = 6; // aligned with trending-audio cache TTL
 
@@ -384,97 +351,6 @@ const fetchDeezerChart = async (): Promise<AppleMusicTrack[]> => {
 };
 
 // ============================================================
-// AI ENRICHMENT — CLASSIFY + SCORE TOPICS BY NICHE
-// ============================================================
-
-interface AIEnrichmentInput {
-  niche: string;
-  googleTrends: GoogleTrendItem[];
-}
-
-const aiEnrichTopics = async (input: AIEnrichmentInput): Promise<TopicRecord[]> => {
-  const trendTitles = input.googleTrends
-    .slice(0, 10)
-    .map((t) => `- ${t.title}${t.approxTraffic ? ` (${t.approxTraffic})` : ""}`)
-    .join("\n");
-
-  const aiResult = await callAI({
-    model: AI_MODEL_DEFAULT,
-    messages: [
-      {
-        role: "system",
-        content: `You are an expert viral content analyst. Given a niche and current Google Trends data, identify 3-5 trending topics. Return as JSON with EXACT schema. Each topic must have: title, description, platforms, heat (70-99), hook_types (array), volume ("High"|"Medium"|"Emerging").`,
-      },
-      {
-        role: "user",
-        content: `Niche: ${input.niche}\n\nCurrent Google Trends:\n${trendTitles || "No real-time data available — use pattern analysis."}\n\nReturn 3-5 trending topics for this niche.`,
-      },
-    ],
-    tools: [
-      {
-        type: "function",
-        function: {
-          name: "return_trending_topics",
-          description: "Return 3-5 trending topics for the given niche",
-          parameters: {
-            type: "object",
-            properties: {
-              topics: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    title:       { type: "string" },
-                    description: { type: "string" },
-                    platforms:   { type: "string" },
-                    heat:        { type: "number" },
-                    hook_types:  { type: "array", items: { type: "string" } },
-                    volume:      { type: "string", enum: ["High", "Medium", "Emerging"] },
-                  },
-                  required: ["title", "description", "platforms", "heat", "hook_types", "volume"],
-                  additionalProperties: false,
-                },
-              },
-            },
-            required: ["topics"],
-            additionalProperties: false,
-          },
-        },
-      },
-    ],
-    tool_choice: { type: "function", function: { name: "return_trending_topics" } },
-  });
-
-  if (!aiResult.ok) {
-    console.warn(`[collect-trends] AI enrichment failed for ${input.niche}: ${aiResult.code}`);
-    return [];
-  }
-
-  try {
-    const toolCall = aiResult.data?.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) return [];
-    const parsed = JSON.parse(toolCall.function.arguments);
-    return parsed.topics || [];
-  } catch (err) {
-    console.error(`[collect-trends] AI response parse error for ${input.niche}:`, err);
-    return [];
-  }
-};
-
-// ============================================================
-// VIRALITY SCORE CALCULATOR (for topics — unchanged)
-// ============================================================
-function calculateViralityScore(topic: { heat: number; volume?: string; platforms: string }): number {
-  const heatScore    = Math.min(topic.heat, 99) * 0.606;
-  const volumeScore  = topic.volume === "High" ? 20 : topic.volume === "Medium" ? 10 : 5;
-  const platformCount = topic.platforms
-    ? topic.platforms.split(",").filter((p) => p.trim()).length
-    : 0;
-  const platformScore = Math.min(platformCount, 4) * 5;
-  return Math.min(Math.round(heatScore + volumeScore + platformScore), 100);
-}
-
-// ============================================================
 // SLUGIFY HASHTAG
 // ============================================================
 function slugifyHashtag(value: string): string {
@@ -491,41 +367,6 @@ function slugifyHashtag(value: string): string {
 // ============================================================
 // DATABASE STORAGE
 // ============================================================
-
-async function storeTopics(
-  supabase: ReturnType<typeof createClient>,
-  topics: TopicRecord[],
-  niche: string,
-  snapshotId: string,
-  expiresAt: string
-): Promise<number> {
-  if (topics.length === 0) return 0;
-
-  const records = topics.map((t) => ({
-    niche_key:             niche,
-    title:                 t.title,
-    description:           t.description,
-    platforms:             t.platforms,
-    heat:                  Math.min(Math.max(t.heat, 0), 99),
-    hook_types:            JSON.stringify(t.hook_types || []),
-    volume:                t.volume || "Medium",
-    virality_score:        calculateViralityScore(t),
-    trend_velocity:        t.heat / 10,
-    source:                "ai",
-    collection_snapshot_id: snapshotId,
-    expires_at:            expiresAt,
-    collected_at:          new Date().toISOString(),
-  }));
-
-  let stored = 0;
-  for (const record of records) {
-    const { error } = await supabase
-      .from("trend_topics")
-      .upsert(record, { onConflict: "niche_key, title", ignoreDuplicates: false });
-    if (!error) stored++;
-  }
-  return stored;
-}
 
 async function storeAudios(
   supabase: ReturnType<typeof createClient>,
@@ -811,28 +652,6 @@ async function collectHashtagsForPlatform(
 }
 
 // ============================================================
-// SINGLE NICHE COLLECTION (TOPICS) — unchanged
-// ============================================================
-async function collectTopicsForNiche(
-  supabase: ReturnType<typeof createClient>,
-  niche: string,
-  snapshotId: string,
-  expiresAt: string
-): Promise<{ topicsCollected: number; errors: string[] }> {
-  const errors: string[] = [];
-
-  const googleTrends = await fetchGoogleTrends();
-  const topics = await aiEnrichTopics({ niche, googleTrends });
-
-  if (topics.length === 0) {
-    errors.push(`No topics generated for ${niche}`);
-    return { topicsCollected: 0, errors };
-  }
-
-  const stored = await storeTopics(supabase, topics, niche, snapshotId, expiresAt);
-  return { topicsCollected: stored, errors };
-}
-
 // ============================================================
 // CALCULATE EXPIRATION TIMESTAMP (deterministic)
 // ============================================================
@@ -854,7 +673,7 @@ async function runFullCollection(supabase: ReturnType<typeof createClient>): Pro
     .insert({
       collection_type: "full_collection",
       status:          "running",
-      niche_keys:      COLLECTION_NICHES,
+      niche_keys:      [],
       platforms:       PLATFORMS,
       started_at:      new Date().toISOString(),
     })
@@ -866,32 +685,15 @@ async function runFullCollection(supabase: ReturnType<typeof createClient>): Pro
     return;
   }
 
-  const snapshotId       = snapshot.id;
-  const topicsExpiresAt  = calculateExpiresAt(TOPICS_TTL_HOURS);
-  const audiosExpiresAt  = calculateExpiresAt(AUDIOS_TTL_HOURS);
+  const snapshotId        = snapshot.id;
+  const audiosExpiresAt   = calculateExpiresAt(AUDIOS_TTL_HOURS);
   const hashtagsExpiresAt = calculateExpiresAt(HASHTAGS_TTL_HOURS);
 
-  let totalTopics   = 0;
   let totalAudios   = 0;
   let totalHashtags = 0;
 
-  // Phase 1: Topics — batched AI enrichment
-  console.log(`[collect-trends] Phase 1: Topics for ${COLLECTION_NICHES.length} niches...`);
-  const nicheBatchSize = 5;
-  for (let i = 0; i < COLLECTION_NICHES.length; i += nicheBatchSize) {
-    const batch = COLLECTION_NICHES.slice(i, i + nicheBatchSize);
-    const results = await Promise.all(
-      batch.map((niche) => collectTopicsForNiche(supabase, niche, snapshotId, topicsExpiresAt))
-    );
-    for (const result of results) {
-      totalTopics += result.topicsCollected;
-      allErrors.push(...result.errors);
-    }
-    console.log(`[collect-trends] Batch: ${i + batch.length}/${COLLECTION_NICHES.length} niches`);
-  }
-
-  // Phase 2: Audios — all platforms in parallel
-  console.log(`[collect-trends] Phase 2: Audios for ${PLATFORMS.length} platforms...`);
+  // Phase 1: Audios — all platforms in parallel
+  console.log(`[collect-trends] Phase 1: Audios for ${PLATFORMS.length} platforms...`);
   const audioResults = await Promise.all(
     PLATFORMS.map((platform) => collectAudiosForPlatform(supabase, platform, snapshotId, audiosExpiresAt))
   );
@@ -900,8 +702,8 @@ async function runFullCollection(supabase: ReturnType<typeof createClient>): Pro
     allErrors.push(...result.errors);
   }
 
-  // Phase 3: Hashtags — all platforms in parallel
-  console.log(`[collect-trends] Phase 3: Hashtags for ${PLATFORMS.length} platforms...`);
+  // Phase 2: Hashtags — all platforms in parallel
+  console.log(`[collect-trends] Phase 2: Hashtags for ${PLATFORMS.length} platforms...`);
   const hashtagResults = await Promise.all(
     PLATFORMS.map((platform) => collectHashtagsForPlatform(supabase, platform, snapshotId, hashtagsExpiresAt))
   );
@@ -915,7 +717,7 @@ async function runFullCollection(supabase: ReturnType<typeof createClient>): Pro
     .from("trend_collection_snapshots")
     .update({
       status:             allErrors.length > 0 ? "completed_with_errors" : "completed",
-      topics_collected:   totalTopics,
+      topics_collected:   0,
       audios_collected:   totalAudios,
       hashtags_collected: totalHashtags,
       errors:             JSON.stringify(allErrors),
@@ -923,7 +725,7 @@ async function runFullCollection(supabase: ReturnType<typeof createClient>): Pro
     })
     .eq("id", snapshotId);
 
-  console.log(`[collect-trends] Done: ${totalTopics} topics, ${totalAudios} audios, ${totalHashtags} hashtags`);
+  console.log(`[collect-trends] Done: ${totalAudios} audios, ${totalHashtags} hashtags`);
   if (allErrors.length > 0) {
     console.warn(`[collect-trends] ${allErrors.length} non-fatal errors`);
   }
@@ -934,10 +736,6 @@ async function runFullCollection(supabase: ReturnType<typeof createClient>): Pro
 // ============================================================
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
-
-  // Validate AI provider config
-  const configError = validateAIConfig();
-  if (configError) return configError;
 
   // Only allow authenticated internal calls (service_role or cron trigger)
   const authHeader = req.headers.get("authorization");

@@ -5,11 +5,12 @@
 // No function should know the provider URL, model name,
 // or API key — those are this module's responsibility only.
 //
-// CURRENT PROVIDER: Groq (OpenAI-compatible)
-//
-// Future migration path:
-//   - swap PROVIDER_URL / DEFAULT_MODEL constants
-//   - edge functions need zero changes
+// PROVIDER CONFIGURATION (environment variables):
+//   AI_API_KEY       — API key for the active provider
+//   AI_PROVIDER_URL  — Full completions endpoint URL
+//                      e.g. https://api.openai.com/v1/chat/completions
+//                           https://api.anthropic.com/v1/messages
+//                           any OpenAI-compatible endpoint
 //
 // STARTUP VALIDATION:
 //   Call validateAIConfig() at the top of every edge function
@@ -20,13 +21,9 @@
 
 import { CORS_HEADERS } from "./entitlement.ts";
 
-// ── Provider constants — change here only ──────────────────
-const PROVIDER_URL = "https://api.groq.com/openai/v1/chat/completions";
-
-// Default model for generation tasks (tool calling, structured output)
-export const AI_MODEL_DEFAULT   = "llama-3.3-70b-versatile";
-// Lightweight model for simple text transformations (no tool calls)
-export const AI_MODEL_FAST      = "llama-3.1-8b-instant";
+// Default model — override via AICallOptions.model if needed
+export const AI_MODEL_DEFAULT = "llama-3.3-70b-versatile";
+export const AI_MODEL_FAST    = "llama-3.1-8b-instant";
 
 // ── Types ───────────────────────────────────────────────────
 
@@ -69,12 +66,12 @@ export type AICallResult =
  *   if (configError) return configError;
  */
 export function validateAIConfig(): Response | null {
-  const key = Deno.env.get("GROQ_API_KEY");
+  const key = Deno.env.get("AI_API_KEY");
   if (!key) {
     console.error(JSON.stringify({
       fn: "ai-provider",
       phase: "STARTUP_VALIDATION_FAILED",
-      var: "GROQ_API_KEY",
+      var: "AI_API_KEY",
       ts: Date.now(),
     }));
     return new Response(
@@ -94,8 +91,8 @@ export function validateAIConfig(): Response | null {
  * Throws if missing (should never happen after validateAIConfig).
  */
 export function getAIKey(): string {
-  const key = Deno.env.get("GROQ_API_KEY");
-  if (!key) throw new Error("GROQ_API_KEY not found — call validateAIConfig() first");
+  const key = Deno.env.get("AI_API_KEY");
+  if (!key) throw new Error("AI_API_KEY not found — call validateAIConfig() first");
   return key;
 }
 
@@ -110,23 +107,30 @@ export function getAIKey(): string {
  *   { ok: false, code, status, message } — categorized error, ready to forward
  */
 export async function callAI(options: AICallOptions): Promise<AICallResult> {
-  const apiKey = getAIKey();
+  const apiKey      = getAIKey();
+  const providerUrl = Deno.env.get("AI_PROVIDER_URL");
+
+  if (!providerUrl) {
+    console.error(JSON.stringify({ fn: "ai-provider", phase: "MISSING_PROVIDER_URL", ts: Date.now() }));
+    return { ok: false, code: "PROVIDER_CONFIG_ERROR", status: 503, message: "AI provider URL not configured." };
+  }
+
   const timeoutMs = options.timeoutMs ?? 45_000;
-  const model = options.model ?? AI_MODEL_DEFAULT;
+  const model     = options.model ?? AI_MODEL_DEFAULT;
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const timeoutId  = setTimeout(() => controller.abort(), timeoutMs);
 
   const body: Record<string, unknown> = {
     model,
     messages: options.messages,
   };
-  if (options.tools)         body.tools = options.tools;
-  if (options.tool_choice)   body.tool_choice = options.tool_choice;
+  if (options.tools)           body.tools         = options.tools;
+  if (options.tool_choice)     body.tool_choice   = options.tool_choice;
   if (options.response_format) body.response_format = options.response_format;
 
   try {
-    const response = await fetch(PROVIDER_URL, {
+    const response = await fetch(providerUrl, {
       method: "POST",
       signal: controller.signal,
       headers: {
@@ -145,12 +149,12 @@ export async function callAI(options: AICallOptions): Promise<AICallResult> {
       return { ok: false, code: "CREDITS_EXHAUSTED",   status: 402, message: "AI provider credits exhausted." };
     }
     if (response.status === 401 || response.status === 403) {
-      const body = await response.text().catch(() => "");
+      await response.text().catch(() => "");
       console.error(JSON.stringify({ fn: "ai-provider", phase: "AUTH_ERROR", status: response.status }));
       return { ok: false, code: "PROVIDER_AUTH_ERROR", status: 503, message: "AI provider authentication failed." };
     }
     if (!response.ok) {
-      const body = await response.text().catch(() => "");
+      await response.text().catch(() => "");
       console.error(JSON.stringify({ fn: "ai-provider", phase: "PROVIDER_ERROR", status: response.status }));
       return { ok: false, code: "AI_UNAVAILABLE",      status: 503, message: "AI provider returned an error. Please try again." };
     }
@@ -162,10 +166,10 @@ export async function callAI(options: AICallOptions): Promise<AICallResult> {
     clearTimeout(timeoutId);
     const isAbort = err instanceof DOMException && err.name === "AbortError";
     if (isAbort) {
-      return { ok: false, code: "AI_TIMEOUT",     status: 503, message: "Generation timed out. Please try again." };
+      return { ok: false, code: "AI_TIMEOUT",   status: 503, message: "Generation timed out. Please try again." };
     }
     console.error(JSON.stringify({ fn: "ai-provider", phase: "NETWORK_ERROR", message: err instanceof Error ? err.message : "unknown" }));
-    return { ok: false, code: "AI_UNAVAILABLE",   status: 503, message: "AI provider unreachable. Please try again." };
+    return { ok: false, code: "AI_UNAVAILABLE", status: 503, message: "AI provider unreachable. Please try again." };
   }
 }
 

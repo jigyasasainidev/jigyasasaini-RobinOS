@@ -288,7 +288,7 @@ export function PrivacyPolicyPage() {
           id: "ai-prompt-processing",
           title: "AI Prompt Processing & Content Handling",
           body: [
-            "All prompts submitted to RobinOS AI generation features are processed by our AI providers (Groq) to generate the requested content. Prompts are transmitted securely over encrypted connections.",
+            "All prompts submitted to RobinOS AI generation features are processed by our AI providers to generate the requested content. Prompts are transmitted securely over encrypted connections.",
             "RobinOS does not use user prompts to train, fine-tune, or improve AI models. Prompts are processed transiently for content generation and are not retained by our AI providers for model training purposes.",
             "Generated AI content (scripts, captions, trend reports) may be stored in your account generation history to support workflow continuity, user-controlled retrieval, and usage tracking for quota management.",
             "Users can delete their generation history at any time through account settings. Deletion requests remove stored content from active databases within 30 days.",
@@ -345,7 +345,7 @@ export function PrivacyPolicyPage() {
           id: "third-party-sharing",
           title: "Third-Party Data Sharing",
           body: [
-            "RobinOS does not sell personal data to third parties. We share data only with service providers necessary to operate the platform: cloud infrastructure (Supabase), AI providers (Groq), payment processors, and analytics services.",
+            "RobinOS does not sell personal data to third parties. We share data only with service providers necessary to operate the platform: cloud infrastructure (Supabase), AI providers, payment processors, and analytics services.",
             "All third-party service providers are contractually bound to process data only as directed and in accordance with applicable privacy law.",
             "RobinOS may disclose data to law enforcement, regulatory authorities, or legal counsel when required by valid legal process, court order, or applicable law.",
           ],
