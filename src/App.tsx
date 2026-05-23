@@ -27,6 +27,7 @@ const VideoStudioPage = lazy(lazyWithRetry(() => import("./pages/VideoStudioPage
 const SettingsPage = lazy(lazyWithRetry(() => import("./pages/SettingsPage"), "dashboard-settings"));
 const HistoryPage = lazy(lazyWithRetry(() => import("./pages/HistoryPage"), "dashboard-history"));
 const ReferralsPage = lazy(lazyWithRetry(() => import("./pages/ReferralsPage"), "dashboard-referrals"));
+const AnalyticsPage = lazy(lazyWithRetry(() => import("./pages/AnalyticsPage"), "dashboard-analytics"));
 
 // Lazy load other pages
 const AboutPage = lazy(() => import("./pages/public/PublicInfoPages").then((m) => ({ default: m.AboutPage })));
@@ -141,6 +142,7 @@ const App = () => (
                 <Route path="video" element={<VideoStudioPage />} />
                 <Route path="history" element={<HistoryPage />} />
                 <Route path="referrals" element={<ReferralsPage />} />
+                <Route path="analytics" element={<AnalyticsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
               <Route path="/adminsh/auth" element={<AdminAuthPage />} />

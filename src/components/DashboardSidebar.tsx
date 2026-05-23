@@ -7,52 +7,48 @@ import { Badge } from "@/components/ui/badge";
 import { BrandMark } from "@/components/BrandMark";
 import { prefetchRoute } from "@/lib/routePrefetch";
 
+// ── Sidebar workflow structure ─────────────────────────────
+// ORDER: Trend Discovery → Script → Voice → Video → Captions
+//        → Analytics → Referrals → History → Settings
+// Three section groups only: CREATE / GROW / SYSTEM
+
 const sidebarSections = [
   {
     label: "CREATE",
     items: [
-      { to: "/dashboard/trending", label: "Idea Stream", icon: Music },
-      { to: "/dashboard/intelligence", label: "Creator Intel", icon: Zap },
-    ],
-  },
-  {
-    label: "WRITE",
-    items: [
-      { to: "/dashboard/studio", label: "Script Engine", icon: PenTool },
-      { to: "/dashboard/caption-engine", label: "Caption Engine", icon: Type, badge: "NEW" },
-    ],
-  },
-  {
-    label: "PRODUCE",
-    items: [
-      { to: "/dashboard/voice", label: "Voice Studio", icon: Mic },
-      { to: "/dashboard/video", label: "Video Studio", icon: Film },
+      { to: "/dashboard/trending",       label: "Idea Stream",        icon: Music },
+      { to: "/dashboard/intelligence",   label: "Trend Radar",        icon: Zap },
+      { to: "/dashboard/studio",         label: "Script Engine",      icon: PenTool },
+      { to: "/dashboard/voice",          label: "Voice Studio",       icon: Mic },
+      { to: "/dashboard/video",          label: "Video Studio",       icon: Film },
+      { to: "/dashboard/caption-engine", label: "Caption & Hashtags", icon: Type },
     ],
   },
   {
     label: "GROW",
     items: [
-      { to: "/dashboard/referrals", label: "Referrals", icon: Link2 },
-      { to: "#", label: "Analytics", icon: BarChart3, disabled: true, badge: "Coming Soon" },
+      { to: "/dashboard/analytics",  label: "Analytics",  icon: BarChart3 },
+      { to: "/dashboard/referrals",  label: "Referrals",  icon: Link2 },
     ],
   },
   {
     label: "SYSTEM",
     items: [
-      { to: "/dashboard/history", label: "History", icon: Clock },
-      { to: "/dashboard/settings", label: "Settings", icon: Settings },
+      { to: "/dashboard/history",  label: "History",   icon: Clock },
+      { to: "/dashboard/settings", label: "Settings",  icon: Settings },
     ],
   },
 ];
 
+// Mobile bottom nav — workflow order, most-used 7
 const bottomNavItems = [
-  { to: "/dashboard/trending", label: "Idea", icon: Music },
-  { to: "/dashboard/intelligence", label: "Intel", icon: Zap },
-  { to: "/dashboard/studio", label: "Script Engine", icon: PenTool },
-  { to: "/dashboard/caption-engine", label: "Caption", icon: Type },
-  { to: "/dashboard/voice", label: "Voice Studio", icon: Mic },
-  { to: "/dashboard/video", label: "Video Studio", icon: Film },
-  { to: "/dashboard/settings", label: "Settings", icon: Settings },
+  { to: "/dashboard/trending",       label: "Discover",  icon: Music },
+  { to: "/dashboard/studio",         label: "Script",    icon: PenTool },
+  { to: "/dashboard/voice",          label: "Voice",     icon: Mic },
+  { to: "/dashboard/video",          label: "Video",     icon: Film },
+  { to: "/dashboard/caption-engine", label: "Caption",   icon: Type },
+  { to: "/dashboard/analytics",      label: "Analytics", icon: BarChart3 },
+  { to: "/dashboard/settings",       label: "Settings",  icon: Settings },
 ];
 
 export function DashboardSidebar() {
@@ -120,25 +116,8 @@ export function DashboardSidebar() {
 
               <div className="space-y-1">
                 {section.items.map((item, itemIndex) => {
-                  const active = !item.disabled && location.pathname === item.to;
-                  const order = sectionIndex * 3 + itemIndex;
-
-                  if (item.disabled) {
-                    return (
-                      <div
-                        key={`${section.label}-${item.label}`}
-                        className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-sm text-muted-foreground/55 bg-sidebar-accent/35 border border-border/40 cursor-not-allowed"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-8 h-8 rounded-md flex items-center justify-center border border-border/50 bg-sidebar-accent/30 shrink-0">
-                            <item.icon strokeWidth={1.9} className="w-4 h-4" />
-                          </div>
-                          <span className="font-medium truncate">{item.label}</span>
-                        </div>
-                        <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/70">{item.badge}</span>
-                      </div>
-                    );
-                  }
+                  const active = location.pathname === item.to;
+                  const order  = sectionIndex * 6 + itemIndex;
 
                   return (
                     <NavLink
