@@ -1,0 +1,21 @@
+{
+  "name": "robinos-trend-engine",
+  "version": "2.0.0",
+  "description": "Isolated trend intelligence service for RobinOS",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev":   "bun --watch src/index.ts",
+    "check": "bun run --bun tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.49.4"
+  },
+  "devDependencies": {
+    "typescript": "5.4.5",
+    "@types/bun":  "latest"
+  },
+  "engines": {
+    "bun": ">=1.1.0"
+  }
+}
