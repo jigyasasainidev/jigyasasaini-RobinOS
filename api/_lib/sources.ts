@@ -4,7 +4,7 @@
 // All are truly public — no API keys required.
 // ============================================================
 
-import { fetchText, fetchJson } from "./fetch.js";
+import { fetchText, fetchJson } from "./fetch";
 
 export interface RawSignal {
   text: string;        // raw phrase / title

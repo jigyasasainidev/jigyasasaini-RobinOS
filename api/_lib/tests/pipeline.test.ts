@@ -12,9 +12,9 @@ import {
   deriveFreshness,
   deriveMaturity,
   classifyOpportunity,
-} from "../pipeline.js";
-import { ScanRequestSchema } from "../schema.js";
-import type { RawSignal } from "../sources.js";
+} from "../pipeline";
+import { ScanRequestSchema } from "../schema";
+import type { RawSignal } from "../sources";
 
 // ── normalizePhrase ────────────────────────────────────────
 describe("normalizePhrase", () => {

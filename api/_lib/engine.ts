@@ -4,7 +4,7 @@
 // Returns stable ScanResponse envelope
 // ============================================================
 
-import { fetchAllSources }  from "./sources.js";
+import { fetchAllSources }  from "./sources";
 import {
   clusterSignals,
   scoreMomentum,
@@ -16,8 +16,8 @@ import {
   deriveConfidence,
   classifyOpportunity,
   toReadableTitle,
-} from "./pipeline.js";
-import type { ScanRequest, TrendOpportunity, ScanResponse } from "./schema.js";
+} from "./pipeline";
+import type { ScanRequest, TrendOpportunity, ScanResponse } from "./schema";
 
 const MAX_TRENDS_RETURNED = 12;
 const SCAN_WINDOWS        = ["6h", "12h", "24h", "48h", "7d"];

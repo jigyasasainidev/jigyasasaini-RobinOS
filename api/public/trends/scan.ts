@@ -10,9 +10,9 @@
 // ============================================================
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { authenticate }                        from "../../_lib/auth.js";
-import { runScan }                             from "../../_lib/engine.js";
-import { ScanRequestSchema, GET_METADATA }     from "../../_lib/schema.js";
+import { authenticate }                        from "../../_lib/auth";
+import { runScan }                             from "../../_lib/engine";
+import { ScanRequestSchema, GET_METADATA }     from "../../_lib/schema";
 import {
   errUnauthorized,
   errInvalidPayload,
@@ -20,7 +20,7 @@ import {
   errUnavailable,
   errMethodNotAllowed,
   statusForCode,
-} from "../../_lib/errors.js";
+} from "../../_lib/errors";
 
 // ── Security + CORS headers ────────────────────────────────
 function setHeaders(res: VercelResponse): void {

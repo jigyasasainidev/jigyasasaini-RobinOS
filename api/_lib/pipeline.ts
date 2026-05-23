@@ -2,7 +2,7 @@
 // TREND RADAR — Normalization, Clustering & Scoring Pipeline
 // ============================================================
 
-import type { RawSignal } from "./sources.js";
+import type { RawSignal } from "./sources";
 
 // ── Stop words to strip from phrases ──────────────────────
 const STOP_WORDS = new Set([
