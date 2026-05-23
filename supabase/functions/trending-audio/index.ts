@@ -530,7 +530,7 @@ serve(async (req) => {
     if (type === "hashtags") {
       const { data: cached, error: cacheErr } = await supabase
         .from("trend_hashtags")
-        .select("tag, category, posts, trend, tip, velocity, confidence")
+        .select("tag, category, posts, trend, tip, velocity, confidence, creator_count, momentum_direction, window_label")
         .eq("platform", platformName)
         .gt("expires_at", now)
         .order("virality_score", { ascending: false })
@@ -554,6 +554,9 @@ serve(async (req) => {
         await supabase.from("trend_hashtags").upsert({
           platform: platformName, tag: h.tag, category: h.category, posts: h.posts,
           trend: h.trend, tip: h.tip, velocity: h.velocity, confidence: h.confidence,
+          creator_count:      h.creator_count,
+          momentum_direction: h.momentum,
+          window_label:       h.window_label,
           hashtag_source: "google_trends",
           virality_score: calcHashtagVirality(h.category, i),
           expires_at: exp, collected_at: now,
@@ -568,7 +571,7 @@ serve(async (req) => {
     // ── AUDIOS ─────────────────────────────────────────────
     const { data: cached, error: cacheErr } = await supabase
       .from("trend_audios")
-      .select("title, artist, image_url, category, uses, trend, tip, velocity, confidence")
+      .select("title, artist, image_url, category, uses, trend, tip, velocity, confidence, creator_count, repost_count, momentum_direction, window_label")
       .eq("platform", platformName)
       .gt("expires_at", now)
       .order("virality_score", { ascending: false })
@@ -593,6 +596,10 @@ serve(async (req) => {
         platform: platformName, title: a.title, artist: a.artist, image_url: a.image_url,
         category: a.category, uses: a.uses, trend: a.trend, tip: a.tip,
         velocity: a.velocity, confidence: a.confidence,
+        creator_count:      a.creator_count,
+        repost_count:       a.repost_count,
+        momentum_direction: a.momentum,
+        window_label:       a.window_label,
         audio_source: "apple_music",
         virality_score: calcAudioVirality(a.category, i),
         expires_at: exp, collected_at: now,

@@ -20,10 +20,11 @@ interface TrendingAudio {
   tip: string;
   velocity?: "rising" | "hot" | "exploding" | "stable";
   confidence?: number;
-  // Phase 2: Signal Depth
+  // Phase 2: Signal Depth — DB stores momentum_direction, edge fn returns both names
   creator_count?: number;
   repost_count?: number;
   momentum?: "up" | "stable" | "down";
+  momentum_direction?: "up" | "stable" | "down"; // DB column name alias
   window_label?: string;
 }
 
@@ -38,6 +39,7 @@ interface TrendingHashtag {
   // Phase 2: Signal Depth
   creator_count?: number;
   momentum?: "up" | "stable" | "down";
+  momentum_direction?: "up" | "stable" | "down"; // DB column name alias
   window_label?: string;
 }
 
@@ -393,7 +395,7 @@ const TrendingAudioPage = () => {
                         </div>
 
                         {/* Signal Depth row */}
-                        {audio.creator_count != null && (
+                        {audio.creator_count != null && audio.creator_count > 0 && (
                           <div className="flex items-center gap-3 mt-2.5 flex-wrap">
                             <div className="flex items-center gap-1">
                               <Users className="w-3 h-3 text-muted-foreground/40 shrink-0" />
@@ -401,7 +403,7 @@ const TrendingAudioPage = () => {
                                 {fmtCount(audio.creator_count)} creator uses
                               </span>
                             </div>
-                            {audio.repost_count != null && (
+                            {audio.repost_count != null && audio.repost_count > 0 && (
                               <div className="flex items-center gap-1">
                                 <RefreshCw className="w-3 h-3 text-muted-foreground/30 shrink-0" />
                                 <span className="text-[9px] font-mono text-muted-foreground/40">
@@ -409,11 +411,14 @@ const TrendingAudioPage = () => {
                                 </span>
                               </div>
                             )}
-                            {audio.window_label && (
-                              <span className={`text-[9px] font-mono shrink-0 ${audio.momentum === "up" ? "text-emerald-400/60" : "text-muted-foreground/30"}`}>
-                                {audio.momentum === "up" ? "↑" : "◎"} {audio.window_label}
-                              </span>
-                            )}
+                            {audio.window_label && (() => {
+                              const mom = audio.momentum ?? audio.momentum_direction;
+                              return (
+                                <span className={`text-[9px] font-mono shrink-0 ${mom === "up" ? "text-emerald-400/60" : "text-muted-foreground/30"}`}>
+                                  {mom === "up" ? "↑" : "◎"} {audio.window_label}
+                                </span>
+                              );
+                            })()}
                           </div>
                         )}
                       </div>
@@ -494,7 +499,7 @@ const TrendingAudioPage = () => {
                       </div>
 
                       {/* Signal Depth row */}
-                      {tag.creator_count != null && (
+                      {tag.creator_count != null && tag.creator_count > 0 && (
                         <div className="flex items-center gap-3 mb-2.5 flex-wrap">
                           <div className="flex items-center gap-1">
                             <Users className="w-3 h-3 text-muted-foreground/40 shrink-0" />
@@ -502,11 +507,14 @@ const TrendingAudioPage = () => {
                               {fmtCount(tag.creator_count)} creator posts
                             </span>
                           </div>
-                          {tag.window_label && (
-                            <span className={`text-[9px] font-mono shrink-0 ${tag.momentum === "up" ? "text-emerald-400/60" : "text-muted-foreground/30"}`}>
-                              {tag.momentum === "up" ? "↑" : "◎"} {tag.window_label}
-                            </span>
-                          )}
+                          {tag.window_label && (() => {
+                            const mom = tag.momentum ?? tag.momentum_direction;
+                            return (
+                              <span className={`text-[9px] font-mono shrink-0 ${mom === "up" ? "text-emerald-400/60" : "text-muted-foreground/30"}`}>
+                                {mom === "up" ? "↑" : "◎"} {tag.window_label}
+                              </span>
+                            );
+                          })()}
                         </div>
                       )}
 
