@@ -1,9 +1,10 @@
 // ============================================================
 // TREND RADAR — Main Scan Engine
 // Orchestrates: fetch → cluster → score → format → sort
+// Returns stable ScanResponse envelope
 // ============================================================
 
-import { fetchAllSources } from "./sources.js";
+import { fetchAllSources }  from "./sources.js";
 import {
   clusterSignals,
   scoreMomentum,
@@ -15,17 +16,19 @@ import {
   deriveConfidence,
   classifyOpportunity,
   toReadableTitle,
-  normalizePhrase,
 } from "./pipeline.js";
 import type { ScanRequest, TrendOpportunity, ScanResponse } from "./schema.js";
 
-const MIN_CLUSTER_SIGNALS = 1; // include single-signal trends (for niche queries)
 const MAX_TRENDS_RETURNED = 12;
+const SCAN_WINDOWS        = ["6h", "12h", "24h", "48h", "7d"];
 
-// Fallback trends when query is too niche or all sources fail
-function buildFallbackTrends(query: string): TrendOpportunity[] {
-  const now = new Date().toISOString();
-  const titleized = query.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+// ── Fallback when topic is too niche or all sources fail ───
+function buildFallbackTrends(topic: string): TrendOpportunity[] {
+  const now        = new Date().toISOString();
+  const titleized  = topic
+    .split(" ")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 
   return [
     {
@@ -34,7 +37,7 @@ function buildFallbackTrends(query: string): TrendOpportunity[] {
       freshness:       "24h",
       maturityStage:   "Early",
       confidenceScore: 30,
-      whyTrending:     `Limited live signals found for "${query}" — this is an emerging or niche topic with early-mover advantage.`,
+      whyTrending:     `Limited live signals found for "${topic}" — emerging or niche topic with early-mover advantage.`,
       creatorAngle:    `Be the first to create authoritative ${titleized} content — low competition + high search intent.`,
       opportunityType: "Explainer",
       signalPlatforms: ["youtube", "instagram"],
@@ -47,8 +50,8 @@ function buildFallbackTrends(query: string): TrendOpportunity[] {
       freshness:       "7d",
       maturityStage:   "Early",
       confidenceScore: 25,
-      whyTrending:     `Search-driven steady demand — evergreen education format works well for niche topics.`,
-      creatorAngle:    `Tutorial-style breakdown for beginners — break down "${query}" into 3 clear steps. Strong SEO pull.`,
+      whyTrending:     `Steady evergreen demand — tutorial format performs well for niche topics.`,
+      creatorAngle:    `Break down "${topic}" into 3 clear steps for beginners. Strong SEO pull on YouTube.`,
       opportunityType: "Tutorial",
       signalPlatforms: ["youtube"],
       firstSeen:       now,
@@ -57,22 +60,19 @@ function buildFallbackTrends(query: string): TrendOpportunity[] {
   ];
 }
 
-export async function runScan(request: ScanRequest): Promise<ScanResponse> {
-  const { query } = request;
+export async function runScan(request: ScanRequest, requestId: string): Promise<ScanResponse> {
+  const { topic } = request;
   const now        = new Date();
 
-  // ── 1. Fetch all sources in parallel ──────────────────────
-  const { results, sourcesHealthy, sourcesPartial } = await fetchAllSources(query);
-
-  // Flatten all signals
+  // ── Fetch all sources in parallel ─────────────────────────
+  const { results, sourcesHealthy, sourcesPartial } = await fetchAllSources(topic);
   const allSignals = results.flatMap((r) => r.signals);
 
-  // ── 2. Cluster signals into trend groups ──────────────────
+  // ── Cluster → score → rank ─────────────────────────────────
   const clusters = clusterSignals(allSignals);
 
-  // ── 3. Score + rank clusters ──────────────────────────────
   const scored = clusters
-    .filter((c) => c.signals.length >= MIN_CLUSTER_SIGNALS)
+    .filter((c) => c.signals.length >= 1)
     .map((cluster) => {
       const momentumScore   = scoreMomentum(cluster);
       const freshness       = deriveFreshness(cluster);
@@ -85,16 +85,15 @@ export async function runScan(request: ScanRequest): Promise<ScanResponse> {
       const creatorAngle    = deriveCreatorAngle(readableTitle, sources);
       const whyTrending     = deriveWhyTrending(cluster, momentumScore);
 
-      // First seen = earliest publishedAt across signals
       const dates = cluster.signals
-        .map((s) => s.publishedAt ? new Date(s.publishedAt).getTime() : Date.now())
+        .map((s) => (s.publishedAt ? new Date(s.publishedAt).getTime() : Date.now()))
         .filter((d) => !isNaN(d));
       const firstSeen = dates.length > 0
         ? new Date(Math.min(...dates)).toISOString()
         : now.toISOString();
 
       return {
-        cleanTitle:      readableTitle || query,
+        cleanTitle:      readableTitle || topic,
         momentumScore,
         freshness,
         maturityStage,
@@ -113,21 +112,30 @@ export async function runScan(request: ScanRequest): Promise<ScanResponse> {
     .slice(0, MAX_TRENDS_RETURNED)
     .map(({ _rank, ...t }) => t);
 
-  // ── 4. Use fallback if no meaningful trends found ──────────
-  const trends: TrendOpportunity[] = scored.length >= 1
-    ? scored
-    : buildFallbackTrends(query);
+  const opportunities: TrendOpportunity[] =
+    scored.length >= 1 ? scored : buildFallbackTrends(topic);
+
+  // Average confidence across returned opportunities
+  const avgConfidence =
+    opportunities.length > 0
+      ? Math.round(
+          opportunities.reduce((acc, o) => acc + o.confidenceScore, 0) / opportunities.length,
+        )
+      : 0;
 
   return {
-    ok:          true,
-    query,
-    scanMode:    "auto_6h_to_7d",
-    generatedAt: now.toISOString(),
-    trends,
-    meta: {
-      sourcesHealthy,
-      sourcesPartial,
-      rateLimit: "20/60s",
+    success:   true,
+    requestId,
+    data: {
+      topic,
+      opportunities,
+      metadata: {
+        scanWindows:  SCAN_WINDOWS,
+        sourceSpread: sourcesHealthy,
+        confidence:   avgConfidence,
+        generatedAt:  now.toISOString(),
+        rateLimit:    "20/60s",
+      },
     },
   };
 }

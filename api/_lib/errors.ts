@@ -1,55 +1,84 @@
 // ============================================================
 // TREND RADAR — Structured Error Utilities
+// Stable external error envelope: { success, error: { code, message } }
 // ============================================================
 
 export type ErrorCode =
-  | "unauthorized"
-  | "invalid_payload"
-  | "rate_limited"
-  | "upstream_error"
-  | "temporary_unavailable"
-  | "method_not_allowed";
+  | "UNAUTHORIZED"
+  | "INVALID_PAYLOAD"
+  | "RATE_LIMITED"
+  | "UPSTREAM_ERROR"
+  | "TEMPORARY_UNAVAILABLE"
+  | "METHOD_NOT_ALLOWED";
 
 export interface ApiError {
-  ok: false;
-  code: ErrorCode;
-  message: string;
-  retryAfterSeconds?: number;
+  success: false;
+  error: {
+    code:                ErrorCode;
+    message:             string;
+    retryAfterSeconds?:  number;
+  };
 }
 
 export function errUnauthorized(): ApiError {
-  return { ok: false, code: "unauthorized", message: "Missing or invalid API key. Pass via x-api-key header or Authorization: Bearer <key>." };
+  return {
+    success: false,
+    error: {
+      code:    "UNAUTHORIZED",
+      message: "Invalid or missing API key. Pass via x-api-key header or Authorization: Bearer <key>.",
+    },
+  };
 }
 
 export function errInvalidPayload(detail: string): ApiError {
-  return { ok: false, code: "invalid_payload", message: `Invalid request: ${detail}` };
+  return {
+    success: false,
+    error: {
+      code:    "INVALID_PAYLOAD",
+      message: `Invalid request: ${detail}`,
+    },
+  };
 }
 
 export function errRateLimited(retryAfterSeconds: number): ApiError {
-  return { ok: false, code: "rate_limited", message: `Rate limit exceeded. Max 20 requests per 60 seconds.`, retryAfterSeconds };
-}
-
-export function errUpstream(detail?: string): ApiError {
-  return { ok: false, code: "upstream_error", message: detail || "One or more upstream sources failed. Partial results may be available." };
+  return {
+    success: false,
+    error: {
+      code:               "RATE_LIMITED",
+      message:            "Rate limit exceeded. Max 20 requests per 60 seconds.",
+      retryAfterSeconds,
+    },
+  };
 }
 
 export function errUnavailable(detail?: string): ApiError {
-  return { ok: false, code: "temporary_unavailable", message: detail || "Service temporarily unavailable." };
+  return {
+    success: false,
+    error: {
+      code:    "TEMPORARY_UNAVAILABLE",
+      message: detail || "Service temporarily unavailable. Please retry.",
+    },
+  };
 }
 
 export function errMethodNotAllowed(): ApiError {
-  return { ok: false, code: "method_not_allowed", message: "Only GET and POST are supported on this endpoint." };
+  return {
+    success: false,
+    error: {
+      code:    "METHOD_NOT_ALLOWED",
+      message: "Only GET and POST are supported on this endpoint.",
+    },
+  };
 }
 
-// Map error codes to HTTP status codes
-export function statusForError(code: ErrorCode): number {
+export function statusForCode(code: ErrorCode): number {
   switch (code) {
-    case "unauthorized":       return 401;
-    case "invalid_payload":    return 400;
-    case "rate_limited":       return 429;
-    case "method_not_allowed": return 405;
-    case "upstream_error":     return 503;
-    case "temporary_unavailable": return 503;
-    default:                   return 500;
+    case "UNAUTHORIZED":          return 401;
+    case "INVALID_PAYLOAD":       return 400;
+    case "RATE_LIMITED":          return 429;
+    case "METHOD_NOT_ALLOWED":    return 405;
+    case "UPSTREAM_ERROR":        return 503;
+    case "TEMPORARY_UNAVAILABLE": return 503;
+    default:                      return 500;
   }
 }
