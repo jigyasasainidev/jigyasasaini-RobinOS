@@ -24,10 +24,11 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { timingSafeEqual, createHash } from "crypto";
 
 // ── Environment ────────────────────────────────────────────
+// Accepts IDEA_STREAM_API_KEY (new name) or TREND_ENGINE_INTERNAL_API_KEY (legacy).
+// Both point to the same secret value — no breaking change on existing Railway deploys.
 const REQUIRED_ENV = [
   "SUPABASE_URL",
   "SUPABASE_SERVICE_ROLE_KEY",
-  "TREND_ENGINE_INTERNAL_API_KEY",
 ] as const;
 
 function loadEnv(): Record<string, string> {
@@ -38,6 +39,13 @@ function loadEnv(): Record<string, string> {
     if (!val) missing.push(key);
     else env[key] = val;
   }
+  // Accept either key name — prefer new canonical name
+  const apiKey =
+    process.env.IDEA_STREAM_API_KEY ??
+    process.env.TREND_ENGINE_INTERNAL_API_KEY;
+  if (!apiKey) missing.push("IDEA_STREAM_API_KEY (or TREND_ENGINE_INTERNAL_API_KEY)");
+  else env.TREND_ENGINE_INTERNAL_API_KEY = apiKey; // normalize to internal name
+
   if (missing.length > 0) {
     console.error(`[trend-engine] FATAL: Missing required env vars: ${missing.join(", ")}`);
     process.exit(1);
@@ -781,7 +789,7 @@ const server = Bun.serve({
     // All other routes require the internal key
     if (!validateKey(req)) {
       log("warn", "auth_rejected", { path, method, ip: req.headers.get("x-forwarded-for") ?? "unknown" });
-      return errorResponse("UNAUTHORIZED", "Invalid or missing x-trend-engine-key.", 401);
+      return errorResponse("UNAUTHORIZED", "Invalid or missing x-idea-stream-key.", 401);
     }
 
     if (method === "GET"  && path === "/trends")  return handleTrends(url, db);

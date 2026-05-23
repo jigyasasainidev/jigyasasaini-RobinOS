@@ -114,6 +114,14 @@ export async function fetchTrends(
   url.searchParams.set("platform", platform);
   url.searchParams.set("type",     type);
 
+  console.log("[idea-stream-client] fetching", {
+    url:      url.toString(),
+    platform,
+    type,
+    has_key:  !!apiKey,
+    base_url: baseUrl,
+  });
+
   const ctrl  = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
 
@@ -133,13 +141,38 @@ export async function fetchTrends(
       let code    = "IDEA_STREAM_ERROR";
       let message = `Idea Stream returned HTTP ${res.status}`;
       try {
-        const body = await res.json();
-        code    = String(body.code    ?? code);
-        message = String(body.message ?? message);
+        const ct = res.headers.get("content-type") ?? "";
+        if (ct.includes("application/json")) {
+          const body = await res.json();
+          code    = String(body.code    ?? code);
+          message = String(body.message ?? message);
+        } else {
+          // Non-JSON (HTML error page, proxy error, etc.) — don't try to parse
+          message = `Idea Stream returned HTTP ${res.status} (non-JSON response — check IDEA_STREAM_BASE_URL)`;
+        }
       } catch { /* ignore parse failure */ }
 
       console.warn("[idea-stream-client] HTTP error", { platform, type, status: res.status, code });
       return { ok: false, code, message, status: res.status };
+    }
+
+    // Guard: reject HTML responses before attempting JSON parse
+    // (happens when IDEA_STREAM_BASE_URL points at a frontend SPA)
+    const contentType = res.headers.get("content-type") ?? "";
+    if (!contentType.includes("application/json")) {
+      const preview = await res.text().then(t => t.slice(0, 120)).catch(() => "");
+      console.error("[idea-stream-client] received non-JSON response", {
+        platform, type,
+        content_type: contentType,
+        body_preview: preview,
+        hint: "IDEA_STREAM_BASE_URL may be pointing at a frontend app, not the Idea Stream API service",
+      });
+      return {
+        ok:      false,
+        code:    "IDEA_STREAM_INVALID_RESPONSE",
+        message: "Idea Stream returned a non-JSON response. Ensure IDEA_STREAM_BASE_URL points to the Idea Stream API service, not a frontend app.",
+        status:  502,
+      };
     }
 
     const data = await res.json() as IdeaStreamResult;

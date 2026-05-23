@@ -102,6 +102,55 @@ serve(async (req) => {
       console.error("[trending-audio] Idea Stream call failed", {
         platform, type, code: result.code, status: result.status,
       });
+
+      // ── DB fallback: serve existing cached rows ──────────
+      // When Idea Stream is unreachable or misconfigured, fall
+      // back to whatever is already in the Supabase cache tables.
+      // This keeps the feature working even during misconfiguration.
+      console.log("[trending-audio] attempting DB cache fallback", { platform, type });
+      const now = new Date().toISOString();
+
+      if (type === "hashtags") {
+        const { data: fallback } = await supabase
+          .from("trend_hashtags")
+          .select("tag, category, posts, trend, tip, velocity, confidence, creator_count, momentum_direction, window_label")
+          .eq("platform", platform)
+          .gt("expires_at", now)
+          .order("virality_score", { ascending: false })
+          .limit(20);
+
+        if (fallback && fallback.length > 0) {
+          console.log("[trending-audio] DB fallback served", { platform, type, count: fallback.length });
+          if (analyticsUserId) trackFeatureUsage({ supabase, userId: analyticsUserId, feature: featureKey });
+          return new Response(JSON.stringify({
+            hashtags: fallback,
+            usage:    entitlement,
+            cached:   true,
+            _fallback: true,
+          }), { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+        }
+      } else {
+        const { data: fallback } = await supabase
+          .from("trend_audios")
+          .select("title, artist, image_url, category, uses, trend, tip, velocity, confidence, creator_count, repost_count, momentum_direction, window_label")
+          .eq("platform", platform)
+          .gt("expires_at", now)
+          .order("virality_score", { ascending: false })
+          .limit(20);
+
+        if (fallback && fallback.length > 0) {
+          console.log("[trending-audio] DB fallback served", { platform, type, count: fallback.length });
+          if (analyticsUserId) trackFeatureUsage({ supabase, userId: analyticsUserId, feature: featureKey });
+          return new Response(JSON.stringify({
+            audios:   fallback,
+            usage:    entitlement,
+            cached:   true,
+            _fallback: true,
+          }), { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+        }
+      }
+
+      // No DB fallback available either
       return new Response(JSON.stringify({
         error: "Trend data temporarily unavailable. Please retry.",
         code:  result.code,
