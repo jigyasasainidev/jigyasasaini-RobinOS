@@ -97,7 +97,7 @@ function secureCompare(a: string, b: string): boolean {
 
 // ── Auth middleware ────────────────────────────────────────
 function validateKey(req: Request): boolean {
-  const provided = req.headers.get("x-trend-engine-key") ?? "";
+  const provided = req.headers.get("x-idea-stream-key") ?? "";
   const expected = ENV.TREND_ENGINE_INTERNAL_API_KEY;
   return secureCompare(provided, expected);
 }
@@ -590,7 +590,7 @@ function jsonResponse(body: unknown, status = 200): Response {
     headers: {
       "Content-Type":               "application/json",
       "X-Schema-Version":           SCHEMA_VERSION,
-      "X-Trend-Engine-Service":     "robinos-trend-engine",
+      "X-Idea-Stream-Service":      "robinos-idea-stream",
       "Cache-Control":              "no-store",
       "Strict-Transport-Security":  "max-age=31536000",
     },

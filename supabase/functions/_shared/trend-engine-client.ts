@@ -1,18 +1,21 @@
 // ============================================================
-// ROBINOS → TREND ENGINE CLIENT ADAPTER
+// ROBINOS → IDEA STREAM SERVICE CLIENT
 // ============================================================
-// This is the ONLY file in RobinOS that knows the Trend Engine
-// URL or internal key. All other RobinOS code that needs trend
-// data must call fetchTrends() from here — never fetch directly.
+// This is the ONLY file in RobinOS edge functions that knows
+// the Idea Stream service URL or API key.
 //
 // Architecture contract:
-//   RobinOS → this adapter → Trend Engine HTTP API → its own DB
+//   RobinOS edge fn → this client → Idea Stream HTTP API → its own DB
 //
-// To swap the entire backend intelligence service:
+// Environment variables required in Supabase project secrets:
+//   IDEA_STREAM_BASE_URL   — base URL of the Idea Stream service
+//   IDEA_STREAM_API_KEY    — shared internal secret (x-idea-stream-key header)
+//
+// To swap the entire intelligence backend:
 //   1. Deploy a new service at a new URL
-//   2. Update TREND_ENGINE_URL secret
+//   2. Update IDEA_STREAM_BASE_URL + IDEA_STREAM_API_KEY secrets
 //   3. This file needs no changes
-//   4. All callers need no changes
+//   4. All callers (trending-audio, collect-trends) need no changes
 // ============================================================
 
 export type Platform      = "TikTok" | "Instagram" | "Facebook" | "YouTube";
@@ -20,7 +23,7 @@ export type TrendType     = "audio" | "hashtags";
 export type VelocityTier  = "exploding" | "hot" | "rising" | "stable";
 export type MomentumDir   = "up" | "stable" | "down";
 
-// ── Canonical response types — mirrors Trend Engine schema v2 ─
+// ── Canonical response types — mirrors Idea Stream schema v2 ─
 
 export interface TrendAudio {
   title:              string;
@@ -51,7 +54,7 @@ export interface TrendHashtag {
   window_label:       string;
 }
 
-export interface TrendEngineResult {
+export interface IdeaStreamResult {
   ok:           true;
   platform:     Platform;
   type:         TrendType;
@@ -67,47 +70,46 @@ export interface TrendEngineResult {
   };
 }
 
-export interface TrendEngineFailure {
+export interface IdeaStreamFailure {
   ok:      false;
   code:    string;
   message: string;
   status:  number;
 }
 
-export type TrendResult = TrendEngineResult | TrendEngineFailure;
+export type FetchTrendsResult = IdeaStreamResult | IdeaStreamFailure;
 
 // ── Internal constants ─────────────────────────────────────
 
-const TIMEOUT_MS = 12_000; // 12s — Trend Engine should respond in <500ms on cache hit
+const TIMEOUT_MS = 12_000; // 12s — cache-hit response should be <500ms
+const AUTH_HEADER = "x-idea-stream-key";
 
 // ── Main fetch function ────────────────────────────────────
 
 /**
- * Fetches trends from the isolated Trend Engine service.
+ * Fetches trends from the isolated Idea Stream service.
  *
- * Requires these Supabase secrets:
- *   TREND_ENGINE_URL              — base URL of the Trend Engine API
- *   TREND_ENGINE_INTERNAL_API_KEY — shared secret for server-to-server auth
- *
- * Returns a typed TrendResult. Callers must check result.ok before reading data.
+ * Required Supabase project secrets:
+ *   IDEA_STREAM_BASE_URL   — e.g. https://your-service.railway.app
+ *   IDEA_STREAM_API_KEY    — shared internal secret
  */
 export async function fetchTrends(
   platform: Platform,
   type: TrendType,
-): Promise<TrendResult> {
-  const baseUrl = Deno.env.get("TREND_ENGINE_URL");
-  const apiKey  = Deno.env.get("TREND_ENGINE_INTERNAL_API_KEY");
+): Promise<FetchTrendsResult> {
+  const baseUrl = Deno.env.get("IDEA_STREAM_BASE_URL");
+  const apiKey  = Deno.env.get("IDEA_STREAM_API_KEY");
 
   if (!baseUrl || !apiKey) {
+    console.warn("[idea-stream-client] IDEA_STREAM_BASE_URL or IDEA_STREAM_API_KEY not set — falling back to direct cache");
     return {
       ok:      false,
-      code:    "TREND_ENGINE_NOT_CONFIGURED",
-      message: "Trend Engine is not configured. Set TREND_ENGINE_URL and TREND_ENGINE_INTERNAL_API_KEY secrets.",
+      code:    "IDEA_STREAM_NOT_CONFIGURED",
+      message: "Idea Stream service is not configured.",
       status:  503,
     };
   }
 
-  // Build URL — GET /trends?platform=X&type=Y
   const url = new URL("/trends", baseUrl.replace(/\/$/, ""));
   url.searchParams.set("platform", platform);
   url.searchParams.set("type",     type);
@@ -119,8 +121,8 @@ export async function fetchTrends(
     const res = await fetch(url.toString(), {
       method:  "GET",
       headers: {
-        "x-trend-engine-key": apiKey,
-        "Accept":             "application/json",
+        [AUTH_HEADER]: apiKey,
+        "Accept":      "application/json",
       },
       signal: ctrl.signal,
     });
@@ -128,24 +130,27 @@ export async function fetchTrends(
     clearTimeout(timer);
 
     if (!res.ok) {
-      let code    = "TREND_ENGINE_ERROR";
-      let message = `Trend Engine returned HTTP ${res.status}`;
+      let code    = "IDEA_STREAM_ERROR";
+      let message = `Idea Stream returned HTTP ${res.status}`;
       try {
         const body = await res.json();
         code    = String(body.code    ?? code);
         message = String(body.message ?? message);
       } catch { /* ignore parse failure */ }
 
+      console.warn("[idea-stream-client] HTTP error", { platform, type, status: res.status, code });
       return { ok: false, code, message, status: res.status };
     }
 
-    const data = await res.json() as TrendEngineResult;
+    const data = await res.json() as IdeaStreamResult;
 
-    // Validate schema_version — warn on mismatch but don't fail
+    // Schema version mismatch — warn but don't fail (forward-compatible)
     const version = data._meta?.schema_version;
     if (version && version !== "2.0") {
-      console.warn(`[trend-engine-client] schema version mismatch: expected 2.0, got ${version}`);
+      console.warn(`[idea-stream-client] schema version mismatch: expected 2.0, got ${version}`);
     }
+
+    console.log("[idea-stream-client] ok", { platform, type, count: data.count, cached: data.cached });
 
     return {
       ok:           true,
@@ -162,28 +167,50 @@ export async function fetchTrends(
 
   } catch (err) {
     clearTimeout(timer);
-
     const isTimeout = err instanceof Error && err.name === "AbortError";
-    return {
-      ok:      false,
-      code:    isTimeout ? "TREND_ENGINE_TIMEOUT" : "TREND_ENGINE_FETCH_FAILED",
-      message: isTimeout
-        ? `Trend Engine did not respond within ${TIMEOUT_MS / 1000}s`
-        : (err instanceof Error ? err.message : "Unknown network error"),
-      status: 503,
-    };
+    const code    = isTimeout ? "IDEA_STREAM_TIMEOUT" : "IDEA_STREAM_FETCH_FAILED";
+    const message = isTimeout
+      ? `Idea Stream did not respond within ${TIMEOUT_MS / 1000}s`
+      : (err instanceof Error ? err.message : "Unknown network error");
+
+    console.warn("[idea-stream-client] fetch error", { platform, type, code, message });
+    return { ok: false, code, message, status: 503 };
   }
 }
 
 /**
- * Pings the Trend Engine health endpoint.
- * Returns true if the service is reachable and healthy.
- * Use this for monitoring/alerting — not in the request path.
+ * Triggers a cache refresh on the Idea Stream service.
+ * Fire-and-forget safe — errors are logged, not thrown.
  */
-export async function pingTrendEngine(): Promise<boolean> {
-  const baseUrl = Deno.env.get("TREND_ENGINE_URL");
-  if (!baseUrl) return false;
+export async function triggerRefresh(): Promise<boolean> {
+  const baseUrl = Deno.env.get("IDEA_STREAM_BASE_URL");
+  const apiKey  = Deno.env.get("IDEA_STREAM_API_KEY");
+  if (!baseUrl || !apiKey) return false;
 
+  try {
+    const ctrl  = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 60_000); // refresh can take up to 60s
+    const res   = await fetch(`${baseUrl.replace(/\/$/, "")}/refresh`, {
+      method:  "POST",
+      headers: { [AUTH_HEADER]: apiKey, "Content-Type": "application/json" },
+      signal:  ctrl.signal,
+    });
+    clearTimeout(timer);
+    console.log("[idea-stream-client] refresh triggered", { status: res.status });
+    return res.ok;
+  } catch (err) {
+    console.warn("[idea-stream-client] refresh failed", { error: String(err) });
+    return false;
+  }
+}
+
+/**
+ * Lightweight health ping — no auth required.
+ * Use from monitoring or cron-safety checks.
+ */
+export async function pingIdeaStream(): Promise<boolean> {
+  const baseUrl = Deno.env.get("IDEA_STREAM_BASE_URL");
+  if (!baseUrl) return false;
   try {
     const ctrl  = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 5_000);

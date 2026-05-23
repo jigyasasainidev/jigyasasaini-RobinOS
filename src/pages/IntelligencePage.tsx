@@ -5,21 +5,18 @@ import { Search, TrendingUp, Flame, ArrowRight, Sparkles, Loader2, Radio, Wifi, 
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/cloudDb";
-import { useTierLevel, useFreeTrialStatus } from "@/hooks/useProfile";
+import { useFreeTrialStatus } from "@/hooks/useProfile";
 import { usePlanKey, useIsProOrAbove, useIsAgency, useMaxTrendTopics, useIsFree } from "@/hooks/useEntitlements";
 import { Badge } from "@/components/ui/badge";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
+import {
+  scanNicheTrends,
+  isEntitlementError,
+  type TrendTopic,
+} from "@/services/ideaStream";
 
-interface TrendTopic {
-  title: string;
-  description: string;
-  platforms: string;
-  heat: number;
-  hook_types?: string[];
-  volume?: string;
-}
+// TrendTopic is imported from @/services/ideaStream
 
 type ScanState = "idle" | "scanning" | "results";
 
@@ -43,7 +40,6 @@ const IntelligencePage = () => {
   const isAgency = useIsAgency();
   const isPro = plan === "pro_creator";
   const maxTopics = useMaxTrendTopics();
-
   const [niche, setNiche] = useState("");
   const [state, setState] = useState<ScanState>("idle");
   const [topics, setTopics] = useState<TrendTopic[]>([]);
@@ -62,34 +58,23 @@ const IntelligencePage = () => {
     }, 1200);
 
     try {
-      // ─── Use supabase.functions.invoke() — handles session auth automatically ───
-      const { data, error } = await supabase.functions.invoke("scan-trends", {
-        body: { niche },
-      });
+      // ── Idea Stream: niche topic scan ──────────────────────
+      const result = await scanNicheTrends(niche);
 
       clearInterval(interval);
 
-      if (error) {
-        const status = (error as any)?.context?.status ?? (error as any)?.status;
-        let parsed: Record<string, unknown> = {};
-        try {
-          const raw = (error as any)?.context?.responseText ?? (error as any)?.message ?? "";
-          parsed = typeof raw === "string" && raw.startsWith("{") ? JSON.parse(raw) : {};
-        } catch { /* keep empty */ }
-
-        const code = String(parsed.code ?? "");
-        if (status === 403 || code === "USAGE_LIMIT_EXCEEDED" || code === "FEATURE_DISABLED") {
-          toast.error(String(parsed.message ?? "Limit reached. Upgrade your plan!"));
+      if (!result.ok) {
+        if (isEntitlementError(result)) {
+          toast.error(result.message);
           setShowUpgrade(true);
-          setState("idle");
-          return;
+        } else {
+          toast.error(result.message || "Scan failed");
         }
-        toast.error(String(parsed.message ?? error.message ?? "Scan failed"));
         setState("idle");
         return;
       }
 
-      let fetchedTopics = (data?.topics ?? []) as TrendTopic[];
+      let fetchedTopics = result.topics;
 
       if (!isAgency && fetchedTopics.length > maxTopics) {
         fetchedTopics = fetchedTopics.slice(0, maxTopics);
@@ -103,7 +88,7 @@ const IntelligencePage = () => {
           user_id: user.id, niche: niche.trim(), topics: fetchedTopics,
         } as any).then(() => {});
       }
-    } catch (e) {
+    } catch {
       clearInterval(interval);
       toast.error("Network error. Try again.");
       setState("idle");

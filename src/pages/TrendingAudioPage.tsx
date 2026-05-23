@@ -7,42 +7,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useHashtagScanLimit, useIsAgency, useTrendScanLimit, usePlanKey } from "@/hooks/useEntitlements";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  getTrendingAudio,
+  getTrendingHashtags,
+  isEntitlementError,
+  type Platform,
+  type TrendAudio,
+  type TrendHashtag,
+} from "@/services/ideaStream";
 
-type Platform = "TikTok" | "Instagram" | "Facebook" | "YouTube";
+// Platform + data types are imported from @/services/ideaStream
 
-interface TrendingAudio {
-  title: string;
-  artist: string;
-  image_url?: string;
-  category: string;
-  uses: string;
-  trend: "up" | "stable" | "new";
-  tip: string;
-  velocity?: "rising" | "hot" | "exploding" | "stable";
-  confidence?: number;
-  // Phase 2: Signal Depth — DB stores momentum_direction, edge fn returns both names
-  creator_count?: number;
-  repost_count?: number;
-  momentum?: "up" | "stable" | "down";
-  momentum_direction?: "up" | "stable" | "down"; // DB column name alias
-  window_label?: string;
-}
-
-interface TrendingHashtag {
-  tag: string;
-  category: string;
-  posts: string;
-  trend: "up" | "stable" | "new";
-  tip: string;
-  velocity?: "rising" | "hot" | "exploding" | "stable";
-  confidence?: number;
-  // Phase 2: Signal Depth
-  creator_count?: number;
-  momentum?: "up" | "stable" | "down";
-  momentum_direction?: "up" | "stable" | "down"; // DB column name alias
-  window_label?: string;
-}
-
+// Locally needed only for platform selector config (no data logic)
 const platforms: { id: Platform; label: string }[] = [
   { id: "TikTok", label: "TikTok" },
   { id: "Instagram", label: "Instagram" },
@@ -75,7 +51,7 @@ const velocityBadgeClass = (v?: string) => {
 function AudioCard({
   audio, i, platform, copiedIdx, onCopy,
 }: {
-  audio: TrendingAudio;
+  audio: TrendAudio;
   i: number;
   platform: Platform;
   copiedIdx: number | null;
@@ -239,8 +215,8 @@ const TrendingAudioPage = () => {
   // All platforms are accessible — usage quotas enforced by backend per scan
   const [platform, setPlatform] = useState<Platform>("Instagram");
 
-  const [audios,        setAudios]        = useState<TrendingAudio[]>([]);
-  const [hashtags,      setHashtags]      = useState<TrendingHashtag[]>([]);
+  const [audios,        setAudios]        = useState<TrendAudio[]>([]);
+  const [hashtags,      setHashtags]      = useState<TrendHashtag[]>([]);
   const [loading,       setLoading]       = useState(false);
   const [hashtagLoading,setHashtagLoading]= useState(false);
   const [searched,      setSearched]      = useState(false);
@@ -286,53 +262,54 @@ const TrendingAudioPage = () => {
     else           { setLoading(true);         setSearched(true); }
 
     try {
-      const { data, error } = await supabase.functions.invoke("trending-audio", {
-        body: { platform, type: isHashtag ? "hashtags" : "audio" },
-      });
-
-      if (error) {
-        const status = (error as any)?.context?.status ?? (error as any)?.status;
-        let parsed: Record<string, unknown> = {};
-        try {
-          const raw = (error as any)?.context?.responseText ?? (error as any)?.message ?? "";
-          parsed = typeof raw === "string" && raw.startsWith("{") ? JSON.parse(raw) : {};
-        } catch { /* keep empty */ }
-
-        const code = String(parsed.code ?? "");
-        if (status === 403 || code === "USAGE_LIMIT_EXCEEDED" || code === "FEATURE_DISABLED") {
-          const msg = String(parsed.message ?? "Scan limit reached. Upgrade your plan.");
-          toast.error(msg);
-          isHashtag ? setHashtagLoading(false) : setLoading(false);
-          return;
-        }
-        throw new Error(String(parsed.message ?? error.message ?? "Failed to fetch"));
-      }
-
-      if (!data) throw new Error("No data returned");
-
       if (isHashtag) {
-        setHashtags(data?.hashtags ?? []);
-        if (data?.usage) {
-          const bq = Number(data.usage.quota ?? 0);
+        // ── Idea Stream: hashtags ──────────────────────────
+        const result = await getTrendingHashtags(platform);
+
+        if (!result.ok) {
+          if (isEntitlementError(result)) {
+            toast.error(result.message);
+            setHashtagLoading(false);
+            return;
+          }
+          throw new Error(result.message);
+        }
+
+        setHashtags(result.hashtags);
+        if (result.usage) {
+          const bq = Number(result.usage.quota ?? 0);
           setHashtagUsage({
-            used: Number(data.usage.used ?? 0),
-            limit: data.usage.unlimited || data.usage.fair_usage ? hashtagLimit : bq > 0 ? bq : hashtagLimit,
+            used:  Number(result.usage.used ?? 0),
+            limit: result.usage.unlimited || result.usage.fair_usage ? hashtagLimit : bq > 0 ? bq : hashtagLimit,
           });
         }
-        if (!data?.hashtags?.length) toast.error("No hashtags found. Try again.");
+        if (!result.hashtags.length) toast.error("No hashtags found. Try again.");
+
       } else {
-        setAudios(data?.audios ?? []);
-        if (data?.usage) {
-          const bq = Number(data.usage.quota ?? 0);
+        // ── Idea Stream: audio ─────────────────────────────
+        const result = await getTrendingAudio(platform);
+
+        if (!result.ok) {
+          if (isEntitlementError(result)) {
+            toast.error(result.message);
+            setLoading(false);
+            return;
+          }
+          throw new Error(result.message);
+        }
+
+        setAudios(result.audios);
+        if (result.usage) {
+          const bq = Number(result.usage.quota ?? 0);
           setAudioUsage({
-            used: Number(data.usage.used ?? 0),
-            limit: data.usage.unlimited || data.usage.fair_usage ? audioLimit : bq > 0 ? bq : audioLimit,
+            used:  Number(result.usage.used ?? 0),
+            limit: result.usage.unlimited || result.usage.fair_usage ? audioLimit : bq > 0 ? bq : audioLimit,
           });
         }
-        if (!data?.audios?.length) toast.error("No results found. Try again.");
+        if (!result.audios.length) toast.error("No results found. Try again.");
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to fetch");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to fetch");
     } finally {
       isHashtag ? setHashtagLoading(false) : setLoading(false);
     }
