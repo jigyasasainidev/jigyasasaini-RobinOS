@@ -361,7 +361,9 @@ interface TrendOpportunity {
 
 async function persistTrendMemory(topic: string, opportunities: TrendOpportunity[], requestId: string, isFallback: boolean, sourceSpread: number, avgConf: number): Promise<void> {
   const url     = process.env.SUPABASE_URL;
-  const roleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // Accepts service_role key (preferred) OR publishable/anon key as fallback.
+  // If using anon key, ensure INSERT policies exist for anon role on both tables.
+  const roleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY;
 
   // Silently skip if Supabase is not configured — keeps endpoint functional
   if (!url || !roleKey) return;
