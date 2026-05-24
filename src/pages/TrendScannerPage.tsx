@@ -38,10 +38,17 @@ const TrendScannerPage = () => {
   const [msgIdx,      setMsgIdx]      = useState(0);
   const [iconIdx,     setIconIdx]     = useState(0);
   const [scanned,     setScanned]     = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const intervalRef   = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastScanRef   = useRef<number>(0);          // debounce: timestamp of last scan start
+  const DEBOUNCE_MS   = 1500;                        // ignore clicks within 1.5s of previous
 
   const handleScan = async () => {
     if (!niche.trim()) { toast.error("Enter a niche to scan"); return; }
+
+    // Debounce: ignore if another scan started within DEBOUNCE_MS
+    const now = Date.now();
+    if (now - lastScanRef.current < DEBOUNCE_MS) return;
+    lastScanRef.current = now;
 
     setLoading(true);
     setScanned(true);
@@ -72,9 +79,14 @@ const TrendScannerPage = () => {
           const raw = (error as any)?.context?.responseText ?? (error as any)?.message ?? "";
           if (typeof raw === "string" && raw.startsWith("{")) parsed = JSON.parse(raw);
         } catch { /* ignore */ }
-        toast.error(status === 403
-          ? String(parsed.error ?? parsed.message ?? "Scan limit reached.")
-          : "Scan failed. Try again.");
+
+        if (status === 429) {
+          toast.error("Too many scans. Please wait 1 minute before trying again.");
+        } else if (status === 403) {
+          toast.error(String(parsed.error ?? parsed.message ?? "Scan limit reached. Upgrade your plan."));
+        } else {
+          toast.error("Scan failed. Try again in a moment.");
+        }
         return;
       }
 

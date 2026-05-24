@@ -20,6 +20,32 @@ import {
 } from "../_shared/entitlement.ts";
 import { trackFeatureUsage } from "../_shared/feature-usage.ts";
 
+// ── Per-user in-memory rate limiter ───────────────────────
+// Limits each user to 8 Gemini calls per 60 seconds.
+// Resets automatically after the window expires.
+// This prevents one user from burning the Gemini free tier quota.
+const USER_RL_MAX    = 8;
+const USER_RL_WINDOW = 60_000; // 60 seconds
+const userRlStore    = new Map<string, { count: number; windowStart: number }>();
+
+function checkUserRateLimit(userId: string): { allowed: boolean; retryAfterSeconds: number } {
+  const now  = Date.now();
+  const slot = userRlStore.get(userId);
+
+  if (!slot || now - slot.windowStart >= USER_RL_WINDOW) {
+    userRlStore.set(userId, { count: 1, windowStart: now });
+    return { allowed: true, retryAfterSeconds: 0 };
+  }
+
+  if (slot.count >= USER_RL_MAX) {
+    const retryAfter = Math.ceil((USER_RL_WINDOW - (now - slot.windowStart)) / 1000);
+    return { allowed: false, retryAfterSeconds: retryAfter };
+  }
+
+  slot.count++;
+  return { allowed: true, retryAfterSeconds: 0 };
+}
+
 // ── Types ──────────────────────────────────────────────────
 interface TrendTopic {
   title:      string;
@@ -224,6 +250,11 @@ serve(async (req) => {
 
     const analyticsUserId = userResult.data?.user?.id ?? "";
 
+    // ── Per-user rate limit (protects Gemini free tier) ───
+    // Only applied on cache-miss path (checked after cache lookup).
+    // We store the userId for the check below.
+    const rlUserId = analyticsUserId || `ip:${req.headers.get("x-forwarded-for") ?? "unknown"}`;
+
     // ── Phase 2: Cache lookup ──────────────────────────────
     const now = new Date().toISOString();
     const { data: cached, error: cacheErr } = await supabase
@@ -258,6 +289,28 @@ serve(async (req) => {
     }
 
     console.log("[scan-trends] cache MISS — calling Gemini");
+
+    // ── Per-user rate limit check (only on cache miss) ────
+    // Cache hits bypass this — they don't call Gemini at all.
+    const rl = checkUserRateLimit(rlUserId);
+    if (!rl.allowed) {
+      console.warn("[scan-trends] user rate limited:", rlUserId, "retry in", rl.retryAfterSeconds, "s");
+      return new Response(
+        JSON.stringify({
+          error: `Too many scans. Please wait ${rl.retryAfterSeconds} seconds before scanning again.`,
+          code:  "USER_RATE_LIMITED",
+          retryAfterSeconds: rl.retryAfterSeconds,
+        }),
+        {
+          status: 429,
+          headers: {
+            ...CORS_HEADERS,
+            "Content-Type": "application/json",
+            "Retry-After":  String(rl.retryAfterSeconds),
+          },
+        },
+      );
+    }
 
     // ── Phase 3: Gemini direct REST call ──────────────────
     let topics: TrendTopic[];
