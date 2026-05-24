@@ -4,6 +4,7 @@ import { SmartLink } from "@/components/SmartLink";
 import { prefetchRoute } from "@/lib/routePrefetch";
 
 const productLinks = [
+  { label: "Creator OS", to: "/creator-os" },
   { label: "Features", to: "/minidemo" },
   { label: "Pricing", to: "/pricing" },
   { label: "Affiliates", to: "/affiliates" },
@@ -107,7 +108,7 @@ export function PublicFooter() {
             <li>Global creator platform</li>
             <li>Remote-first AI software company</li>
             <li>Protected by automated AI moderation</li>
-            <li>AI infrastructure powered by enterprise-grade providers</li>
+            <li>AI infrastructure powered by Groq</li>
           </ul>
           <div className="mt-4 space-y-1.5 text-sm">
             <a href="mailto:support@tryrobin.xyz" className="block text-muted-foreground transition-all duration-200 hover:text-foreground hover:translate-x-0.5">support@tryrobin.xyz</a>

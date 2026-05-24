@@ -2,17 +2,28 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { BrandMark } from "@/components/BrandMark";
 import { SmartLink } from "@/components/SmartLink";
 import { prefetchRoute } from "@/lib/routePrefetch";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
-const links = [
-  { label: "Pricing", to: "/pricing" },
+const BASE_LINKS = [
+  { label: "Creator OS", to: "/creator-os", requiresSetting: "creator_os_page_enabled" as const },
+  { label: "Pricing",    to: "/pricing" },
   { label: "API Access", to: "/api-access" },
-  { label: "Changelog", to: "/changelog" },
-  { label: "Docs", to: "/docs" },
+  { label: "Changelog",  to: "/changelog" },
+  { label: "Docs",       to: "/docs" },
 ];
 
 export function PublicNavbar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { data: settings } = usePlatformSettings();
+
+  const links = BASE_LINKS.filter((link) => {
+    if (link.requiresSetting === "creator_os_page_enabled") {
+      // Default true — show unless explicitly disabled
+      return settings ? settings.creator_os_page_enabled !== false : true;
+    }
+    return true;
+  });
 
   const navigateWithTransition = (to: string) => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;

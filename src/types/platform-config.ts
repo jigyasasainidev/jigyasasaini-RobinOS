@@ -20,6 +20,8 @@ export interface PlatformSettingsRow {
   payout_delay_days: number;
   maintenance_mode: boolean;
   announcement_banner: string | null;
+  creator_os_page_enabled: boolean;
+  creator_os_demo_video_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -41,6 +43,8 @@ export interface PlatformSettingsDraft {
   payout_delay_days: number;
   maintenance_mode: boolean;
   announcement_banner: string;
+  creator_os_page_enabled: boolean;
+  creator_os_demo_video_url: string;
 }
 
 /**
@@ -58,6 +62,8 @@ export const PLATFORM_SETTINGS_DEFAULTS: PlatformSettingsDraft = {
   payout_delay_days: 7,
   maintenance_mode: false,
   announcement_banner: "",
+  creator_os_page_enabled: true,
+  creator_os_demo_video_url: "",
 };
 
 /**
@@ -98,5 +104,7 @@ export interface PlatformSettingsLive {
   payout_delay_days: number;
   maintenance_mode: boolean;
   announcement_banner: string | null;
+  creator_os_page_enabled: boolean;
+  creator_os_demo_video_url: string | null;
   updated_at: string;
 }

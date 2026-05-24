@@ -804,6 +804,8 @@ const AdminDashboard = () => {
       payout_delay_days: Number(platformSettings.payout_delay_days || 0),
       maintenance_mode: !!platformSettings.maintenance_mode,
       announcement_banner: platformSettings.announcement_banner ?? "",
+      creator_os_page_enabled: platformSettings.creator_os_page_enabled ?? true,
+      creator_os_demo_video_url: platformSettings.creator_os_demo_video_url ?? "",
     });
   }, [platformSettings]);
 
@@ -1216,6 +1218,8 @@ const AdminDashboard = () => {
         payout_delay_days: Number(settingsDraft.payout_delay_days),
         maintenance_mode: !!settingsDraft.maintenance_mode,
         announcement_banner: settingsDraft.announcement_banner || null,
+        creator_os_page_enabled: !!settingsDraft.creator_os_page_enabled,
+        creator_os_demo_video_url: settingsDraft.creator_os_demo_video_url?.trim() || null,
       };
 
       if (platformSettings?.id) {
@@ -1669,6 +1673,32 @@ const AdminDashboard = () => {
                   className="h-9 text-sm"
                 />
                 <p className="text-[9px] font-mono text-muted-foreground/25 text-right">{settingsDraft.announcement_banner.length}/280</p>
+              </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Marketing / Launch Controls" subtitle="Creator OS page visibility and demo video">
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Creator OS Page</p>
+                <select
+                  value={settingsDraft.creator_os_page_enabled ? "true" : "false"}
+                  onChange={(e) => setSettingsDraft((s) => ({ ...s, creator_os_page_enabled: e.target.value === "true" }))}
+                  className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground"
+                >
+                  <option value="true">● VISIBLE — /creator-os publicly accessible</option>
+                  <option value="false">⬤ HIDDEN — redirects to homepage</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Demo Video URL</p>
+                <Input
+                  value={settingsDraft.creator_os_demo_video_url}
+                  onChange={(e) => setSettingsDraft((s) => ({ ...s, creator_os_demo_video_url: e.target.value }))}
+                  placeholder="https://youtube.com/watch?v=... or Vimeo / Loom / MP4"
+                  className="h-9 text-sm font-mono"
+                />
+                <p className="text-[9px] font-mono text-muted-foreground/25">YouTube, Vimeo, Loom, or direct MP4 URL. Leave empty to show placeholder.</p>
               </div>
             </div>
           </SectionCard>
