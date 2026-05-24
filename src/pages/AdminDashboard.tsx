@@ -810,6 +810,7 @@ const AdminDashboard = () => {
       jvzoo_affiliate_demo_video_url: platformSettings.jvzoo_affiliate_demo_video_url ?? "",
       jvzoo_affiliate_cta_url: platformSettings.jvzoo_affiliate_cta_url ?? "",
       jvzoo_affiliate_button_text: platformSettings.jvzoo_affiliate_button_text ?? "Join Affiliate Program",
+      jvzoo_affiliate_login_url: platformSettings.jvzoo_affiliate_login_url ?? "https://www.tryrobin.xyz/login",
     });
   }, [platformSettings]);
 
@@ -1228,6 +1229,7 @@ const AdminDashboard = () => {
         jvzoo_affiliate_demo_video_url: settingsDraft.jvzoo_affiliate_demo_video_url?.trim() || null,
         jvzoo_affiliate_cta_url: settingsDraft.jvzoo_affiliate_cta_url?.trim() || null,
         jvzoo_affiliate_button_text: settingsDraft.jvzoo_affiliate_button_text?.trim() || "Join Affiliate Program",
+        jvzoo_affiliate_login_url: settingsDraft.jvzoo_affiliate_login_url?.trim() || "https://www.tryrobin.xyz/login",
       };
 
       if (platformSettings?.id) {
@@ -1751,6 +1753,16 @@ const AdminDashboard = () => {
                   maxLength={60}
                   className="h-9 text-sm"
                 />
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Affiliate Login / Signup URL</p>
+                <Input
+                  value={settingsDraft.jvzoo_affiliate_login_url}
+                  onChange={(e) => setSettingsDraft((s) => ({ ...s, jvzoo_affiliate_login_url: e.target.value }))}
+                  placeholder="https://www.tryrobin.xyz/login"
+                  className="h-9 text-sm font-mono"
+                />
+                <p className="text-[9px] font-mono text-muted-foreground/25">All affiliate CTA buttons use this URL. Default: /login</p>
               </div>
             </div>
           </SectionCard>

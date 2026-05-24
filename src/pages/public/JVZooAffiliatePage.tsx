@@ -4,10 +4,11 @@ import { motion, useInView, AnimatePresence } from "framer-motion";
 import {
   DollarSign, TrendingUp, Users, Zap, Star, ArrowRight, Play,
   CheckCircle, Globe, BarChart3, PenTool, Mic,
-  Hash, Sparkles, Clock, Shield, Film, type LucideIcon,
+  Hash, Sparkles, Clock, Shield, Film, Mail, Image, ExternalLink, type LucideIcon,
 } from "lucide-react";
 import { PublicLayout } from "@/components/public/PublicLayout";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
+import { useAffiliatePromoAssets } from "@/hooks/useAffiliatePromoAssets";
 
 // ── Scroll-reveal ─────────────────────────────────────────
 function Reveal({ children, delay = 0, className = "" }: {
@@ -226,7 +227,7 @@ function StickyJoinCTA({ ctaUrl, btnText }: { ctaUrl: string; btnText: string })
           className="fixed bottom-6 right-6 z-50"
         >
           <motion.a
-            href={ctaUrl} target="_blank" rel="noopener noreferrer"
+            href={affiliateCtaUrl} target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold text-white backdrop-blur-xl"
             style={{
               background: "linear-gradient(135deg, hsl(142 70% 38%), hsl(142 65% 31%))",
@@ -244,10 +245,32 @@ function StickyJoinCTA({ ctaUrl, btnText }: { ctaUrl: string; btnText: string })
   );
 }
 
+// ── Icon resolver for dynamic asset cards ────────────────
+function resolveIcon(name: string): LucideIcon {
+  const map: Record<string, LucideIcon> = {
+    sparkles:    Sparkles,
+    film:        Film,
+    play:        Play,
+    "pen-tool":  PenTool,
+    hash:        Hash,
+    "bar-chart-3": BarChart3,
+    mic:         Mic,
+    mail:        Mail,
+    image:       Image,
+    globe:       Globe,
+    zap:         Zap,
+    clock:       Clock,
+    users:       Users,
+    "check-circle": CheckCircle,
+  };
+  return map[name?.toLowerCase()] ?? Sparkles;
+}
+
 // ── Main page ─────────────────────────────────────────────
 export default function JVZooAffiliatePage() {
   const navigate = useNavigate();
   const { data: settings, isLoading } = usePlatformSettings();
+  const { data: promoAssets = [] }     = useAffiliatePromoAssets();
 
   useEffect(() => {
     if (!isLoading && settings && settings.jvzoo_affiliate_enabled === false) {
@@ -259,12 +282,19 @@ export default function JVZooAffiliatePage() {
   if (settings && settings.jvzoo_affiliate_enabled === false) return null;
 
   const videoUrl = settings?.jvzoo_affiliate_demo_video_url ?? null;
-  const ctaUrl   = settings?.jvzoo_affiliate_cta_url ?? "#";
   const btnText  = settings?.jvzoo_affiliate_button_text?.trim() || "Join Affiliate Program";
+
+  // ── Centralized affiliate CTA URL ──────────────────────────
+  // All CTA buttons on this page use this single source of truth.
+  // Admin controls it via "Affiliate Login / Signup URL" field.
+  // Default: /login so affiliates always have a working destination.
+  const affiliateCtaUrl =
+    settings?.jvzoo_affiliate_login_url?.trim() ||
+    "https://www.tryrobin.xyz/login";
 
   return (
     <PublicLayout>
-      <StickyJoinCTA ctaUrl={ctaUrl} btnText={btnText} />
+      <StickyJoinCTA ctaUrl={affiliateCtaUrl} btnText={btnText} />
 
       {/* Ambient */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
@@ -302,7 +332,7 @@ export default function JVZooAffiliatePage() {
 
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.28 }}
               className="flex flex-wrap gap-3 mb-8">
-              <motion.a href={ctaUrl} target="_blank" rel="noopener noreferrer"
+              <motion.a href={affiliateCtaUrl} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 h-12 px-8 rounded-xl text-sm font-semibold text-white transition-all duration-300 relative overflow-hidden group"
                 style={{ background: "linear-gradient(135deg, hsl(142 70% 42%), hsl(142 65% 35%))", boxShadow: "0 4px 20px hsl(142 70% 55% / 0.35), inset 0 1px 0 hsl(0 0% 100% / 0.1)" }}
                 whileHover={{ scale: 1.02, boxShadow: "0 6px 28px hsl(142 70% 55% / 0.45), inset 0 1px 0 hsl(0 0% 100% / 0.1)" }}
@@ -541,41 +571,64 @@ export default function JVZooAffiliatePage() {
         </div>
       </section>
 
-      {/* ════════════ 8. PROMOTIONAL ASSETS ════════════════ */}
+      {/* ════════════ 8. PROMOTIONAL ASSETS (dynamic) ═══════ */}
       <section className="relative z-10 px-4 py-20 sm:px-6 lg:px-8 max-w-[1240px] mx-auto">
         <Reveal className="text-center mb-12">
           <Label>Promo Assets</Label>
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mt-3 text-chrome">Everything you need to promote</h2>
-          <p className="text-muted-foreground max-w-xl mx-auto text-sm mt-3">Ready-to-use creative assets. More being added continuously.</p>
+          <p className="text-muted-foreground max-w-xl mx-auto text-sm mt-3">
+            Ready-to-use creative assets — managed from the admin panel and updated without code changes.
+          </p>
         </Reveal>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[
-            { icon: Film,     label: "Video Thumbnails",  desc: "High-CTR thumbnail templates for YouTube and social ads." },
-            { icon: Play,     label: "Demo Videos",       desc: "Screen recording walkthroughs and feature demonstrations." },
-            { icon: Sparkles, label: "Short-Form Reels",  desc: "15-60 second product highlight videos for TikTok/Instagram." },
-            { icon: PenTool,  label: "Swipe Copy",        desc: "Email sequences, DM scripts, and post captions ready to use." },
-            { icon: Hash,     label: "Email Templates",   desc: "Conversion-tested email campaigns for your subscriber list." },
-            { icon: BarChart3,label: "Banner Creatives",  desc: "Display ads and social media graphics in multiple formats." },
-          ].map(({ icon: Icon, label, desc }, i) => (
-            <Reveal key={label} delay={i * 0.05}>
-              <div className="rounded-xl p-4 relative overflow-hidden"
-                style={{ background: "linear-gradient(135deg, hsl(222 32% 8%), hsl(222 28% 6.5%))", border: "1px solid hsl(217 28% 14%)" }}>
-                <div className="absolute top-3 right-3">
-                  <span className="text-[8px] font-mono px-1.5 py-0.5 rounded-full"
-                    style={{ background: "hsl(38 92% 55% / 0.08)", border: "1px solid hsl(38 92% 55% / 0.15)", color: "hsl(38 92% 55% / 0.7)" }}>
-                    Soon
-                  </span>
-                </div>
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center mb-3"
-                  style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.15)" }}>
-                  <Icon className="w-3.5 h-3.5 text-primary/60" strokeWidth={1.5} />
-                </div>
-                <p className="text-sm font-semibold text-foreground">{label}</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed pr-8">{desc}</p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
+
+        {promoAssets.length === 0 ? (
+          <Reveal>
+            <div className="rounded-2xl p-12 text-center"
+              style={{ background: "linear-gradient(135deg, hsl(222 32% 8%), hsl(222 28% 6.5%))", border: "1px solid hsl(217 28% 14%)", borderStyle: "dashed" }}>
+              <Sparkles className="w-8 h-8 text-muted-foreground/20 mx-auto mb-3" strokeWidth={1.5} />
+              <p className="text-sm text-muted-foreground/50">Promo resources will appear here.</p>
+              <p className="text-[10px] font-mono text-muted-foreground/30 mt-1">Managed from Admin → JVZoo Affiliate Launch Controls</p>
+            </div>
+          </Reveal>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {promoAssets.map((asset, i) => {
+              const Icon = resolveIcon(asset.icon_name);
+              return (
+                <Reveal key={asset.id} delay={i * 0.05}>
+                  <motion.div className="rounded-xl p-4 relative overflow-hidden flex flex-col h-full"
+                    style={{ background: "linear-gradient(135deg, hsl(222 32% 8%), hsl(222 28% 6.5%))", border: "1px solid hsl(217 28% 14%)" }}
+                    whileHover={{ borderColor: "hsl(217 91% 60% / 0.2)", y: -1 }} transition={{ duration: 0.2 }}>
+                    {asset.badge && (
+                      <div className="absolute top-3 right-3">
+                        <span className="text-[8px] font-mono px-1.5 py-0.5 rounded-full"
+                          style={{ background: "hsl(38 92% 55% / 0.08)", border: "1px solid hsl(38 92% 55% / 0.15)", color: "hsl(38 92% 55% / 0.7)" }}>
+                          {asset.badge}
+                        </span>
+                      </div>
+                    )}
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center mb-3"
+                      style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.15)" }}>
+                      <Icon className="w-3.5 h-3.5 text-primary/60" strokeWidth={1.5} />
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">{asset.title}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed pr-8 flex-1">{asset.description}</p>
+                    {asset.button_url && (
+                      <a href={asset.button_url} target="_blank" rel="noopener noreferrer"
+                        className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-mono transition-colors"
+                        style={{ color: "hsl(217 91% 68%)" }}>
+                        {asset.button_text} <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                    {!asset.button_url && (
+                      <p className="mt-3 text-[10px] font-mono text-muted-foreground/30">{asset.button_text}</p>
+                    )}
+                  </motion.div>
+                </Reveal>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* ════════════ 9. DEMO VIDEO ══════════════════════════ */}
@@ -682,7 +735,7 @@ export default function JVZooAffiliatePage() {
             </div>
 
             <div className="flex flex-wrap justify-center gap-4">
-              <motion.a href={ctaUrl} target="_blank" rel="noopener noreferrer"
+              <motion.a href={affiliateCtaUrl} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 h-12 px-8 rounded-xl text-sm font-semibold text-white transition-all duration-300"
                 style={{ background: "linear-gradient(135deg, hsl(142 70% 42%), hsl(142 65% 35%))", boxShadow: "0 4px 24px hsl(142 70% 55% / 0.4), inset 0 1px 0 hsl(0 0% 100% / 0.1)" }}
                 whileHover={{ scale: 1.02, boxShadow: "0 6px 32px hsl(142 70% 55% / 0.5), inset 0 1px 0 hsl(0 0% 100% / 0.1)" }}
