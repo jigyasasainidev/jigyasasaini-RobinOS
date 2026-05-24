@@ -1,20 +1,25 @@
 // ============================================================
-// ROBINOS SCAN TRENDS — Gemini Direct, Cache-First, Unlimited
+// ROBINOS SCAN TRENDS — Gemini Direct, Cache-First
 // ============================================================
 // FLOW:
-// 1. Auth: verify JWT (no quota checks — unlimited)
-// 2. Cache lookup — return instantly if fresh results exist
-// 3. Cache miss → Gemini AI → store async → return
+// 1. Validate Gemini config (fast fail)
+// 2. Auth + entitlement check in parallel (quota enforced)
+// 3. Cache lookup — return instantly if fresh results exist
+//    (cache hits still consume quota — backend authoritative)
+// 4. Cache miss → Gemini AI → fire-and-forget cache write → return
 //
-// NO AI_API_KEY, NO GROQ, NO ai-provider.ts
-// Uses GEMINI_API_KEY only.
+// QUOTA: enforced via checkAndIncrementUsage (TREND_SCAN feature)
+// Free users → plan limit | Creator → higher | Agency → fair_usage
 // ============================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   CORS_HEADERS,
+  FEATURES,
   createServiceClient,
+  checkAndIncrementUsage,
 } from "../_shared/entitlement.ts";
+import { trackFeatureUsage } from "../_shared/feature-usage.ts";
 import {
   validateGeminiConfig,
   callGemini,
@@ -24,43 +29,82 @@ import {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
 
-  // Fail fast if Gemini key missing
+  // Fail fast if Gemini key not configured
   const configError = validateGeminiConfig();
   if (configError) return configError;
 
   try {
-    // ── Auth: verify user JWT (no quota check) ────────────
+    // ── Auth header present ────────────────────────────────
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Unauthorized", code: "AUTH_REQUIRED" }),
+        { status: 401, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
+      );
     }
 
-    const body = await req.json();
-    const niche = typeof body?.niche === "string" ? body.niche.trim() : "";
+    // ── Parse body ────────────────────────────────────────
+    let niche: string;
+    try {
+      const body = await req.json();
+      niche = typeof body?.niche === "string" ? body.niche.trim() : "";
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Request body must be valid JSON" }),
+        { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
+      );
+    }
+
     if (!niche) {
-      return new Response(JSON.stringify({ error: "niche is required" }), {
-        status: 400,
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "niche is required" }),
+        { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
+      );
     }
 
-    const nicheKey = niche.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "").slice(0, 80);
+    const nicheKey   = niche.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "").slice(0, 80);
+    const requestId  = crypto.randomUUID();
+    const supabase   = createServiceClient();
+    const token      = authHeader.replace("Bearer ", "");
 
-    // Verify JWT (non-blocking auth — just confirms logged-in user)
-    const supabase = createServiceClient();
-    const token    = authHeader.replace("Bearer ", "");
-    const { data: { user } } = await supabase.auth.getUser(token);
-    if (!user?.id) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      });
+    // ── Phase 1: Entitlement check + user resolution (parallel) ──
+    // checkAndIncrementUsage atomically verifies auth + increments quota.
+    // supabase.auth.getUser runs in parallel for analytics userId.
+    // IMPORTANT: quota is consumed here BEFORE cache/AI — prevents
+    // bypassing limits via cache manipulation.
+    const [entitlementResult, userResult] = await Promise.all([
+      checkAndIncrementUsage(authHeader, FEATURES.TREND_SCAN, requestId),
+      supabase.auth.getUser(token),
+    ]);
+
+    const { result: entitlement, error: entitlementError } = entitlementResult;
+
+    if (entitlementError) {
+      if (entitlement && !entitlement.success) {
+        // Return structured 403 with plan/usage context so frontend
+        // can show the correct upgrade dialog
+        return new Response(
+          JSON.stringify({
+            error:     entitlement.message || "Scan limit reached. Upgrade to continue.",
+            code:      entitlement.code,
+            feature:   entitlement.feature,
+            plan:      entitlement.plan,
+            limit:     entitlement.limit,
+            used:      entitlement.used,
+            remaining: entitlement.remaining,
+            reset_at:  entitlement.reset_at,
+          }),
+          { status: 403, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
+        );
+      }
+      return entitlementError;
     }
 
-    // ── Cache lookup ──────────────────────────────────────
+    const analyticsUserId = userResult.data?.user?.id ?? "";
+
+    // ── Phase 2: Cache lookup ─────────────────────────────
+    // Cache hits still count against quota (entitlement already incremented above).
+    // This is correct — the user consumed a scan, regardless of cache state.
     const now = new Date().toISOString();
     const { data: cached, error: cacheErr } = await supabase
       .from("trend_topics")
@@ -71,6 +115,9 @@ serve(async (req) => {
       .limit(5);
 
     if (!cacheErr && cached && cached.length > 0) {
+      if (analyticsUserId) {
+        trackFeatureUsage({ supabase, userId: analyticsUserId, feature: FEATURES.TREND_SCAN });
+      }
       return new Response(
         JSON.stringify({
           topics: cached.map((t: any) => ({
@@ -78,19 +125,22 @@ serve(async (req) => {
             description: t.description,
             platforms:   t.platforms,
             heat:        t.heat,
-            hook_types:  Array.isArray(t.hook_types) ? t.hook_types : (t.hook_types ? JSON.parse(t.hook_types) : []),
+            hook_types:  Array.isArray(t.hook_types)
+              ? t.hook_types
+              : (t.hook_types ? (() => { try { return JSON.parse(t.hook_types); } catch { return []; } })() : []),
             volume:      t.volume ?? "Medium",
           })),
-          cached: true,
-          niche:  nicheKey,
+          cached:  true,
+          niche:   nicheKey,
+          usage:   entitlement,
         }),
-        { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+        { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
       );
     }
 
-    // ── Cache miss: call Gemini ───────────────────────────
+    // ── Phase 3: Cache miss — call Gemini ─────────────────
     const aiResult = await callGemini({
-      model:    GEMINI_MODEL_DEFAULT,
+      model:     GEMINI_MODEL_DEFAULT,
       timeoutMs: 20_000,
       messages: [
         {
@@ -137,7 +187,7 @@ Be specific, cite real signals. Never fabricate — use best estimates.`,
                 },
               },
             },
-            required: ["topics"],
+            required:             ["topics"],
             additionalProperties: false,
           },
         },
@@ -171,40 +221,44 @@ Be specific, cite real signals. Never fabricate — use best estimates.`,
       );
     }
 
-    // ── Store to cache async (non-blocking) ───────────────
+    // ── Phase 4: Cache write (fire-and-forget, non-blocking) ─
+    // Does NOT block the response. Errors here are non-fatal.
     if (topics.length > 0) {
       const expiresAt = new Date(Date.now() + 4 * 3600_000).toISOString();
       const now2      = new Date().toISOString();
 
-      // Fire-and-forget — don't await, doesn't block response
       Promise.allSettled(
-        topics.map((t) => {
-          const heatScore    = Math.min(t.heat ?? 0, 99) * 0.606;
-          const volumeScore  = t.volume === "High" ? 20 : t.volume === "Medium" ? 10 : 5;
+        topics.map((t: any) => {
+          const heatScore     = Math.min(t.heat ?? 0, 99) * 0.606;
+          const volumeScore   = t.volume === "High" ? 20 : t.volume === "Medium" ? 10 : 5;
           const platformCount = (t.platforms ?? "").split(",").filter((p: string) => p.trim()).length;
           const viralityScore = Math.min(Math.round(heatScore + volumeScore + Math.min(platformCount, 4) * 5), 100);
 
           return supabase.from("trend_topics").upsert({
-            niche_key:       nicheKey,
-            title:           t.title,
-            description:     t.description,
-            platforms:       t.platforms,
-            heat:            Math.min(Math.max(t.heat ?? 0, 0), 99),
-            hook_types:      JSON.stringify(t.hook_types ?? []),
-            volume:          t.volume ?? "Medium",
-            virality_score:  viralityScore,
-            trend_velocity:  (t.heat ?? 0) / 10,
-            source:          "ai",
-            expires_at:      expiresAt,
-            collected_at:    now2,
+            niche_key:      nicheKey,
+            title:          t.title,
+            description:    t.description,
+            platforms:      t.platforms,
+            heat:           Math.min(Math.max(t.heat ?? 0, 0), 99),
+            hook_types:     JSON.stringify(t.hook_types ?? []),
+            volume:         t.volume ?? "Medium",
+            virality_score: viralityScore,
+            trend_velocity: (t.heat ?? 0) / 10,
+            source:         "ai",
+            expires_at:     expiresAt,
+            collected_at:   now2,
           }, { onConflict: "niche_key, title", ignoreDuplicates: false });
         })
       ).catch(() => { /* non-fatal */ });
     }
 
+    if (analyticsUserId) {
+      trackFeatureUsage({ supabase, userId: analyticsUserId, feature: FEATURES.TREND_SCAN });
+    }
+
     return new Response(
-      JSON.stringify({ topics, cached: false, niche: nicheKey }),
-      { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      JSON.stringify({ topics, cached: false, niche: nicheKey, usage: entitlement }),
+      { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
     );
 
   } catch (e) {
