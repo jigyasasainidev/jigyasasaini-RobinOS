@@ -18,7 +18,6 @@ import type { TrendScanResult, TrendIntelligence, TrendOpportunity } from "@/typ
 // No API key required — Trend Radar is an internal platform capability.
 const TREND_RADAR_URL = "/api/public/trends/scan";
 const TIMEOUT_MS      = 8_000;
-const TIMEOUT_MS      = 8_000;
 
 // In-memory scan cache — prevents duplicate scans within 5 min
 const scanCache = new Map<string, { result: TrendIntelligence; at: number }>();
