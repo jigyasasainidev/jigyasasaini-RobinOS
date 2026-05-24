@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Zap, PenTool, Settings, LogOut, Clock, Link2, Crown, Mic, Film, BarChart3, Type, Flag } from "lucide-react";
+import { Zap, PenTool, Settings, LogOut, Clock, Link2, Crown, Mic, Film, BarChart3, Type, Flag, TrendingUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlanKey, useIsProOrAbove, useIsAgency } from "@/hooks/useEntitlements";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ const sidebarSections = [
   {
     label: "CREATE",
     items: [
+      { to: "/dashboard/trend-scanner",  label: "Trend Scanner",      icon: TrendingUp },
       { to: "/dashboard/studio",         label: "Script Engine",      icon: PenTool },
       { to: "/dashboard/voice",          label: "Voice Studio",       icon: Mic },
       { to: "/dashboard/video",          label: "Video Studio",       icon: Film },
@@ -40,12 +41,12 @@ const sidebarSections = [
 
 // Mobile bottom nav — 7 most-used in workflow order
 const bottomNavItems = [
-  { to: "/dashboard/caption-engine", label: "Publish",   icon: Type },
+  { to: "/dashboard/trend-scanner",  label: "Trends",    icon: TrendingUp },
   { to: "/dashboard/studio",         label: "Script",    icon: PenTool },
+  { to: "/dashboard/caption-engine", label: "Publish",   icon: Type },
   { to: "/dashboard/voice",          label: "Voice",     icon: Mic },
   { to: "/dashboard/video",          label: "Video",     icon: Film },
   { to: "/dashboard/analytics",      label: "Analytics", icon: BarChart3 },
-  { to: "/dashboard/referrals",      label: "Referrals", icon: Link2 },
   { to: "/dashboard/settings",       label: "Settings",  icon: Settings },
 ];
 

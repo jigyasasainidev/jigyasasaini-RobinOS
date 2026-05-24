@@ -28,6 +28,7 @@ const SettingsPage = lazy(lazyWithRetry(() => import("./pages/SettingsPage"), "d
 const HistoryPage = lazy(lazyWithRetry(() => import("./pages/HistoryPage"), "dashboard-history"));
 const ReferralsPage = lazy(lazyWithRetry(() => import("./pages/ReferralsPage"), "dashboard-referrals"));
 const AnalyticsPage = lazy(lazyWithRetry(() => import("./pages/AnalyticsPage"), "dashboard-analytics"));
+const TrendScannerPage = lazy(lazyWithRetry(() => import("./pages/TrendScannerPage"), "dashboard-trend-scanner"));
 
 // Lazy load other pages
 const AboutPage = lazy(() => import("./pages/public/PublicInfoPages").then((m) => ({ default: m.AboutPage })));
@@ -147,6 +148,7 @@ const App = () => (
                 <Route path="history" element={<HistoryPage />} />
                 <Route path="referrals" element={<ReferralsPage />} />
                 <Route path="analytics" element={<AnalyticsPage />} />
+                <Route path="trend-scanner" element={<TrendScannerPage />} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
               <Route path="/adminsh/auth" element={<AdminAuthPage />} />
