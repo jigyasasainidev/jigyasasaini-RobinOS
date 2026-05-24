@@ -16,6 +16,10 @@ export type PlatformSettingsLive = {
   announcement_banner: string | null;
   creator_os_page_enabled: boolean;
   creator_os_demo_video_url: string | null;
+  jvzoo_affiliate_enabled: boolean;
+  jvzoo_affiliate_demo_video_url: string | null;
+  jvzoo_affiliate_cta_url: string | null;
+  jvzoo_affiliate_button_text: string | null;
   updated_at: string;
 };
 
@@ -28,7 +32,7 @@ export function usePlatformSettings() {
       const { data, error } = await db
         .from("platform_settings")
         .select(
-          "creator_price,pro_price,agency_price,free_scripts_limit,free_scans_limit,affiliate_commission_percent,minimum_withdrawal,payout_delay_days,maintenance_mode,announcement_banner,creator_os_page_enabled,creator_os_demo_video_url,updated_at",
+          "creator_price,pro_price,agency_price,free_scripts_limit,free_scans_limit,affiliate_commission_percent,minimum_withdrawal,payout_delay_days,maintenance_mode,announcement_banner,creator_os_page_enabled,creator_os_demo_video_url,jvzoo_affiliate_enabled,jvzoo_affiliate_demo_video_url,jvzoo_affiliate_cta_url,jvzoo_affiliate_button_text,updated_at",
         )
         .order("updated_at", { ascending: false })
         .limit(1)

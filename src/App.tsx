@@ -54,6 +54,7 @@ const TrustSafetyPage = lazy(() => import("./pages/public/TrustSafetyPage").then
 const AcceptableUsePolicyPage = lazy(() => import("./pages/public/AcceptableUsePolicyPage").then((m) => ({ default: m.AcceptableUsePolicyPage })));
 const ReportAbusePage = lazy(() => import("./pages/public/ReportAbusePage").then((m) => ({ default: m.ReportAbusePage })));
 const CreatorOSPage = lazy(lazyWithRetry(() => import("./pages/public/CreatorOSPage"), "creator-os"));
+const JVZooAffiliatePage = lazy(lazyWithRetry(() => import("./pages/public/JVZooAffiliatePage"), "jvzoo-affiliate"));
 const AdminAuthPage = lazy(() => import("./pages/AdminAuthPage"));
 const AdminAuthCallbackPage = lazy(() => import("./pages/AdminAuthCallbackPage"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
@@ -184,6 +185,7 @@ const App = () => (
               <Route path="/acceptable-use-policy" element={<AcceptableUsePolicyPage />} />
               <Route path="/report-abuse" element={<ReportAbusePage />} />
               <Route path="/creator-os" element={<CreatorOSPage />} />
+              <Route path="/jvzooaffiliate" element={<JVZooAffiliatePage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

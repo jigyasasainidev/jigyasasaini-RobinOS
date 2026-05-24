@@ -22,6 +22,10 @@ export interface PlatformSettingsRow {
   announcement_banner: string | null;
   creator_os_page_enabled: boolean;
   creator_os_demo_video_url: string | null;
+  jvzoo_affiliate_enabled: boolean;
+  jvzoo_affiliate_demo_video_url: string | null;
+  jvzoo_affiliate_cta_url: string | null;
+  jvzoo_affiliate_button_text: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -45,6 +49,10 @@ export interface PlatformSettingsDraft {
   announcement_banner: string;
   creator_os_page_enabled: boolean;
   creator_os_demo_video_url: string;
+  jvzoo_affiliate_enabled: boolean;
+  jvzoo_affiliate_demo_video_url: string;
+  jvzoo_affiliate_cta_url: string;
+  jvzoo_affiliate_button_text: string;
 }
 
 /**
@@ -64,6 +72,10 @@ export const PLATFORM_SETTINGS_DEFAULTS: PlatformSettingsDraft = {
   announcement_banner: "",
   creator_os_page_enabled: true,
   creator_os_demo_video_url: "",
+  jvzoo_affiliate_enabled: false,
+  jvzoo_affiliate_demo_video_url: "",
+  jvzoo_affiliate_cta_url: "",
+  jvzoo_affiliate_button_text: "Join Affiliate Program",
 };
 
 /**
@@ -106,5 +118,9 @@ export interface PlatformSettingsLive {
   announcement_banner: string | null;
   creator_os_page_enabled: boolean;
   creator_os_demo_video_url: string | null;
+  jvzoo_affiliate_enabled: boolean;
+  jvzoo_affiliate_demo_video_url: string | null;
+  jvzoo_affiliate_cta_url: string | null;
+  jvzoo_affiliate_button_text: string | null;
   updated_at: string;
 }

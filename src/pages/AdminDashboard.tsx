@@ -806,6 +806,10 @@ const AdminDashboard = () => {
       announcement_banner: platformSettings.announcement_banner ?? "",
       creator_os_page_enabled: platformSettings.creator_os_page_enabled ?? true,
       creator_os_demo_video_url: platformSettings.creator_os_demo_video_url ?? "",
+      jvzoo_affiliate_enabled: platformSettings.jvzoo_affiliate_enabled ?? false,
+      jvzoo_affiliate_demo_video_url: platformSettings.jvzoo_affiliate_demo_video_url ?? "",
+      jvzoo_affiliate_cta_url: platformSettings.jvzoo_affiliate_cta_url ?? "",
+      jvzoo_affiliate_button_text: platformSettings.jvzoo_affiliate_button_text ?? "Join Affiliate Program",
     });
   }, [platformSettings]);
 
@@ -1220,6 +1224,10 @@ const AdminDashboard = () => {
         announcement_banner: settingsDraft.announcement_banner || null,
         creator_os_page_enabled: !!settingsDraft.creator_os_page_enabled,
         creator_os_demo_video_url: settingsDraft.creator_os_demo_video_url?.trim() || null,
+        jvzoo_affiliate_enabled: !!settingsDraft.jvzoo_affiliate_enabled,
+        jvzoo_affiliate_demo_video_url: settingsDraft.jvzoo_affiliate_demo_video_url?.trim() || null,
+        jvzoo_affiliate_cta_url: settingsDraft.jvzoo_affiliate_cta_url?.trim() || null,
+        jvzoo_affiliate_button_text: settingsDraft.jvzoo_affiliate_button_text?.trim() || "Join Affiliate Program",
       };
 
       if (platformSettings?.id) {
@@ -1699,6 +1707,50 @@ const AdminDashboard = () => {
                   className="h-9 text-sm font-mono"
                 />
                 <p className="text-[9px] font-mono text-muted-foreground/25">YouTube, Vimeo, Loom, or direct MP4 URL. Leave empty to show placeholder.</p>
+              </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard title="JVZoo Affiliate Launch Controls" subtitle="Affiliate page visibility, video, CTA, and button text">
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Affiliate Page</p>
+                <select
+                  value={settingsDraft.jvzoo_affiliate_enabled ? "true" : "false"}
+                  onChange={(e) => setSettingsDraft((s) => ({ ...s, jvzoo_affiliate_enabled: e.target.value === "true" }))}
+                  className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground"
+                >
+                  <option value="false">⬤ HIDDEN — /jvzooaffiliate redirects to homepage</option>
+                  <option value="true">● VISIBLE — /jvzooaffiliate publicly accessible</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Demo Video URL</p>
+                <Input
+                  value={settingsDraft.jvzoo_affiliate_demo_video_url}
+                  onChange={(e) => setSettingsDraft((s) => ({ ...s, jvzoo_affiliate_demo_video_url: e.target.value }))}
+                  placeholder="https://youtube.com/watch?v=... or Vimeo / Loom / MP4"
+                  className="h-9 text-sm font-mono"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Affiliate CTA URL (JVZoo link)</p>
+                <Input
+                  value={settingsDraft.jvzoo_affiliate_cta_url}
+                  onChange={(e) => setSettingsDraft((s) => ({ ...s, jvzoo_affiliate_cta_url: e.target.value }))}
+                  placeholder="https://jvzoo.com/... or your affiliate sign-up URL"
+                  className="h-9 text-sm font-mono"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Join Button Text</p>
+                <Input
+                  value={settingsDraft.jvzoo_affiliate_button_text}
+                  onChange={(e) => setSettingsDraft((s) => ({ ...s, jvzoo_affiliate_button_text: e.target.value }))}
+                  placeholder="Join Affiliate Program"
+                  maxLength={60}
+                  className="h-9 text-sm"
+                />
               </div>
             </div>
           </SectionCard>
