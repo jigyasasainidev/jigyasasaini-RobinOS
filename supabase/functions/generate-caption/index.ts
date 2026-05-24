@@ -7,11 +7,11 @@ import {
   createServiceClient,
 } from "../_shared/entitlement.ts";
 import {
-  validateAIConfig,
-  callAI,
-  aiErrorResponse,
-  AI_MODEL_DEFAULT,
-} from "../_shared/ai-provider.ts";
+  validateGeminiConfig,
+  callGemini,
+  geminiErrorResponse,
+  GEMINI_MODEL_DEFAULT,
+} from "../_shared/gemini.ts";
 import { trackFeatureUsage } from "../_shared/feature-usage.ts";
 
 type Platform = "youtube" | "instagram" | "tiktok" | "facebook";
@@ -27,8 +27,8 @@ const platformGuidance: Record<Platform, string> = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
 
-  // ── Startup: validate AI provider config ──────────────────
-  const configError = validateAIConfig();
+  // ── Startup: validate Gemini config ──────────────────────
+  const configError = validateGeminiConfig();
   if (configError) return configError;
 
   try {
@@ -117,8 +117,8 @@ serve(async (req) => {
       });
     }
 
-    const aiResponse = await callAI({
-      model: AI_MODEL_DEFAULT,
+    const aiResponse = await callGemini({
+      model: GEMINI_MODEL_DEFAULT,
       response_format: { type: "json_object" },
         messages: [
           {
@@ -152,7 +152,7 @@ Output constraints:
     });
 
     if (!aiResponse.ok) {
-      return aiErrorResponse(aiResponse);
+      return geminiErrorResponse(aiResponse);
     }
 
     const raw = aiResponse.data;

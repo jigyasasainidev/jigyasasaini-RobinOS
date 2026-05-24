@@ -1,8 +1,8 @@
 import {
-  validateAIConfig,
-  callAI,
-  AI_MODEL_FAST,
-} from "../_shared/ai-provider.ts";
+  validateGeminiConfig,
+  callGemini,
+  GEMINI_MODEL_FAST,
+} from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,8 +15,7 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // ── Startup: validate AI provider config ──────────────────
-  const configError = validateAIConfig();
+  const configError = validateGeminiConfig();
   if (configError) return configError;
 
   try {
@@ -35,23 +34,22 @@ Deno.serve(async (req) => {
       });
     }
 
-    const aiResult = await callAI({
-      model: AI_MODEL_FAST,
+    const aiResult = await callGemini({
+      model: GEMINI_MODEL_FAST,
       messages: [
         {
           role: "system",
-          content: `You are a script simplifier for content creators. Your job is to take a detailed AI-generated script and convert it into a simple, easy-to-read format that ANYONE can understand — even a 10-year-old.
+          content: `You are a script simplifier for content creators. Convert the detailed script into a simple, easy-to-read format anyone can follow.
 
 Rules:
-1. Remove ALL markdown formatting (no ##, **, etc)
-2. Write in simple, conversational language
-3. Break into clear sections: WHAT TO SAY, HOW TO EDIT, TIPS
-4. Use numbered steps for "What to Say" — just the spoken words, no timestamps
-5. For editing directions, write like you're explaining to a friend: "Add some chill music here", "Show a clip of..."
-6. Keep the energy and hook of the original but make it dead simple
-7. Remove jargon like "pattern interrupt", "retention", "B-roll"
-8. Output should be clean plain text — no markdown, no special symbols
-9. Keep it SHORT — maximum 60% of original length`,
+1. Remove ALL markdown (no ##, **, etc)
+2. Simple, conversational language
+3. Three sections: WHAT TO SAY, HOW TO EDIT, TIPS
+4. Numbered steps for "What to Say" — spoken words only, no timestamps
+5. Editing directions explained like to a friend: "Add chill music here"
+6. Remove jargon: no "pattern interrupt", "retention", "B-roll"
+7. Plain text only — no markdown, no special symbols
+8. Max 60% of original length`,
         },
         {
           role: "user",
@@ -61,7 +59,7 @@ Rules:
     });
 
     if (!aiResult.ok) {
-      console.error("simplify-script AI error:", aiResult.code);
+      console.error("simplify-script Gemini error:", aiResult.code);
       return new Response(
         JSON.stringify({ success: false, code: aiResult.code, error: aiResult.message }),
         { status: aiResult.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },

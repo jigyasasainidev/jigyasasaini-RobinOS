@@ -7,11 +7,11 @@ import {
   createErrorResponse,
 } from "../_shared/entitlement.ts";
 import {
-  validateAIConfig,
-  callAI,
-  aiErrorResponse,
-  AI_MODEL_DEFAULT,
-} from "../_shared/ai-provider.ts";
+  validateGeminiConfig,
+  callGemini,
+  geminiErrorResponse,
+  GEMINI_MODEL_DEFAULT,
+} from "../_shared/gemini.ts";
 import { trackFeatureUsage } from "../_shared/feature-usage.ts";
 
 // ============================================================
@@ -31,8 +31,8 @@ function logError(phase: string, meta: Record<string, unknown> = {}) {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
 
-  // ── Startup: validate AI provider config ──────────────────
-  const configError = validateAIConfig();
+  // ── Startup: validate Gemini config ──────────────────────
+  const configError = validateGeminiConfig();
   if (configError) return configError;
 
   const startMs = Date.now();
@@ -119,12 +119,12 @@ serve(async (req) => {
   log("AUTH_VERIFIED", { user_id: user.id, elapsed_ms: Date.now() - startMs });
 
   // ── PHASE 4: AI generation ────────────────────────────────
-  log("AI_REQUEST_STARTED", { model: AI_MODEL_DEFAULT, topic_length: topic.length });
+  log("AI_REQUEST_STARTED", { model: GEMINI_MODEL_DEFAULT, topic_length: topic.length });
 
   const aiStart = Date.now();
-  const aiResult = await callAI({
-    model: AI_MODEL_DEFAULT,
-    timeoutMs: 25_000, // keep under Supabase free-tier CPU wall
+  const aiResult = await callGemini({
+    model: GEMINI_MODEL_DEFAULT,
+    timeoutMs: 25_000,
     messages: [
       {
         role: "system",
@@ -147,14 +147,14 @@ Be specific, concise, and ruthlessly engaging.`,
   const aiElapsed = Date.now() - aiStart;
 
   if (!aiResult.ok) {
-    logError("AI_PROVIDER_ERROR", { code: aiResult.code, status: aiResult.status, elapsed_ms: aiElapsed });
-    return aiErrorResponse(aiResult);
+    logError("AI_PROVIDER_ERROR", { code: aiResult.code, status: aiResult.status, elapsed_ms: Date.now() - aiStart });
+    return geminiErrorResponse(aiResult);
   }
 
   const content = String(aiResult.data?.choices?.[0]?.message?.content ?? "").trim() || null;
 
   if (!content) {
-    logError("AI_EMPTY_CONTENT", { model: AI_MODEL_DEFAULT, elapsed_ms: aiElapsed });
+    logError("AI_EMPTY_CONTENT", { model: GEMINI_MODEL_DEFAULT, elapsed_ms: Date.now() - aiStart });
     // Non-fatal persist of empty result for debugging
     await supabase.from("script_generations").insert({
       user_id: user.id,
