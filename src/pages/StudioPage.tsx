@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { PenTool, Wand2, Lock, Sparkles, Loader2, Zap, TrendingUp, Target, Brain } from "lucide-react";
+import { PenTool, Wand2, Lock, Sparkles, Loader2, Zap, TrendingUp, Target, Brain, Search, Flame, ArrowRight, Radio, Wifi, Globe } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,6 +18,29 @@ import { ScriptModeSelector, type ScriptMode } from "@/components/ScriptModeSele
 import { ScriptOutput } from "@/components/ScriptOutput";
 import { scanTrendTopic } from "@/services/trendRadarClient";
 import type { TrendIntelligence } from "@/types/trendRadar";
+
+// ── Trend topic shape from scan-trends edge function ──────
+interface TrendTopic {
+  title:       string;
+  description: string;
+  platforms:   string;
+  heat:        number;
+  hook_types:  string[];
+  volume:      "High" | "Medium" | "Emerging";
+}
+
+// ── Scan messages (rotated during scanning) ───────────────
+const SCANNER_MESSAGES = [
+  "Scanning creator signals...",
+  "Analyzing trend velocity...",
+  "Detecting viral patterns...",
+  "Measuring topic saturation...",
+  "Mapping audience demand...",
+  "Calibrating AI intelligence...",
+];
+
+// ── Scan icons (cycling) ──────────────────────────────────
+const SCAN_ICONS = [Zap, Radio, Globe, Wifi, Sparkles, Search, TrendingUp];
 
 const tones = ["Casual", "Bold", "Storytelling", "Educational", "Provocative"];
 const allLengths = ["30s Short", "60s Reel", "3min Script", "10min Long-form"];
@@ -52,6 +75,15 @@ const StudioPage = () => {
   const [scanPhase, setScanPhase]       = useState<string>("");
   const [trendIntel, setTrendIntel]     = useState<TrendIntelligence | null>(null);
   const scanPhaseRef                    = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ── Trend Scanner state (standalone section) ──────────────
+  const [scannerNiche,    setScannerNiche]    = useState("");
+  const [scannerLoading,  setScannerLoading]  = useState(false);
+  const [scannerTopics,   setScannerTopics]   = useState<TrendTopic[]>([]);
+  const [scannerMsgIdx,   setScannerMsgIdx]   = useState(0);
+  const [scannerIconIdx,  setScannerIconIdx]  = useState(0);
+  const [scannerScanned,  setScannerScanned]  = useState(false);
+  const scannerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [dailyUsage, setDailyUsage] = useState<{
     used: number;
     quota: number | null;
@@ -103,6 +135,66 @@ const StudioPage = () => {
     "Mapping audience demand...",
     "Calibrating trend intelligence...",
   ];
+
+  // ── Trend Scanner handler ─────────────────────────────────
+  const handleScan = async () => {
+    if (!scannerNiche.trim()) { toast.error("Enter a niche to scan"); return; }
+
+    setScannerLoading(true);
+    setScannerScanned(true);
+    setScannerTopics([]);
+    setScannerMsgIdx(0);
+    setScannerIconIdx(0);
+
+    let mIdx = 0, iIdx = 0;
+    scannerIntervalRef.current = setInterval(() => {
+      mIdx = (mIdx + 1) % SCANNER_MESSAGES.length;
+      iIdx = (iIdx + 1) % SCAN_ICONS.length;
+      setScannerMsgIdx(mIdx);
+      setScannerIconIdx(iIdx);
+    }, 1100);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("scan-trends", {
+        body: { niche: scannerNiche.trim() },
+      });
+
+      if (scannerIntervalRef.current) { clearInterval(scannerIntervalRef.current); scannerIntervalRef.current = null; }
+      setScannerLoading(false);
+
+      if (error) {
+        const status = (error as any)?.context?.status ?? (error as any)?.status;
+        let parsed: Record<string, unknown> = {};
+        try {
+          const raw = (error as any)?.context?.responseText ?? (error as any)?.message ?? "";
+          parsed = typeof raw === "string" && raw.startsWith("{") ? JSON.parse(raw) : {};
+        } catch { /* ignore */ }
+        if (status === 403) {
+          toast.error(String(parsed.error ?? parsed.message ?? "Scan limit reached."));
+        } else {
+          toast.error("Scan failed. Try again.");
+        }
+        return;
+      }
+
+      const topics = (data?.topics ?? []) as TrendTopic[];
+      setScannerTopics(topics);
+      if (!topics.length) toast.error("No trends found. Try a different niche.");
+    } catch {
+      if (scannerIntervalRef.current) { clearInterval(scannerIntervalRef.current); scannerIntervalRef.current = null; }
+      setScannerLoading(false);
+      toast.error("Network error. Try again.");
+    }
+  };
+
+  // Use a scanned topic as script input
+  const useTopicInScript = (title: string) => {
+    setTopic(title);
+    // Smooth scroll to Script Engine input
+    setTimeout(() => {
+      document.getElementById("script-engine-input")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  };
 
   const handleGenerate = async () => {
     if (!topic.trim()) { toast.error("Enter a topic first"); return; }
@@ -239,6 +331,224 @@ const StudioPage = () => {
 
   return (
     <div className="pt-14 md:pt-0">
+
+      {/* ══════════════════════════════════════════════════
+          TREND SCANNER — above Script Engine
+      ══════════════════════════════════════════════════ */}
+      <div className="mb-8">
+        {/* Header */}
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-1">
+            <TrendingUp className="w-4 h-4 text-primary" />
+            <span className="text-xs font-mono uppercase tracking-[0.2em] text-muted-foreground">Trend Scanner</span>
+          </div>
+          <h2 className="text-chrome text-xl font-semibold mb-1">Discover What's Trending</h2>
+          <p className="text-muted-foreground text-sm">Enter your niche → RobinOS scans AI for viral trends → pick one → generate script.</p>
+        </div>
+
+        {/* Search bar */}
+        <div className="glass-card p-4 mb-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
+              <Input
+                value={scannerNiche}
+                onChange={(e) => setScannerNiche(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !scannerLoading && handleScan()}
+                placeholder="Enter your niche — e.g. Fitness, AI Tools, Personal Finance..."
+                className="input-glass h-12 text-sm pl-10 rounded-xl"
+                disabled={scannerLoading}
+              />
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={handleScan}
+              disabled={scannerLoading || !scannerNiche.trim()}
+              className="btn-primary flex items-center justify-center gap-2 !py-3 !px-7 shrink-0 shimmer-btn disabled:opacity-50"
+            >
+              {scannerLoading
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> Scanning...</>
+                : <><Sparkles className="w-4 h-4" /> Scan Now</>
+              }
+            </motion.button>
+          </div>
+        </div>
+
+        {/* ── Scanning animation overlay ─────────────────── */}
+        <AnimatePresence>
+          {scannerLoading && (
+            <motion.div
+              key="scanner-anim"
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              className="relative rounded-2xl overflow-hidden mb-4 flex flex-col items-center justify-center py-14"
+              style={{ background: "hsl(222 28% 5.5% / 0.95)", border: "1px solid hsl(217 91% 60% / 0.12)" }}
+            >
+              {/* Holographic rings */}
+              {[0,1,2,3].map((i) => (
+                <motion.div
+                  key={`ring-${i}`}
+                  className="absolute rounded-full border border-primary/10"
+                  style={{ width: 80 + i * 38, height: 80 + i * 38 }}
+                  initial={{ scale: 0.3, opacity: 0 }}
+                  animate={{ scale: [0.3, 2.5, 3.5], opacity: [0, 0.5, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, delay: i * 0.55, ease: "easeOut" }}
+                />
+              ))}
+
+              {/* Rotating scanner beam */}
+              <motion.div
+                className="absolute w-36 h-[1.5px] origin-left"
+                style={{ background: "linear-gradient(90deg, hsl(217 91% 60% / 0.7), transparent)" }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2.8, repeat: Infinity, ease: "linear" }}
+              />
+
+              {/* Center pulse */}
+              <motion.div
+                className="relative z-10 w-14 h-14 rounded-full flex items-center justify-center mb-5"
+                style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.2)" }}
+              >
+                {(() => {
+                  const Icon = SCAN_ICONS[scannerIconIdx % SCAN_ICONS.length];
+                  return (
+                    <motion.div key={scannerIconIdx} initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
+                      <Icon className="w-6 h-6 text-primary" strokeWidth={1.5} />
+                    </motion.div>
+                  );
+                })()}
+              </motion.div>
+
+              {/* Cycling message */}
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={scannerMsgIdx}
+                  initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, y: -10, filter: "blur(4px)" }}
+                  transition={{ duration: 0.35 }}
+                  className="relative z-10 text-sm font-mono text-primary tracking-wider"
+                >
+                  {SCANNER_MESSAGES[scannerMsgIdx]}
+                </motion.p>
+              </AnimatePresence>
+              <p className="relative z-10 mt-2 text-[11px] text-muted-foreground/50 font-mono">
+                Target: "{scannerNiche}"
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Results ───────────────────────────────────── */}
+        <AnimatePresence mode="wait">
+          {!scannerLoading && scannerScanned && scannerTopics.length > 0 && (
+            <motion.div
+              key="scanner-results"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className="space-y-3"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <Flame className="w-3.5 h-3.5 text-primary/70" />
+                <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground/60">
+                  {scannerTopics.length} signals detected for "{scannerNiche}"
+                </span>
+              </div>
+
+              {scannerTopics.map((topic, i) => (
+                <motion.div
+                  key={topic.title}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.08, duration: 0.35 }}
+                  className="glass-card p-4 group"
+                >
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      {/* Title row */}
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <span className="text-[10px] font-mono text-muted-foreground/40">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <h3 className="text-sm font-semibold text-foreground">{topic.title}</h3>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Flame className="w-3 h-3 text-primary" />
+                          <span className="text-xs font-mono text-primary">{topic.heat}</span>
+                        </div>
+                        <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
+                          topic.volume === "High"
+                            ? "bg-red-500/10 text-red-400"
+                            : topic.volume === "Medium"
+                              ? "bg-amber-500/10 text-amber-400"
+                              : "bg-blue-500/10 text-blue-400"
+                        }`}>{topic.volume}</span>
+                      </div>
+
+                      {/* Description */}
+                      <p className="text-xs text-muted-foreground leading-relaxed mb-2">{topic.description}</p>
+
+                      {/* Platforms */}
+                      <div className="flex items-center gap-1.5 flex-wrap mb-2">
+                        {topic.platforms.split(",").map((p) => (
+                          <span key={p.trim()} className="px-2 py-0.5 rounded-md bg-secondary text-[10px] font-mono text-muted-foreground">
+                            {p.trim()}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Hooks */}
+                      {topic.hook_types?.length > 0 && (
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[9px] font-mono text-muted-foreground/40">HOOKS:</span>
+                          {topic.hook_types.map((h) => (
+                            <span key={h} className="px-1.5 py-0.5 rounded bg-primary/8 text-[9px] font-mono text-primary border border-primary/15">
+                              {h}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Use in Script Engine button */}
+                    <motion.button
+                      whileHover={{ scale: 1.02, x: 2 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => useTopicInScript(topic.title)}
+                      className="shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium border transition-all w-full md:w-auto"
+                      style={{
+                        background: "hsl(217 91% 60% / 0.08)",
+                        border: "1px solid hsl(217 91% 60% / 0.2)",
+                        color: "hsl(217 91% 68%)",
+                      }}
+                    >
+                      Use in Script Engine <ArrowRight className="w-3 h-3" />
+                    </motion.button>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+
+          {!scannerLoading && scannerScanned && scannerTopics.length === 0 && (
+            <motion.div
+              key="scanner-empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-8 text-sm text-muted-foreground"
+            >
+              No trends found. Try a broader niche.
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Divider */}
+      <div className="border-t border-border/40 mb-8" />
+
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-1">
@@ -264,7 +574,7 @@ const StudioPage = () => {
       </div>
 
       {/* Quick Generate Box */}
-      <div className="glass-card p-5 mb-6">
+      <div id="script-engine-input" className="glass-card p-5 mb-6">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
