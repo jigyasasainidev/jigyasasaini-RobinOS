@@ -118,24 +118,24 @@ serve(async (req) => {
 
   log("AUTH_VERIFIED", { user_id: user.id, elapsed_ms: Date.now() - startMs });
 
-  // ── PHASE 4: AI generation via provider adapter ───────────
+  // ── PHASE 4: AI generation ────────────────────────────────
   log("AI_REQUEST_STARTED", { model: AI_MODEL_DEFAULT, topic_length: topic.length });
 
   const aiStart = Date.now();
   const aiResult = await callAI({
     model: AI_MODEL_DEFAULT,
+    timeoutMs: 25_000, // keep under Supabase free-tier CPU wall
     messages: [
       {
         role: "system",
-        content: `You are an elite viral script writer for short-form and long-form content. You write scripts that maximize retention, emotional impact, and shareability.
+        content: `You are an elite viral script writer for short-form and long-form content. Write scripts that maximize retention, emotional impact, and shareability. When a trend signal is mentioned in the topic, reference it naturally to make the script feel current.
 
-When given a topic, tone, and length, generate:
+Generate:
+1. **3 HOOKS** (different styles: question, bold statement, story opener)
+2. **FULL SCRIPT** (with timestamps and [VISUAL CUE] directions)
+3. **EDITING DIRECTIONS** (5 specific visual instructions)
 
-1. **3 HOOKS** (opening lines that stop the scroll — each should be a different style: question, bold statement, story opener)
-2. **FULL SCRIPT** (structured with timestamps, pattern interrupts every 3-5 seconds for short-form, clear sections for long-form. Include [VISUAL CUE] directions inline.)
-3. **EDITING DIRECTIONS** (5-7 specific visual editing instructions: b-roll suggestions, text overlays, transitions, sound effects, pacing notes)
-
-Format the output clearly with markdown headers. Be specific, actionable, and ruthlessly engaging. The script should feel like it was written by a top-tier content strategist.`,
+Be specific, concise, and ruthlessly engaging.`,
       },
       {
         role: "user",

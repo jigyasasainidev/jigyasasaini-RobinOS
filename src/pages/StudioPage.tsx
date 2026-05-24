@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { ScriptModeSelector, type ScriptMode } from "@/components/ScriptModeSelector";
 import { ScriptOutput } from "@/components/ScriptOutput";
-import { scanTrendTopic, buildTrendAwareContext } from "@/services/trendRadarClient";
+import { scanTrendTopic } from "@/services/trendRadarClient";
 import type { TrendIntelligence } from "@/types/trendRadar";
 
 const tones = ["Casual", "Bold", "Storytelling", "Educational", "Provocative"];
@@ -151,12 +151,17 @@ const StudioPage = () => {
     setScanPhase("");
     setTrendIntel(intel);
 
-    // ── STEP 2: Build enriched prompt ─────────────────────
-    const trendContext = buildTrendAwareContext(intel);
-    const suffix       = modePromptSuffix[mode];
-    const enrichedTopic = trendContext
-      ? `${topic.trim()}\n\n${trendContext}${suffix}`
-      : `${topic.trim()}${suffix}`;
+    // ── STEP 2: Build prompt — trend context stays in UI cards only ───
+    // Do NOT inject trend context into the edge function topic —
+    // extra tokens increase Groq latency and push past Supabase 2s CPU limit.
+    // The intelligence is already surfaced in the UI cards above the output.
+    const suffix        = modePromptSuffix[mode];
+    const cleanTopic    = topic.trim();
+    // Attach a compact one-line signal hint only if we have real data
+    const signalHint    = (!intel.isFallback && intel.topOpportunities[0])
+      ? ` [Signal: ${intel.topOpportunities[0].maturityStage} trend, ${intel.topOpportunities[0].momentumScore}/100 momentum]`
+      : "";
+    const enrichedTopic = `${cleanTopic}${signalHint}${suffix}`;
 
     // ── STEP 3: Generate script with intelligence ──────────
     try {
