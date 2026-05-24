@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
-import { PenTool, Wand2, Lock, Sparkles, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { PenTool, Wand2, Lock, Sparkles, Loader2, Zap, TrendingUp, Target, Brain } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { ScriptModeSelector, type ScriptMode } from "@/components/ScriptModeSelector";
 import { ScriptOutput } from "@/components/ScriptOutput";
+import { scanTrendTopic, buildTrendAwareContext } from "@/services/trendRadarClient";
+import type { TrendIntelligence } from "@/types/trendRadar";
 
 const tones = ["Casual", "Bold", "Storytelling", "Educational", "Provocative"];
 const allLengths = ["30s Short", "60s Reel", "3min Script", "10min Long-form"];
@@ -45,6 +47,11 @@ const StudioPage = () => {
   const [generating, setGenerating] = useState(false);
   const [output, setOutput] = useState(() => sessionStorage.getItem("studio_output") || "");
   const [showUpgrade, setShowUpgrade] = useState(false);
+
+  // ── Trend Intelligence state ───────────────────────────────
+  const [scanPhase, setScanPhase]       = useState<string>("");
+  const [trendIntel, setTrendIntel]     = useState<TrendIntelligence | null>(null);
+  const scanPhaseRef                    = useRef<ReturnType<typeof setInterval> | null>(null);
   const [dailyUsage, setDailyUsage] = useState<{
     used: number;
     quota: number | null;
@@ -88,11 +95,20 @@ const StudioPage = () => {
     void loadUsageStatus();
   }, [user?.id, isFree, currentTier]);
 
+  const SCAN_MESSAGES = [
+    "Scanning creator signals...",
+    "Detecting recurring hooks...",
+    "Measuring topic saturation...",
+    "Finding breakout opportunities...",
+    "Mapping audience demand...",
+    "Calibrating trend intelligence...",
+  ];
+
   const handleGenerate = async () => {
     if (!topic.trim()) { toast.error("Enter a topic first"); return; }
     if (isFree && (expired || scriptsLeft <= 0)) { setShowUpgrade(true); return; }
 
-    // ── Moderation: check prompt before any AI call ──────────
+    // ── Moderation ─────────────────────────────────────────
     const modResult = moderatePrompt(topic);
     if (!modResult.safe && (modResult.severity === "HIGH" || modResult.severity === "BLOCKED")) {
       toast.error(getModerationBlockMessage(modResult.categories));
@@ -101,24 +117,15 @@ const StudioPage = () => {
 
     if (!isFree) {
       const { data, error } = await db.rpc("get_usage_status", { p_feature_name: "scripts" });
-      if (error) {
-        toast.error(error.message || "Unable to verify your usage limits right now.");
-        return;
-      }
-
+      if (error) { toast.error(error.message || "Unable to verify your usage limits right now."); return; }
       const row = Array.isArray(data) ? data[0] : data;
       if (!row?.allowed) {
-        toast.warning("Daily generation limit reached.", {
-          description: "Upgrade to Pro Creator for higher limits.",
-        });
+        toast.warning("Daily generation limit reached.", { description: "Upgrade to Pro Creator for higher limits." });
         setShowUpgrade(true);
         setDailyUsage({
-          used: Number(row?.used ?? 0),
-          quota: row?.quota == null ? null : Number(row.quota),
-          remaining: Number(row?.remaining ?? 0),
-          allowed: Boolean(row?.allowed),
-          near_limit: Boolean(row?.near_limit),
-          fair_usage: Boolean(row?.fair_usage),
+          used: Number(row?.used ?? 0), quota: row?.quota == null ? null : Number(row.quota),
+          remaining: Number(row?.remaining ?? 0), allowed: false,
+          near_limit: Boolean(row?.near_limit), fair_usage: Boolean(row?.fair_usage),
           message: String(row?.message ?? "Daily limit reached"),
         });
         return;
@@ -127,15 +134,36 @@ const StudioPage = () => {
 
     setGenerating(true);
     setOutput("");
+    setTrendIntel(null);
 
+    // ── STEP 1: Trend Intelligence scan ───────────────────
+    // Staged loading messages while scanning
+    let msgIdx = 0;
+    setScanPhase(SCAN_MESSAGES[0]);
+    scanPhaseRef.current = setInterval(() => {
+      msgIdx = (msgIdx + 1) % SCAN_MESSAGES.length;
+      setScanPhase(SCAN_MESSAGES[msgIdx]);
+    }, 900);
+
+    const intel = await scanTrendTopic(topic.trim());
+
+    if (scanPhaseRef.current) { clearInterval(scanPhaseRef.current); scanPhaseRef.current = null; }
+    setScanPhase("");
+    setTrendIntel(intel);
+
+    // ── STEP 2: Build enriched prompt ─────────────────────
+    const trendContext = buildTrendAwareContext(intel);
+    const suffix       = modePromptSuffix[mode];
+    const enrichedTopic = trendContext
+      ? `${topic.trim()}\n\n${trendContext}${suffix}`
+      : `${topic.trim()}${suffix}`;
+
+    // ── STEP 3: Generate script with intelligence ──────────
     try {
-      const suffix = modePromptSuffix[mode];
       const requestId = crypto.randomUUID();
-
-      // ─── Use supabase.functions.invoke() — handles session auth automatically ───
       const { data: invokeData, error: invokeError } = await supabase.functions.invoke("generate-script", {
         body: {
-          topic: topic + suffix,
+          topic: enrichedTopic,
           tone: selectedTone,
           length: mode === "hooks" ? "30s Short" : selectedLength,
           user_id: user?.id,
@@ -155,12 +183,9 @@ const StudioPage = () => {
           const usage = parsed.usage as Record<string, unknown> | undefined;
           if (usage) {
             setDailyUsage({
-              used: Number(usage.used ?? 0),
-              quota: usage.quota == null ? null : Number(usage.quota),
-              remaining: Number(usage.remaining ?? 0),
-              allowed: false,
-              near_limit: Boolean(usage.near_limit),
-              fair_usage: Boolean(usage.fair_usage),
+              used: Number(usage.used ?? 0), quota: usage.quota == null ? null : Number(usage.quota),
+              remaining: Number(usage.remaining ?? 0), allowed: false,
+              near_limit: Boolean(usage.near_limit), fair_usage: Boolean(usage.fair_usage),
               message: String(usage.message ?? "Daily limit reached"),
             });
           }
@@ -174,12 +199,9 @@ const StudioPage = () => {
         return;
       }
 
-      // generate-script returns SSE-formatted text — parse it
       const rawText: string = typeof invokeData === "string"
         ? invokeData
-        : invokeData instanceof Blob
-          ? await invokeData.text()
-          : "";
+        : invokeData instanceof Blob ? await invokeData.text() : "";
 
       let fullOutput = "";
       for (const line of rawText.split("\n")) {
@@ -188,10 +210,10 @@ const StudioPage = () => {
         const jsonStr = trimmed.slice(6).trim();
         if (jsonStr === "[DONE]") break;
         try {
-          const parsed = JSON.parse(jsonStr);
-          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          const p = JSON.parse(jsonStr);
+          const content = p.choices?.[0]?.delta?.content as string | undefined;
           if (content) { fullOutput += content; setOutput(fullOutput); }
-        } catch { /* skip unparseable lines */ }
+        } catch { /* skip */ }
       }
 
       if (user && fullOutput.trim()) {
@@ -201,9 +223,10 @@ const StudioPage = () => {
       }
 
       await loadUsageStatus();
-    } catch (e) {
+    } catch {
       toast.error("Network error. Try again.");
     }
+
     setGenerating(false);
   };
 
@@ -259,7 +282,7 @@ const StudioPage = () => {
               {effectiveLimitReached ? (
                 <><Lock className="w-4 h-4" /> Upgrade</>
               ) : generating ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+                <><Loader2 className="w-4 h-4 animate-spin" /> {scanPhase || "Generating..."}</>
               ) : (
                 <><Wand2 className="w-4 h-4" /> Generate in Script Engine</>
               )}
@@ -313,6 +336,124 @@ const StudioPage = () => {
           )}
         </div>
       </div>
+
+      {/* ── Scan phase indicator ─────────────────────────── */}
+      <AnimatePresence>
+        {generating && scanPhase && !output && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+            className="mb-4 flex items-center gap-2.5 px-4 py-2.5 rounded-lg border border-primary/20 bg-primary/5"
+          >
+            <Loader2 className="w-3.5 h-3.5 text-primary animate-spin shrink-0" />
+            <span className="text-xs font-mono text-primary/80">{scanPhase}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Intelligence Preview Cards ────────────────────── */}
+      <AnimatePresence>
+        {trendIntel && !trendIntel.isFallback && trendIntel.topOpportunities.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.35 }}
+            className="mb-6 space-y-3"
+          >
+            {/* Section header */}
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-primary/70" />
+              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground/60">
+                Live Trend Intelligence
+              </span>
+              <span className="text-[9px] font-mono text-muted-foreground/35 ml-auto">
+                {trendIntel.confidence}% confidence · {trendIntel.sourceSpread} source{trendIntel.sourceSpread !== 1 ? "s" : ""}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Top opportunities */}
+              {trendIntel.topOpportunities.length > 0 && (
+                <div className="rounded-xl border border-border/50 bg-card/40 p-3.5">
+                  <div className="flex items-center gap-1.5 mb-2.5">
+                    <Zap className="w-3 h-3 text-primary/70" />
+                    <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Detected Opportunities</span>
+                  </div>
+                  <div className="space-y-2">
+                    {trendIntel.topOpportunities.slice(0, 2).map((op, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <span className={`mt-0.5 text-[9px] font-mono px-1.5 py-0.5 rounded border shrink-0 ${
+                          op.maturityStage === "Hot"    ? "border-red-500/25 text-red-400/80" :
+                          op.maturityStage === "Rising" ? "border-emerald-500/25 text-emerald-400/80" :
+                          "border-primary/20 text-primary/60"
+                        }`}>{op.maturityStage}</span>
+                        <p className="text-[11px] text-foreground/80 leading-snug truncate">{op.cleanTitle}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Low competition angles */}
+              {trendIntel.lowCompetition.length > 0 && (
+                <div className="rounded-xl border border-border/50 bg-card/40 p-3.5">
+                  <div className="flex items-center gap-1.5 mb-2.5">
+                    <Target className="w-3 h-3 text-primary/70" />
+                    <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Low Competition Angles</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {trendIntel.lowCompetition.slice(0, 2).map((op, i) => (
+                      <p key={i} className="text-[11px] text-muted-foreground/70 leading-snug truncate">
+                        · {op.opportunityType}: {op.cleanTitle}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Viral hooks */}
+              {trendIntel.viralHooks.length > 0 && (
+                <div className="rounded-xl border border-border/50 bg-card/40 p-3.5">
+                  <div className="flex items-center gap-1.5 mb-2.5">
+                    <Brain className="w-3 h-3 text-primary/70" />
+                    <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Viral Signal Patterns</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {trendIntel.viralHooks.slice(0, 2).map((hook, i) => (
+                      <p key={i} className="text-[11px] text-muted-foreground/70 leading-snug line-clamp-2">
+                        · {hook}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Trend momentum */}
+              {trendIntel.topOpportunities.length > 0 && (
+                <div className="rounded-xl border border-border/50 bg-card/40 p-3.5">
+                  <div className="flex items-center gap-1.5 mb-2.5">
+                    <TrendingUp className="w-3 h-3 text-primary/70" />
+                    <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Trend Momentum</span>
+                  </div>
+                  <div className="space-y-2">
+                    {trendIntel.topOpportunities.slice(0, 2).map((op, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <div className="flex-1 h-1 rounded-full bg-border/40 overflow-hidden">
+                          <motion.div
+                            className="h-full rounded-full bg-primary/50"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${op.momentumScore}%` }}
+                            transition={{ duration: 0.8, delay: i * 0.15, ease: "easeOut" }}
+                          />
+                        </div>
+                        <span className="text-[9px] font-mono text-muted-foreground/50 w-7 shrink-0">{op.momentumScore}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Output */}
       <ScriptOutput
