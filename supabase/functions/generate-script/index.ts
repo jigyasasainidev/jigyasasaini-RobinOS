@@ -66,12 +66,16 @@ serve(async (req) => {
 
   const requestId = request_id || crypto.randomUUID();
 
-  // ── PHASE 2: Entitlement check + atomic quota increment ───
-  const { result: entitlement, error: entitlementError } = await checkAndIncrementUsage(
-    authHeader,
-    FEATURES.SCRIPT_GENERATION,
-    requestId,
-  );
+  // ── PHASE 2 + 3: Entitlement check AND user resolution in parallel ──
+  const supabase = createServiceClient();
+  const token = authHeader.replace("Bearer ", "");
+
+  const [entitlementResult, userResult] = await Promise.all([
+    checkAndIncrementUsage(authHeader, FEATURES.SCRIPT_GENERATION, requestId),
+    supabase.auth.getUser(token),
+  ]);
+
+  const { result: entitlement, error: entitlementError } = entitlementResult;
 
   if (entitlementError) {
     if (entitlement && !entitlement.success) {
@@ -103,15 +107,10 @@ serve(async (req) => {
     plan: entitlement.plan,
     used: entitlement.used,
     remaining: entitlement.remaining,
-    code: entitlement.code,
     elapsed_ms: Date.now() - startMs,
   });
 
-  // ── PHASE 3: User resolution ──────────────────────────────
-  const supabase = createServiceClient();
-  const token = authHeader.replace("Bearer ", "");
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
+  const { data: { user }, error: authError } = userResult;
   if (authError || !user?.id) {
     logError("USER_RESOLUTION_FAILED");
     return createErrorResponse("UNAUTHORIZED", "Invalid or expired token", 401);

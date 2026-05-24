@@ -188,43 +188,18 @@ export async function scanTrendTopic(topic: string): Promise<TrendIntelligence> 
 export function buildTrendAwareContext(intel: TrendIntelligence): string {
   if (intel.isFallback || intel.topOpportunities.length === 0) return "";
 
-  const lines: string[] = [];
+  // Keep it compact — edge function has strict CPU limits.
+  // One line of signal context is enough to shift AI output quality.
+  const top = intel.topOpportunities[0];
+  const hook = intel.viralHooks[0] ?? "";
+  const angle = intel.risingAngles[0] ?? top?.creatorAngle ?? "";
 
-  lines.push("=== LIVE TREND INTELLIGENCE (use this to shape the script) ===");
+  const parts: string[] = [
+    `[TREND SIGNAL: "${top.cleanTitle}" is ${top.maturityStage} (${top.momentumScore}/100 momentum).`,
+  ];
+  if (hook)  parts.push(`Signal: ${hook}`);
+  if (angle) parts.push(`Creator angle: ${angle}`);
+  parts.push("Reference this trend context to make the script feel current and creator-native.]");
 
-  if (intel.topOpportunities.length > 0) {
-    lines.push("\n🔥 TOP CREATOR OPPORTUNITIES RIGHT NOW:");
-    for (const op of intel.topOpportunities) {
-      lines.push(`  • ${op.cleanTitle}`);
-      lines.push(`    Why: ${op.whyTrending}`);
-      lines.push(`    Angle: ${op.creatorAngle}`);
-      lines.push(`    Stage: ${op.maturityStage} | Momentum: ${op.momentumScore}/100`);
-    }
-  }
-
-  if (intel.lowCompetition.length > 0) {
-    lines.push("\n🎯 LOW COMPETITION ANGLES (Early/Rising — act now):");
-    for (const op of intel.lowCompetition) {
-      lines.push(`  • ${op.cleanTitle} (${op.opportunityType})`);
-    }
-  }
-
-  if (intel.viralHooks.length > 0) {
-    lines.push("\n🧠 VIRAL SIGNAL PATTERNS DETECTED:");
-    for (const hook of intel.viralHooks) {
-      lines.push(`  • ${hook}`);
-    }
-  }
-
-  if (intel.risingAngles.length > 0) {
-    lines.push("\n⚡ RISING CREATOR ANGLES:");
-    for (const angle of intel.risingAngles) {
-      lines.push(`  • ${angle}`);
-    }
-  }
-
-  lines.push(`\nSignal confidence: ${intel.confidence}/100 | Source spread: ${intel.sourceSpread} sources`);
-  lines.push("=== USE THE ABOVE INTELLIGENCE — reference real trends, not generic advice ===\n");
-
-  return lines.join("\n");
+  return parts.join(" ");
 }
