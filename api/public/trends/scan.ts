@@ -469,8 +469,13 @@ async function runScan(topic: string, _platforms: string[], requestId: string) {
   const isFallback = scored.length < 1;
   const avgConf = Math.round(opportunities.reduce((a, o) => a + o.confidenceScore, 0) / opportunities.length);
 
-  // Persist to Supabase — non-fatal, fire-and-forget
-  void persistTrendMemory(topic, opportunities, requestId, isFallback, sourcesHealthy, avgConf);
+  // Persist to Supabase — awaited with 4s timeout so serverless context
+  // does not terminate before the write completes (void/fire-and-forget
+  // is silently dropped in Vercel serverless environments).
+  await Promise.race([
+    persistTrendMemory(topic, opportunities, requestId, isFallback, sourcesHealthy, avgConf),
+    new Promise<void>(resolve => setTimeout(resolve, 4000)),
+  ]);
 
   return {
     success:   true,
