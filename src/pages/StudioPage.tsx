@@ -329,25 +329,27 @@ const StudioPage = () => {
 
   const effectiveLimitReached = (isFree && (expired || scriptsLeft <= 0)) || (!isFree && dailyUsage ? !dailyUsage.allowed : false);
 
+
   return (
-    <div className="pt-14 md:pt-0">
+    <div className="pt-14 md:pt-0 space-y-10">
 
       {/* ══════════════════════════════════════════════════
-          TREND SCANNER — above Script Engine
+          SECTION 1 — TREND SCANNER
+          Standalone discovery module. Finds what's trending.
+          Completely separate from Script Engine.
       ══════════════════════════════════════════════════ */}
-      <div className="mb-8">
-        {/* Header */}
+      <section>
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-1">
             <TrendingUp className="w-4 h-4 text-primary" />
             <span className="text-xs font-mono uppercase tracking-[0.2em] text-muted-foreground">Trend Scanner</span>
           </div>
           <h2 className="text-chrome text-xl font-semibold mb-1">Discover What's Trending</h2>
-          <p className="text-muted-foreground text-sm">Enter your niche → RobinOS scans AI for viral trends → pick one → generate script.</p>
+          <p className="text-muted-foreground text-sm">Enter your niche → AI scans viral trends → pick one → generate your script below.</p>
         </div>
 
-        {/* Search bar */}
-        <div className="glass-card p-4 mb-4">
+        {/* Scanner input card */}
+        <div className="glass-card p-5">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
@@ -361,21 +363,19 @@ const StudioPage = () => {
               />
             </div>
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
+              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
               onClick={handleScan}
               disabled={scannerLoading || !scannerNiche.trim()}
               className="btn-primary flex items-center justify-center gap-2 !py-3 !px-7 shrink-0 shimmer-btn disabled:opacity-50"
             >
               {scannerLoading
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Scanning...</>
-                : <><Sparkles className="w-4 h-4" /> Scan Now</>
-              }
+                : <><Sparkles className="w-4 h-4" /> Scan Now</>}
             </motion.button>
           </div>
         </div>
 
-        {/* ── Scanning animation overlay ─────────────────── */}
+        {/* Scanning animation */}
         <AnimatePresence>
           {scannerLoading && (
             <motion.div
@@ -383,13 +383,11 @@ const StudioPage = () => {
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.97 }}
-              className="relative rounded-2xl overflow-hidden mb-4 flex flex-col items-center justify-center py-14"
+              className="relative rounded-2xl overflow-hidden mt-4 flex flex-col items-center justify-center py-14"
               style={{ background: "hsl(222 28% 5.5% / 0.95)", border: "1px solid hsl(217 91% 60% / 0.12)" }}
             >
-              {/* Holographic rings */}
               {[0,1,2,3].map((i) => (
-                <motion.div
-                  key={`ring-${i}`}
+                <motion.div key={`ring-${i}`}
                   className="absolute rounded-full border border-primary/10"
                   style={{ width: 80 + i * 38, height: 80 + i * 38 }}
                   initial={{ scale: 0.3, opacity: 0 }}
@@ -397,16 +395,12 @@ const StudioPage = () => {
                   transition={{ duration: 3, repeat: Infinity, delay: i * 0.55, ease: "easeOut" }}
                 />
               ))}
-
-              {/* Rotating scanner beam */}
               <motion.div
                 className="absolute w-36 h-[1.5px] origin-left"
                 style={{ background: "linear-gradient(90deg, hsl(217 91% 60% / 0.7), transparent)" }}
                 animate={{ rotate: 360 }}
                 transition={{ duration: 2.8, repeat: Infinity, ease: "linear" }}
               />
-
-              {/* Center pulse */}
               <motion.div
                 className="relative z-10 w-14 h-14 rounded-full flex items-center justify-center mb-5"
                 style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.2)" }}
@@ -414,17 +408,14 @@ const StudioPage = () => {
                 {(() => {
                   const Icon = SCAN_ICONS[scannerIconIdx % SCAN_ICONS.length];
                   return (
-                    <motion.div key={scannerIconIdx} initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
+                    <motion.div key={scannerIconIdx} initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }}>
                       <Icon className="w-6 h-6 text-primary" strokeWidth={1.5} />
                     </motion.div>
                   );
                 })()}
               </motion.div>
-
-              {/* Cycling message */}
               <AnimatePresence mode="wait">
-                <motion.p
-                  key={scannerMsgIdx}
+                <motion.p key={scannerMsgIdx}
                   initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
                   animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                   exit={{ opacity: 0, y: -10, filter: "blur(4px)" }}
@@ -441,89 +432,61 @@ const StudioPage = () => {
           )}
         </AnimatePresence>
 
-        {/* ── Results ───────────────────────────────────── */}
+        {/* Scan results */}
         <AnimatePresence mode="wait">
           {!scannerLoading && scannerScanned && scannerTopics.length > 0 && (
-            <motion.div
-              key="scanner-results"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
+            <motion.div key="scanner-results"
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.4 }}
-              className="space-y-3"
+              className="mt-4 space-y-3"
             >
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2">
                 <Flame className="w-3.5 h-3.5 text-primary/70" />
                 <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground/60">
                   {scannerTopics.length} signals detected for "{scannerNiche}"
                 </span>
               </div>
-
-              {scannerTopics.map((topic, i) => (
-                <motion.div
-                  key={topic.title}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
+              {scannerTopics.map((topicItem, i) => (
+                <motion.div key={topicItem.title}
+                  initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.08, duration: 0.35 }}
                   className="glass-card p-4 group"
                 >
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      {/* Title row */}
                       <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                        <span className="text-[10px] font-mono text-muted-foreground/40">
-                          {String(i + 1).padStart(2, "0")}
-                        </span>
-                        <h3 className="text-sm font-semibold text-foreground">{topic.title}</h3>
+                        <span className="text-[10px] font-mono text-muted-foreground/40">{String(i + 1).padStart(2, "0")}</span>
+                        <h3 className="text-sm font-semibold text-foreground">{topicItem.title}</h3>
                         <div className="flex items-center gap-1 shrink-0">
                           <Flame className="w-3 h-3 text-primary" />
-                          <span className="text-xs font-mono text-primary">{topic.heat}</span>
+                          <span className="text-xs font-mono text-primary">{topicItem.heat}</span>
                         </div>
                         <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
-                          topic.volume === "High"
-                            ? "bg-red-500/10 text-red-400"
-                            : topic.volume === "Medium"
-                              ? "bg-amber-500/10 text-amber-400"
-                              : "bg-blue-500/10 text-blue-400"
-                        }`}>{topic.volume}</span>
+                          topicItem.volume === "High" ? "bg-red-500/10 text-red-400"
+                          : topicItem.volume === "Medium" ? "bg-amber-500/10 text-amber-400"
+                          : "bg-blue-500/10 text-blue-400"
+                        }`}>{topicItem.volume}</span>
                       </div>
-
-                      {/* Description */}
-                      <p className="text-xs text-muted-foreground leading-relaxed mb-2">{topic.description}</p>
-
-                      {/* Platforms */}
+                      <p className="text-xs text-muted-foreground leading-relaxed mb-2">{topicItem.description}</p>
                       <div className="flex items-center gap-1.5 flex-wrap mb-2">
-                        {topic.platforms.split(",").map((p) => (
-                          <span key={p.trim()} className="px-2 py-0.5 rounded-md bg-secondary text-[10px] font-mono text-muted-foreground">
-                            {p.trim()}
-                          </span>
+                        {topicItem.platforms.split(",").map((p) => (
+                          <span key={p.trim()} className="px-2 py-0.5 rounded-md bg-secondary text-[10px] font-mono text-muted-foreground">{p.trim()}</span>
                         ))}
                       </div>
-
-                      {/* Hooks */}
-                      {topic.hook_types?.length > 0 && (
+                      {topicItem.hook_types?.length > 0 && (
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-[9px] font-mono text-muted-foreground/40">HOOKS:</span>
-                          {topic.hook_types.map((h) => (
-                            <span key={h} className="px-1.5 py-0.5 rounded bg-primary/8 text-[9px] font-mono text-primary border border-primary/15">
-                              {h}
-                            </span>
+                          {topicItem.hook_types.map((h) => (
+                            <span key={h} className="px-1.5 py-0.5 rounded bg-primary/8 text-[9px] font-mono text-primary border border-primary/15">{h}</span>
                           ))}
                         </div>
                       )}
                     </div>
-
-                    {/* Use in Script Engine button */}
                     <motion.button
-                      whileHover={{ scale: 1.02, x: 2 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => useTopicInScript(topic.title)}
-                      className="shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium border transition-all w-full md:w-auto"
-                      style={{
-                        background: "hsl(217 91% 60% / 0.08)",
-                        border: "1px solid hsl(217 91% 60% / 0.2)",
-                        color: "hsl(217 91% 68%)",
-                      }}
+                      whileHover={{ scale: 1.02, x: 2 }} whileTap={{ scale: 0.97 }}
+                      onClick={() => useTopicInScript(topicItem.title)}
+                      className="shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium transition-all w-full md:w-auto"
+                      style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.2)", color: "hsl(217 91% 68%)" }}
                     >
                       Use in Script Engine <ArrowRight className="w-3 h-3" />
                     </motion.button>
@@ -532,256 +495,230 @@ const StudioPage = () => {
               ))}
             </motion.div>
           )}
-
           {!scannerLoading && scannerScanned && scannerTopics.length === 0 && (
-            <motion.div
-              key="scanner-empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-8 text-sm text-muted-foreground"
+            <motion.p key="scanner-empty"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="mt-4 text-center py-8 text-sm text-muted-foreground"
             >
               No trends found. Try a broader niche.
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </section>
+
+      {/* ══════════════════════════════════════════════════
+          SECTION 2 — SCRIPT ENGINE
+          Standalone generation module. Writes scripts.
+          Completely separate from Trend Scanner.
+      ══════════════════════════════════════════════════ */}
+      <section id="script-engine-input">
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-1">
+            <PenTool className="w-4 h-4 text-primary" />
+            <span className="text-xs font-mono uppercase tracking-[0.2em] text-muted-foreground">Script Engine</span>
+          </div>
+          <div className="flex items-center gap-3 mb-1">
+            <h1 className="text-chrome text-2xl md:text-3xl font-semibold">Script Engine</h1>
+            <Badge variant="outline" className={`text-[10px] font-mono ${isAgencyTier ? 'border-amber-500/30 text-amber-400' : 'border-primary/30 text-primary'}`}>
+              {isFree
+                ? `${scriptsLeft}/2 left`
+                : dailyUsage?.quota
+                  ? `${dailyUsage.used}/${dailyUsage.quota} used today`
+                  : isAgencyTier ? "Unlimited"
+                  : `${dailyUsage?.remaining ?? 0}/${dailyUsage?.quota ?? 0} left`}
+            </Badge>
+          </div>
+          <p className="text-muted-foreground text-sm">Enter a topic → Get a script → Record immediately.</p>
+          {!!dailyUsage?.near_limit && !dailyUsage?.fair_usage && (
+            <p className="text-xs text-amber-400/90 font-mono mt-2">{dailyUsage.message || `${dailyUsage.remaining} generations remaining today`}</p>
+          )}
+        </div>
+
+        {/* Engine input card */}
+        <div className="glass-card p-5 mb-5">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Input
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
+                  placeholder="What's your video about? e.g. How to grow on Instagram..."
+                  className="input-glass h-12 text-sm pl-4 pr-4 rounded-xl"
+                  disabled={generating}
+                />
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                onClick={handleGenerate}
+                disabled={generating || effectiveLimitReached}
+                className="btn-primary flex items-center justify-center gap-2 !py-3 !px-8 shrink-0 shimmer-btn disabled:opacity-50"
+              >
+                {effectiveLimitReached ? (
+                  <><Lock className="w-4 h-4" /> Upgrade</>
+                ) : generating ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> {scanPhase || "Generating..."}</>
+                ) : (
+                  <><Wand2 className="w-4 h-4" /> Generate Script</>
+                )}
+              </motion.button>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between">
+              <ScriptModeSelector mode={mode} onChange={setMode} />
+              <div className="flex gap-2 flex-wrap">
+                {tones.map((tone) => (
+                  <button key={tone} onClick={() => setSelectedTone(tone)}
+                    className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-smooth ${
+                      selectedTone === tone
+                        ? "bg-primary/12 text-primary border border-primary/25"
+                        : "text-muted-foreground border border-transparent hover:text-foreground hover:bg-secondary/50"
+                    }`}
+                  >{tone}</button>
+                ))}
+              </div>
+            </div>
+
+            {mode !== "hooks" && (
+              <div className="flex gap-2 flex-wrap">
+                {allLengths.map((len) => {
+                  const isLocked = !availableLengths.includes(len);
+                  return (
+                    <button key={len}
+                      onClick={() => !isLocked && setSelectedLength(len)}
+                      disabled={isLocked}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-smooth flex items-center gap-1.5 ${
+                        isLocked ? "text-muted-foreground/30 cursor-not-allowed"
+                        : selectedLength === len ? "bg-primary/12 text-primary border border-primary/25"
+                        : "text-muted-foreground border border-transparent hover:text-foreground hover:bg-secondary/50"
+                      }`}
+                    >
+                      {isLocked && <Lock className="w-3 h-3" />}
+                      {len}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Scan phase indicator */}
+        <AnimatePresence>
+          {generating && scanPhase && !output && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+              className="mb-4 flex items-center gap-2.5 px-4 py-2.5 rounded-lg border border-primary/20 bg-primary/5"
+            >
+              <Loader2 className="w-3.5 h-3.5 text-primary animate-spin shrink-0" />
+              <span className="text-xs font-mono text-primary/80">{scanPhase}</span>
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
 
-      {/* Divider */}
-      <div className="border-t border-border/40 mb-8" />
-
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <PenTool className="w-4 h-4 text-primary" />
-          <span className="text-xs font-mono uppercase tracking-[0.2em] text-muted-foreground">Script Engine</span>
-        </div>
-        <div className="flex items-center gap-3 mb-1">
-          <h1 className="text-chrome text-2xl md:text-3xl font-semibold">Script Engine</h1>
-          <Badge variant="outline" className={`text-[10px] font-mono ${isAgencyTier ? 'border-amber-500/30 text-amber-400' : 'border-primary/30 text-primary'}`}>
-            {isFree
-              ? `${scriptsLeft}/2 left`
-              : dailyUsage?.quota
-                ? `${dailyUsage.used}/${dailyUsage.quota} used today`
-                  : isAgencyTier
-                  ? "Unlimited"
-                    : `${dailyUsage?.remaining ?? 0}/${dailyUsage?.quota ?? 0} left`}
-          </Badge>
-        </div>
-        <p className="text-muted-foreground text-sm">Enter a topic → Get a script → Record immediately.</p>
-        {!!dailyUsage?.near_limit && !dailyUsage?.fair_usage && (
-          <p className="text-xs text-amber-400/90 font-mono mt-2">{dailyUsage.message || `${dailyUsage.remaining} generations remaining today`}</p>
-        )}
-      </div>
-
-      {/* Quick Generate Box */}
-      <div id="script-engine-input" className="glass-card p-5 mb-6">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Input
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
-                placeholder="What's your video about? e.g. How to grow on Instagram..."
-                className="input-glass h-12 text-sm pl-4 pr-4 rounded-xl"
-                disabled={generating}
-              />
-            </div>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={handleGenerate}
-              disabled={generating || effectiveLimitReached}
-              className="btn-primary flex items-center justify-center gap-2 !py-3 !px-8 shrink-0 shimmer-btn disabled:opacity-50"
+        {/* Intelligence preview cards */}
+        <AnimatePresence>
+          {trendIntel && !trendIntel.isFallback && trendIntel.topOpportunities.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.35 }}
+              className="mb-5 space-y-3"
             >
-              {effectiveLimitReached ? (
-                <><Lock className="w-4 h-4" /> Upgrade</>
-              ) : generating ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> {scanPhase || "Generating..."}</>
-              ) : (
-                <><Wand2 className="w-4 h-4" /> Generate in Script Engine</>
-              )}
-            </motion.button>
-          </div>
-
-          {/* Mode & Options Row */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between">
-            <ScriptModeSelector mode={mode} onChange={setMode} />
-            <div className="flex gap-2 flex-wrap">
-              {tones.map((tone) => (
-                <button
-                  key={tone}
-                  onClick={() => setSelectedTone(tone)}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-smooth ${
-                    selectedTone === tone
-                      ? "bg-primary/12 text-primary border border-primary/25"
-                      : "text-muted-foreground border border-transparent hover:text-foreground hover:bg-secondary/50"
-                  }`}
-                >
-                  {tone}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Length selector (hidden for hooks mode) */}
-          {mode !== "hooks" && (
-            <div className="flex gap-2 flex-wrap">
-              {allLengths.map((len) => {
-                const isLocked = !availableLengths.includes(len);
-                return (
-                  <button
-                    key={len}
-                    onClick={() => !isLocked && setSelectedLength(len)}
-                    disabled={isLocked}
-                    className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-smooth flex items-center gap-1.5 ${
-                      isLocked
-                        ? "text-muted-foreground/30 cursor-not-allowed"
-                        : selectedLength === len
-                          ? "bg-primary/12 text-primary border border-primary/25"
-                          : "text-muted-foreground border border-transparent hover:text-foreground hover:bg-secondary/50"
-                    }`}
-                  >
-                    {isLocked && <Lock className="w-3 h-3" />}
-                    {len}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Scan phase indicator ─────────────────────────── */}
-      <AnimatePresence>
-        {generating && scanPhase && !output && (
-          <motion.div
-            initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-            className="mb-4 flex items-center gap-2.5 px-4 py-2.5 rounded-lg border border-primary/20 bg-primary/5"
-          >
-            <Loader2 className="w-3.5 h-3.5 text-primary animate-spin shrink-0" />
-            <span className="text-xs font-mono text-primary/80">{scanPhase}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Intelligence Preview Cards ────────────────────── */}
-      <AnimatePresence>
-        {trendIntel && !trendIntel.isFallback && trendIntel.topOpportunities.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.35 }}
-            className="mb-6 space-y-3"
-          >
-            {/* Section header */}
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-primary/70" />
-              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground/60">
-                Live Trend Intelligence
-              </span>
-              <span className="text-[9px] font-mono text-muted-foreground/35 ml-auto">
-                {trendIntel.confidence}% confidence · {trendIntel.sourceSpread} source{trendIntel.sourceSpread !== 1 ? "s" : ""}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Top opportunities */}
-              {trendIntel.topOpportunities.length > 0 && (
-                <div className="rounded-xl border border-border/50 bg-card/40 p-3.5">
-                  <div className="flex items-center gap-1.5 mb-2.5">
-                    <Zap className="w-3 h-3 text-primary/70" />
-                    <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Detected Opportunities</span>
-                  </div>
-                  <div className="space-y-2">
-                    {trendIntel.topOpportunities.slice(0, 2).map((op, i) => (
-                      <div key={i} className="flex items-start gap-2">
-                        <span className={`mt-0.5 text-[9px] font-mono px-1.5 py-0.5 rounded border shrink-0 ${
-                          op.maturityStage === "Hot"    ? "border-red-500/25 text-red-400/80" :
-                          op.maturityStage === "Rising" ? "border-emerald-500/25 text-emerald-400/80" :
-                          "border-primary/20 text-primary/60"
-                        }`}>{op.maturityStage}</span>
-                        <p className="text-[11px] text-foreground/80 leading-snug truncate">{op.cleanTitle}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Low competition angles */}
-              {trendIntel.lowCompetition.length > 0 && (
-                <div className="rounded-xl border border-border/50 bg-card/40 p-3.5">
-                  <div className="flex items-center gap-1.5 mb-2.5">
-                    <Target className="w-3 h-3 text-primary/70" />
-                    <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Low Competition Angles</span>
-                  </div>
-                  <div className="space-y-1.5">
-                    {trendIntel.lowCompetition.slice(0, 2).map((op, i) => (
-                      <p key={i} className="text-[11px] text-muted-foreground/70 leading-snug truncate">
-                        · {op.opportunityType}: {op.cleanTitle}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Viral hooks */}
-              {trendIntel.viralHooks.length > 0 && (
-                <div className="rounded-xl border border-border/50 bg-card/40 p-3.5">
-                  <div className="flex items-center gap-1.5 mb-2.5">
-                    <Brain className="w-3 h-3 text-primary/70" />
-                    <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Viral Signal Patterns</span>
-                  </div>
-                  <div className="space-y-1.5">
-                    {trendIntel.viralHooks.slice(0, 2).map((hook, i) => (
-                      <p key={i} className="text-[11px] text-muted-foreground/70 leading-snug line-clamp-2">
-                        · {hook}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Trend momentum */}
-              {trendIntel.topOpportunities.length > 0 && (
-                <div className="rounded-xl border border-border/50 bg-card/40 p-3.5">
-                  <div className="flex items-center gap-1.5 mb-2.5">
-                    <TrendingUp className="w-3 h-3 text-primary/70" />
-                    <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Trend Momentum</span>
-                  </div>
-                  <div className="space-y-2">
-                    {trendIntel.topOpportunities.slice(0, 2).map((op, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <div className="flex-1 h-1 rounded-full bg-border/40 overflow-hidden">
-                          <motion.div
-                            className="h-full rounded-full bg-primary/50"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${op.momentumScore}%` }}
-                            transition={{ duration: 0.8, delay: i * 0.15, ease: "easeOut" }}
-                          />
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-3.5 h-3.5 text-primary/70" />
+                <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground/60">Live Trend Intelligence</span>
+                <span className="text-[9px] font-mono text-muted-foreground/35 ml-auto">
+                  {trendIntel.confidence}% confidence · {trendIntel.sourceSpread} source{trendIntel.sourceSpread !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {trendIntel.topOpportunities.length > 0 && (
+                  <div className="rounded-xl border border-border/50 bg-card/40 p-3.5">
+                    <div className="flex items-center gap-1.5 mb-2.5">
+                      <Zap className="w-3 h-3 text-primary/70" />
+                      <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Detected Opportunities</span>
+                    </div>
+                    <div className="space-y-2">
+                      {trendIntel.topOpportunities.slice(0, 2).map((op, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <span className={`mt-0.5 text-[9px] font-mono px-1.5 py-0.5 rounded border shrink-0 ${
+                            op.maturityStage === "Hot" ? "border-red-500/25 text-red-400/80"
+                            : op.maturityStage === "Rising" ? "border-emerald-500/25 text-emerald-400/80"
+                            : "border-primary/20 text-primary/60"
+                          }`}>{op.maturityStage}</span>
+                          <p className="text-[11px] text-foreground/80 leading-snug truncate">{op.cleanTitle}</p>
                         </div>
-                        <span className="text-[9px] font-mono text-muted-foreground/50 w-7 shrink-0">{op.momentumScore}</span>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                )}
+                {trendIntel.lowCompetition.length > 0 && (
+                  <div className="rounded-xl border border-border/50 bg-card/40 p-3.5">
+                    <div className="flex items-center gap-1.5 mb-2.5">
+                      <Target className="w-3 h-3 text-primary/70" />
+                      <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Low Competition Angles</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {trendIntel.lowCompetition.slice(0, 2).map((op, i) => (
+                        <p key={i} className="text-[11px] text-muted-foreground/70 leading-snug truncate">· {op.opportunityType}: {op.cleanTitle}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {trendIntel.viralHooks.length > 0 && (
+                  <div className="rounded-xl border border-border/50 bg-card/40 p-3.5">
+                    <div className="flex items-center gap-1.5 mb-2.5">
+                      <Brain className="w-3 h-3 text-primary/70" />
+                      <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Viral Signal Patterns</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {trendIntel.viralHooks.slice(0, 2).map((hook, i) => (
+                        <p key={i} className="text-[11px] text-muted-foreground/70 leading-snug line-clamp-2">· {hook}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {trendIntel.topOpportunities.length > 0 && (
+                  <div className="rounded-xl border border-border/50 bg-card/40 p-3.5">
+                    <div className="flex items-center gap-1.5 mb-2.5">
+                      <TrendingUp className="w-3 h-3 text-primary/70" />
+                      <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Trend Momentum</span>
+                    </div>
+                    <div className="space-y-2">
+                      {trendIntel.topOpportunities.slice(0, 2).map((op, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <div className="flex-1 h-1 rounded-full bg-border/40 overflow-hidden">
+                            <motion.div
+                              className="h-full rounded-full bg-primary/50"
+                              initial={{ width: 0 }}
+                              animate={{ width: `${op.momentumScore}%` }}
+                              transition={{ duration: 0.8, delay: i * 0.15, ease: "easeOut" }}
+                            />
+                          </div>
+                          <span className="text-[9px] font-mono text-muted-foreground/50 w-7 shrink-0">{op.momentumScore}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* Output */}
-      <ScriptOutput
-        output={output}
-        generating={generating}
-        mode={mode}
-        onRegenerate={handleGenerate}
-        onTryDifferent={() => {
-          const nextTone = tones[(tones.indexOf(selectedTone) + 1) % tones.length];
-          setSelectedTone(nextTone);
-          toast.info(`Switched to ${nextTone} tone. Hit Generate!`);
-        }}
-      />
+        {/* Script output */}
+        <ScriptOutput
+          output={output}
+          generating={generating}
+          mode={mode}
+          onRegenerate={handleGenerate}
+          onTryDifferent={() => {
+            const nextTone = tones[(tones.indexOf(selectedTone) + 1) % tones.length];
+            setSelectedTone(nextTone);
+            toast.info(`Switched to ${nextTone} tone. Hit Generate!`);
+          }}
+        />
+      </section>
 
       <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} />
       <ModerationNotice className="mt-4 max-w-2xl" />
