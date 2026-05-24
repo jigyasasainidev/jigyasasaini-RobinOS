@@ -1,12 +1,11 @@
 // ============================================================
 // TREND RADAR — /api/public/trends/scan  (self-contained)
-// GET  (no topic)   → service metadata (public, no auth)
-// GET  (?topic=...) → trend scan (auth required)
-// POST              → trend scan (auth required)
+// GET  (no topic)   → service metadata
+// GET  (?topic=...) → trend scan
+// POST              → trend scan
 // ============================================================
-// Single-file to avoid ESM/module resolution issues on Vercel.
-// "type":"module" in package.json + multi-file relative imports
-// causes ERR_MODULE_NOT_FOUND regardless of .js extension usage.
+// No API key required — internal platform capability.
+// Rate limiting by IP only.
 // ============================================================
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
@@ -14,23 +13,12 @@ import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 
 // ════════════════════════════════════════════════════════════
-// AUTH + RATE LIMITER
+// IP-ONLY RATE LIMITER (no API key needed)
 // ════════════════════════════════════════════════════════════
 
 const RATE_LIMIT_MAX    = 20;
 const RATE_LIMIT_WINDOW = 60_000;
 const rateLimitStore    = new Map<string, { count: number; windowStart: number }>();
-
-function extractApiKey(req: VercelRequest): string | null {
-  const h = req.headers["x-api-key"];
-  if (typeof h === "string" && h.trim()) return h.trim();
-  const auth = req.headers["authorization"];
-  if (typeof auth === "string" && auth.startsWith("Bearer ")) {
-    const t = auth.slice(7).trim();
-    if (t) return t;
-  }
-  return null;
-}
 
 function getClientIp(req: VercelRequest): string {
   const fwd = req.headers["x-forwarded-for"];
@@ -38,11 +26,11 @@ function getClientIp(req: VercelRequest): string {
   return "unknown";
 }
 
-function checkRateLimit(fingerprint: string): number | null {
+function checkRateLimit(ip: string): number | null {
   const now  = Date.now();
-  const slot = rateLimitStore.get(fingerprint);
+  const slot = rateLimitStore.get(ip);
   if (!slot || now - slot.windowStart >= RATE_LIMIT_WINDOW) {
-    rateLimitStore.set(fingerprint, { count: 1, windowStart: now });
+    rateLimitStore.set(ip, { count: 1, windowStart: now });
     return null;
   }
   if (slot.count >= RATE_LIMIT_MAX) {
@@ -50,18 +38,6 @@ function checkRateLimit(fingerprint: string): number | null {
   }
   slot.count++;
   return null;
-}
-
-function authenticate(req: VercelRequest):
-  | { ok: true }
-  | { ok: false; code: "unauthorized" | "rate_limited"; retryAfterSeconds?: number } {
-  const expected = process.env.TREND_RADAR_API_KEY;
-  if (!expected) return { ok: false, code: "unauthorized" };
-  const provided = extractApiKey(req);
-  if (!provided || provided !== expected) return { ok: false, code: "unauthorized" };
-  const retryAfter = checkRateLimit(`${getClientIp(req)}::${provided.slice(0, 8)}`);
-  if (retryAfter !== null) return { ok: false, code: "rate_limited", retryAfterSeconds: retryAfter };
-  return { ok: true };
 }
 
 // ════════════════════════════════════════════════════════════
@@ -500,17 +476,13 @@ async function runScan(topic: string, _platforms: string[], requestId: string) {
 
 const GET_METADATA = {
   success:     true,
-  service:     "Trend Radar Public API",
-  version:     "1.1.0",
-  description: "Creator-ready trend opportunities from multi-window free source scanning.",
-  auth: {
-    method:  "API key required for scan requests",
-    headers: ["x-api-key: <your-key>", "Authorization: Bearer <your-key>"],
-  },
+  service:     "Trend Radar — Internal Platform Intelligence",
+  version:     "1.2.0",
+  description: "Creator-ready trend opportunities from multi-window free source scanning. Internal platform capability — no API key required.",
   endpoints: {
-    "GET  /api/public/trends/scan":           "Service metadata (no auth)",
-    "GET  /api/public/trends/scan?topic=...": "Trend scan via query param (auth required)",
-    "POST /api/public/trends/scan":           "Trend scan via JSON body (auth required)",
+    "GET  /api/public/trends/scan":           "Service metadata",
+    "GET  /api/public/trends/scan?topic=...": "Trend scan via query param",
+    "POST /api/public/trends/scan":           "Trend scan via JSON body",
   },
   requestBody: {
     topic:     "string, 2-120 chars, required",
@@ -518,7 +490,7 @@ const GET_METADATA = {
   },
   successEnvelope: { success: true, requestId: "string", data: { topic: "string", opportunities: "TrendOpportunity[]", metadata: "object" } },
   errorEnvelope:   { success: false, error: { code: "string", message: "string" } },
-  rateLimit:       "20 requests / 60s per IP + key",
+  rateLimit:       "20 requests / 60s per IP",
 };
 
 // ════════════════════════════════════════════════════════════
@@ -536,13 +508,12 @@ function setHeaders(res: VercelResponse): void {
   res.setHeader("X-Robots-Tag",                  "noindex");
   res.setHeader("Access-Control-Allow-Origin",   "*");
   res.setHeader("Access-Control-Allow-Methods",  "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers",  "Content-Type, x-api-key, Authorization");
+  res.setHeader("Access-Control-Allow-Headers",  "Content-Type");
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setHeaders(res);
 
-  // Generate once — used in both success and error responses
   const requestId = makeRequestId();
 
   if (req.method === "OPTIONS") { res.status(204).end(); return; }
@@ -551,22 +522,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json(err("METHOD_NOT_ALLOWED", "Only GET and POST are supported.", requestId));
   }
 
+  // ── Rate limit by IP only (no API key) ────────────────────
+  const ip          = getClientIp(req);
+  const retryAfter  = checkRateLimit(ip);
+  if (retryAfter !== null) {
+    return res.status(429)
+      .setHeader("Retry-After", String(retryAfter))
+      .json(err("RATE_LIMITED", "Rate limit exceeded. Max 20 requests per 60 seconds.", requestId, { retryAfterSeconds: retryAfter }));
+  }
+
   // ── GET ──────────────────────────────────────────────────
   if (req.method === "GET") {
     const rawTopic = req.query.topic ?? req.query.query;
     const topicStr = typeof rawTopic === "string" ? rawTopic.trim() : "";
 
     if (!topicStr) return res.status(200).json(GET_METADATA);
-
-    const auth = authenticate(req);
-    if (!auth.ok) {
-      if (auth.code === "rate_limited") {
-        return res.status(429)
-          .setHeader("Retry-After", String(auth.retryAfterSeconds ?? 60))
-          .json(err("RATE_LIMITED", "Rate limit exceeded.", requestId, { retryAfterSeconds: auth.retryAfterSeconds }));
-      }
-      return res.status(401).json(err("UNAUTHORIZED", "Invalid or missing API key.", requestId));
-    }
 
     const parsed = ScanRequestSchema.safeParse({ topic: topicStr });
     if (!parsed.success) {
@@ -583,16 +553,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // ── POST ─────────────────────────────────────────────────
-  const auth = authenticate(req);
-  if (!auth.ok) {
-    if (auth.code === "rate_limited") {
-      return res.status(429)
-        .setHeader("Retry-After", String(auth.retryAfterSeconds ?? 60))
-        .json(err("RATE_LIMITED", "Rate limit exceeded.", requestId, { retryAfterSeconds: auth.retryAfterSeconds }));
-    }
-    return res.status(401).json(err("UNAUTHORIZED", "Invalid or missing API key.", requestId));
-  }
-
   const ct = (req.headers["content-type"] ?? "").toLowerCase();
   if (!ct.includes("application/json")) {
     return res.status(400).json(err("INVALID_PAYLOAD", "Content-Type must be application/json.", requestId));

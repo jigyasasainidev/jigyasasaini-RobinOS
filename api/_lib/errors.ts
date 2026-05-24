@@ -1,10 +1,8 @@
 // ============================================================
 // TREND RADAR — Structured Error Utilities
-// Stable external error envelope: { success, error: { code, message } }
 // ============================================================
 
 export type ErrorCode =
-  | "UNAUTHORIZED"
   | "INVALID_PAYLOAD"
   | "RATE_LIMITED"
   | "UPSTREAM_ERROR"
@@ -14,66 +12,30 @@ export type ErrorCode =
 export interface ApiError {
   success: false;
   error: {
-    code:                ErrorCode;
-    message:             string;
-    retryAfterSeconds?:  number;
-  };
-}
-
-export function errUnauthorized(): ApiError {
-  return {
-    success: false,
-    error: {
-      code:    "UNAUTHORIZED",
-      message: "Invalid or missing API key. Pass via x-api-key header or Authorization: Bearer <key>.",
-    },
+    code:               ErrorCode;
+    message:            string;
+    retryAfterSeconds?: number;
   };
 }
 
 export function errInvalidPayload(detail: string): ApiError {
-  return {
-    success: false,
-    error: {
-      code:    "INVALID_PAYLOAD",
-      message: `Invalid request: ${detail}`,
-    },
-  };
+  return { success: false, error: { code: "INVALID_PAYLOAD", message: `Invalid request: ${detail}` } };
 }
 
 export function errRateLimited(retryAfterSeconds: number): ApiError {
-  return {
-    success: false,
-    error: {
-      code:               "RATE_LIMITED",
-      message:            "Rate limit exceeded. Max 20 requests per 60 seconds.",
-      retryAfterSeconds,
-    },
-  };
+  return { success: false, error: { code: "RATE_LIMITED", message: "Rate limit exceeded. Max 20 requests per 60 seconds.", retryAfterSeconds } };
 }
 
 export function errUnavailable(detail?: string): ApiError {
-  return {
-    success: false,
-    error: {
-      code:    "TEMPORARY_UNAVAILABLE",
-      message: detail || "Service temporarily unavailable. Please retry.",
-    },
-  };
+  return { success: false, error: { code: "TEMPORARY_UNAVAILABLE", message: detail || "Service temporarily unavailable." } };
 }
 
 export function errMethodNotAllowed(): ApiError {
-  return {
-    success: false,
-    error: {
-      code:    "METHOD_NOT_ALLOWED",
-      message: "Only GET and POST are supported on this endpoint.",
-    },
-  };
+  return { success: false, error: { code: "METHOD_NOT_ALLOWED", message: "Only GET and POST are supported." } };
 }
 
 export function statusForCode(code: ErrorCode): number {
   switch (code) {
-    case "UNAUTHORIZED":          return 401;
     case "INVALID_PAYLOAD":       return 400;
     case "RATE_LIMITED":          return 429;
     case "METHOD_NOT_ALLOWED":    return 405;

@@ -15,14 +15,9 @@
 import type { TrendScanResult, TrendIntelligence, TrendOpportunity } from "@/types/trendRadar";
 
 // ── Config ────────────────────────────────────────────────
-// VITE_TREND_RADAR_API_KEY — set in Vercel env vars (production)
-// Falls back to hardcoded key so the feature works even if env var
-// is not yet configured. This key is safe to be here — it's the
-// public-facing API protection key, not a Supabase service secret.
+// No API key required — Trend Radar is an internal platform capability.
 const TREND_RADAR_URL = "/api/public/trends/scan";
-const TREND_RADAR_KEY =
-  (import.meta.env.VITE_TREND_RADAR_API_KEY as string | undefined) ||
-  "trd_live_IGHlFFcIPPYryvyVv_-j2kqqkalj1c_ZrRroh8yftob8sbvD5yjQOA";
+const TIMEOUT_MS      = 8_000;
 const TIMEOUT_MS      = 8_000;
 
 // In-memory scan cache — prevents duplicate scans within 5 min
@@ -120,7 +115,6 @@ export async function scanTrendTopic(topic: string): Promise<TrendIntelligence> 
   try {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "x-api-key":    TREND_RADAR_KEY,
     };
 
     const res = await fetch(TREND_RADAR_URL, {
