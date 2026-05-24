@@ -331,24 +331,29 @@ const StudioPage = () => {
 
 
   return (
-    <div className="pt-14 md:pt-0 space-y-10">
+    <div className="pt-14 md:pt-0">
 
       {/* ══════════════════════════════════════════════════
-          SECTION 1 — TREND SCANNER
-          Standalone discovery module. Finds what's trending.
-          Completely separate from Script Engine.
+          MODULE 1 — TREND SCANNER
+          Intelligence layer. Completely independent module.
       ══════════════════════════════════════════════════ */}
-      <section>
-        <div className="mb-4">
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingUp className="w-4 h-4 text-primary" />
-            <span className="text-xs font-mono uppercase tracking-[0.2em] text-muted-foreground">Trend Scanner</span>
+      <section className="mb-16">
+        {/* Module header */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-1 h-8 rounded-full bg-primary/60 shrink-0" />
+          <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <TrendingUp className="w-4 h-4 text-primary" />
+              <span className="text-xs font-mono uppercase tracking-[0.2em] text-muted-foreground">Trend Scanner</span>
+            </div>
+            <h2 className="text-chrome text-xl font-semibold leading-tight">Discover What's Trending</h2>
           </div>
-          <h2 className="text-chrome text-xl font-semibold mb-1">Discover What's Trending</h2>
-          <p className="text-muted-foreground text-sm">Enter your niche → AI scans viral trends → pick one → generate your script below.</p>
         </div>
+        <p className="text-muted-foreground text-sm mb-5 ml-4">
+          Enter your niche → AI scans for viral creator opportunities → pick a trend → send it to Script Engine.
+        </p>
 
-        {/* Scanner input card */}
+        {/* Scanner input */}
         <div className="glass-card p-5">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
@@ -378,56 +383,39 @@ const StudioPage = () => {
         {/* Scanning animation */}
         <AnimatePresence>
           {scannerLoading && (
-            <motion.div
-              key="scanner-anim"
-              initial={{ opacity: 0, scale: 0.97 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.97 }}
+            <motion.div key="scanner-anim"
+              initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97 }}
               className="relative rounded-2xl overflow-hidden mt-4 flex flex-col items-center justify-center py-14"
               style={{ background: "hsl(222 28% 5.5% / 0.95)", border: "1px solid hsl(217 91% 60% / 0.12)" }}
             >
               {[0,1,2,3].map((i) => (
-                <motion.div key={`ring-${i}`}
-                  className="absolute rounded-full border border-primary/10"
+                <motion.div key={`ring-${i}`} className="absolute rounded-full border border-primary/10"
                   style={{ width: 80 + i * 38, height: 80 + i * 38 }}
                   initial={{ scale: 0.3, opacity: 0 }}
                   animate={{ scale: [0.3, 2.5, 3.5], opacity: [0, 0.5, 0] }}
                   transition={{ duration: 3, repeat: Infinity, delay: i * 0.55, ease: "easeOut" }}
                 />
               ))}
-              <motion.div
-                className="absolute w-36 h-[1.5px] origin-left"
+              <motion.div className="absolute w-36 h-[1.5px] origin-left"
                 style={{ background: "linear-gradient(90deg, hsl(217 91% 60% / 0.7), transparent)" }}
-                animate={{ rotate: 360 }}
-                transition={{ duration: 2.8, repeat: Infinity, ease: "linear" }}
+                animate={{ rotate: 360 }} transition={{ duration: 2.8, repeat: Infinity, ease: "linear" }}
               />
-              <motion.div
-                className="relative z-10 w-14 h-14 rounded-full flex items-center justify-center mb-5"
-                style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.2)" }}
-              >
+              <motion.div className="relative z-10 w-14 h-14 rounded-full flex items-center justify-center mb-5"
+                style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.2)" }}>
                 {(() => {
                   const Icon = SCAN_ICONS[scannerIconIdx % SCAN_ICONS.length];
-                  return (
-                    <motion.div key={scannerIconIdx} initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }}>
-                      <Icon className="w-6 h-6 text-primary" strokeWidth={1.5} />
-                    </motion.div>
-                  );
+                  return <motion.div key={scannerIconIdx} initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }}><Icon className="w-6 h-6 text-primary" strokeWidth={1.5} /></motion.div>;
                 })()}
               </motion.div>
               <AnimatePresence mode="wait">
                 <motion.p key={scannerMsgIdx}
-                  initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
-                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                  exit={{ opacity: 0, y: -10, filter: "blur(4px)" }}
-                  transition={{ duration: 0.35 }}
-                  className="relative z-10 text-sm font-mono text-primary tracking-wider"
-                >
+                  initial={{ opacity: 0, y: 10, filter: "blur(4px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, y: -10, filter: "blur(4px)" }} transition={{ duration: 0.35 }}
+                  className="relative z-10 text-sm font-mono text-primary tracking-wider">
                   {SCANNER_MESSAGES[scannerMsgIdx]}
                 </motion.p>
               </AnimatePresence>
-              <p className="relative z-10 mt-2 text-[11px] text-muted-foreground/50 font-mono">
-                Target: "{scannerNiche}"
-              </p>
+              <p className="relative z-10 mt-2 text-[11px] text-muted-foreground/50 font-mono">Target: "{scannerNiche}"</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -437,9 +425,7 @@ const StudioPage = () => {
           {!scannerLoading && scannerScanned && scannerTopics.length > 0 && (
             <motion.div key="scanner-results"
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              transition={{ duration: 0.4 }}
-              className="mt-4 space-y-3"
-            >
+              transition={{ duration: 0.4 }} className="mt-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Flame className="w-3.5 h-3.5 text-primary/70" />
                 <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground/60">
@@ -450,8 +436,7 @@ const StudioPage = () => {
                 <motion.div key={topicItem.title}
                   initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.08, duration: 0.35 }}
-                  className="glass-card p-4 group"
-                >
+                  className="glass-card p-4 group">
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1.5 flex-wrap">
@@ -486,8 +471,7 @@ const StudioPage = () => {
                       whileHover={{ scale: 1.02, x: 2 }} whileTap={{ scale: 0.97 }}
                       onClick={() => useTopicInScript(topicItem.title)}
                       className="shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium transition-all w-full md:w-auto"
-                      style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.2)", color: "hsl(217 91% 68%)" }}
-                    >
+                      style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.2)", color: "hsl(217 91% 68%)" }}>
                       Use in Script Engine <ArrowRight className="w-3 h-3" />
                     </motion.button>
                   </div>
@@ -496,43 +480,58 @@ const StudioPage = () => {
             </motion.div>
           )}
           {!scannerLoading && scannerScanned && scannerTopics.length === 0 && (
-            <motion.p key="scanner-empty"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="mt-4 text-center py-8 text-sm text-muted-foreground"
-            >
+            <motion.p key="scanner-empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="mt-4 text-center py-8 text-sm text-muted-foreground">
               No trends found. Try a broader niche.
             </motion.p>
           )}
         </AnimatePresence>
       </section>
 
-      {/* ══════════════════════════════════════════════════
-          SECTION 2 — SCRIPT ENGINE
-          Standalone generation module. Writes scripts.
-          Completely separate from Trend Scanner.
-      ══════════════════════════════════════════════════ */}
-      <section id="script-engine-input">
-        <div className="mb-4">
-          <div className="flex items-center gap-2 mb-1">
-            <PenTool className="w-4 h-4 text-primary" />
-            <span className="text-xs font-mono uppercase tracking-[0.2em] text-muted-foreground">Script Engine</span>
-          </div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-chrome text-2xl md:text-3xl font-semibold">Script Engine</h1>
-            <Badge variant="outline" className={`text-[10px] font-mono ${isAgencyTier ? 'border-amber-500/30 text-amber-400' : 'border-primary/30 text-primary'}`}>
-              {isFree
-                ? `${scriptsLeft}/2 left`
-                : dailyUsage?.quota
-                  ? `${dailyUsage.used}/${dailyUsage.quota} used today`
-                  : isAgencyTier ? "Unlimited"
-                  : `${dailyUsage?.remaining ?? 0}/${dailyUsage?.quota ?? 0} left`}
-            </Badge>
-          </div>
-          <p className="text-muted-foreground text-sm">Enter a topic → Get a script → Record immediately.</p>
-          {!!dailyUsage?.near_limit && !dailyUsage?.fair_usage && (
-            <p className="text-xs text-amber-400/90 font-mono mt-2">{dailyUsage.message || `${dailyUsage.remaining} generations remaining today`}</p>
-          )}
+      {/* ── Module boundary ──────────────────────────────────────────── */}
+      <div className="relative mb-16">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border/30" />
         </div>
+        <div className="relative flex justify-start">
+          <span className="pr-3 text-[9px] font-mono uppercase tracking-[0.25em] text-muted-foreground/30 bg-background">
+            next module
+          </span>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════
+          MODULE 2 — SCRIPT ENGINE
+          Generation layer. Completely independent module.
+      ══════════════════════════════════════════════════ */}
+      <section id="script-engine-input" className="mb-6">
+        {/* Module header */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-1 h-8 rounded-full bg-primary/60 shrink-0" />
+          <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <PenTool className="w-4 h-4 text-primary" />
+              <span className="text-xs font-mono uppercase tracking-[0.2em] text-muted-foreground">Script Engine</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-chrome text-xl font-semibold leading-tight">Generate Viral Scripts</h1>
+              <Badge variant="outline" className={`text-[10px] font-mono ${isAgencyTier ? 'border-amber-500/30 text-amber-400' : 'border-primary/30 text-primary'}`}>
+                {isFree
+                  ? `${scriptsLeft}/2 left`
+                  : dailyUsage?.quota
+                    ? `${dailyUsage.used}/${dailyUsage.quota} used today`
+                    : isAgencyTier ? "Unlimited"
+                    : `${dailyUsage?.remaining ?? 0}/${dailyUsage?.quota ?? 0} left`}
+              </Badge>
+            </div>
+          </div>
+        </div>
+        <p className="text-muted-foreground text-sm mb-5 ml-4">
+          Enter any topic — or use a trend from above — and generate a ready-to-record creator script.
+        </p>
+        {!!dailyUsage?.near_limit && !dailyUsage?.fair_usage && (
+          <p className="text-xs text-amber-400/90 font-mono mb-4 ml-4">{dailyUsage.message || `${dailyUsage.remaining} generations remaining today`}</p>
+        )}
 
         {/* Engine input card */}
         <div className="glass-card p-5 mb-5">
@@ -554,13 +553,9 @@ const StudioPage = () => {
                 disabled={generating || effectiveLimitReached}
                 className="btn-primary flex items-center justify-center gap-2 !py-3 !px-8 shrink-0 shimmer-btn disabled:opacity-50"
               >
-                {effectiveLimitReached ? (
-                  <><Lock className="w-4 h-4" /> Upgrade</>
-                ) : generating ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> {scanPhase || "Generating..."}</>
-                ) : (
-                  <><Wand2 className="w-4 h-4" /> Generate Script</>
-                )}
+                {effectiveLimitReached ? <><Lock className="w-4 h-4" /> Upgrade</>
+                  : generating ? <><Loader2 className="w-4 h-4 animate-spin" /> {scanPhase || "Generating..."}</>
+                  : <><Wand2 className="w-4 h-4" /> Generate Script</>}
               </motion.button>
             </div>
 
@@ -573,8 +568,7 @@ const StudioPage = () => {
                       selectedTone === tone
                         ? "bg-primary/12 text-primary border border-primary/25"
                         : "text-muted-foreground border border-transparent hover:text-foreground hover:bg-secondary/50"
-                    }`}
-                  >{tone}</button>
+                    }`}>{tone}</button>
                 ))}
               </div>
             </div>
@@ -584,17 +578,13 @@ const StudioPage = () => {
                 {allLengths.map((len) => {
                   const isLocked = !availableLengths.includes(len);
                   return (
-                    <button key={len}
-                      onClick={() => !isLocked && setSelectedLength(len)}
-                      disabled={isLocked}
+                    <button key={len} onClick={() => !isLocked && setSelectedLength(len)} disabled={isLocked}
                       className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-smooth flex items-center gap-1.5 ${
                         isLocked ? "text-muted-foreground/30 cursor-not-allowed"
                         : selectedLength === len ? "bg-primary/12 text-primary border border-primary/25"
                         : "text-muted-foreground border border-transparent hover:text-foreground hover:bg-secondary/50"
-                      }`}
-                    >
-                      {isLocked && <Lock className="w-3 h-3" />}
-                      {len}
+                      }`}>
+                      {isLocked && <Lock className="w-3 h-3" />}{len}
                     </button>
                   );
                 })}
@@ -606,10 +596,8 @@ const StudioPage = () => {
         {/* Scan phase indicator */}
         <AnimatePresence>
           {generating && scanPhase && !output && (
-            <motion.div
-              initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-              className="mb-4 flex items-center gap-2.5 px-4 py-2.5 rounded-lg border border-primary/20 bg-primary/5"
-            >
+            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+              className="mb-4 flex items-center gap-2.5 px-4 py-2.5 rounded-lg border border-primary/20 bg-primary/5">
               <Loader2 className="w-3.5 h-3.5 text-primary animate-spin shrink-0" />
               <span className="text-xs font-mono text-primary/80">{scanPhase}</span>
             </motion.div>
@@ -619,11 +607,8 @@ const StudioPage = () => {
         {/* Intelligence preview cards */}
         <AnimatePresence>
           {trendIntel && !trendIntel.isFallback && trendIntel.topOpportunities.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              transition={{ duration: 0.35 }}
-              className="mb-5 space-y-3"
-            >
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.35 }} className="mb-5 space-y-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-3.5 h-3.5 text-primary/70" />
                 <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground/60">Live Trend Intelligence</span>
@@ -634,18 +619,11 @@ const StudioPage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {trendIntel.topOpportunities.length > 0 && (
                   <div className="rounded-xl border border-border/50 bg-card/40 p-3.5">
-                    <div className="flex items-center gap-1.5 mb-2.5">
-                      <Zap className="w-3 h-3 text-primary/70" />
-                      <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Detected Opportunities</span>
-                    </div>
+                    <div className="flex items-center gap-1.5 mb-2.5"><Zap className="w-3 h-3 text-primary/70" /><span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Detected Opportunities</span></div>
                     <div className="space-y-2">
                       {trendIntel.topOpportunities.slice(0, 2).map((op, i) => (
                         <div key={i} className="flex items-start gap-2">
-                          <span className={`mt-0.5 text-[9px] font-mono px-1.5 py-0.5 rounded border shrink-0 ${
-                            op.maturityStage === "Hot" ? "border-red-500/25 text-red-400/80"
-                            : op.maturityStage === "Rising" ? "border-emerald-500/25 text-emerald-400/80"
-                            : "border-primary/20 text-primary/60"
-                          }`}>{op.maturityStage}</span>
+                          <span className={`mt-0.5 text-[9px] font-mono px-1.5 py-0.5 rounded border shrink-0 ${op.maturityStage === "Hot" ? "border-red-500/25 text-red-400/80" : op.maturityStage === "Rising" ? "border-emerald-500/25 text-emerald-400/80" : "border-primary/20 text-primary/60"}`}>{op.maturityStage}</span>
                           <p className="text-[11px] text-foreground/80 leading-snug truncate">{op.cleanTitle}</p>
                         </div>
                       ))}
@@ -654,46 +632,24 @@ const StudioPage = () => {
                 )}
                 {trendIntel.lowCompetition.length > 0 && (
                   <div className="rounded-xl border border-border/50 bg-card/40 p-3.5">
-                    <div className="flex items-center gap-1.5 mb-2.5">
-                      <Target className="w-3 h-3 text-primary/70" />
-                      <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Low Competition Angles</span>
-                    </div>
-                    <div className="space-y-1.5">
-                      {trendIntel.lowCompetition.slice(0, 2).map((op, i) => (
-                        <p key={i} className="text-[11px] text-muted-foreground/70 leading-snug truncate">· {op.opportunityType}: {op.cleanTitle}</p>
-                      ))}
-                    </div>
+                    <div className="flex items-center gap-1.5 mb-2.5"><Target className="w-3 h-3 text-primary/70" /><span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Low Competition Angles</span></div>
+                    <div className="space-y-1.5">{trendIntel.lowCompetition.slice(0, 2).map((op, i) => (<p key={i} className="text-[11px] text-muted-foreground/70 leading-snug truncate">· {op.opportunityType}: {op.cleanTitle}</p>))}</div>
                   </div>
                 )}
                 {trendIntel.viralHooks.length > 0 && (
                   <div className="rounded-xl border border-border/50 bg-card/40 p-3.5">
-                    <div className="flex items-center gap-1.5 mb-2.5">
-                      <Brain className="w-3 h-3 text-primary/70" />
-                      <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Viral Signal Patterns</span>
-                    </div>
-                    <div className="space-y-1.5">
-                      {trendIntel.viralHooks.slice(0, 2).map((hook, i) => (
-                        <p key={i} className="text-[11px] text-muted-foreground/70 leading-snug line-clamp-2">· {hook}</p>
-                      ))}
-                    </div>
+                    <div className="flex items-center gap-1.5 mb-2.5"><Brain className="w-3 h-3 text-primary/70" /><span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Viral Signal Patterns</span></div>
+                    <div className="space-y-1.5">{trendIntel.viralHooks.slice(0, 2).map((hook, i) => (<p key={i} className="text-[11px] text-muted-foreground/70 leading-snug line-clamp-2">· {hook}</p>))}</div>
                   </div>
                 )}
                 {trendIntel.topOpportunities.length > 0 && (
                   <div className="rounded-xl border border-border/50 bg-card/40 p-3.5">
-                    <div className="flex items-center gap-1.5 mb-2.5">
-                      <TrendingUp className="w-3 h-3 text-primary/70" />
-                      <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Trend Momentum</span>
-                    </div>
+                    <div className="flex items-center gap-1.5 mb-2.5"><TrendingUp className="w-3 h-3 text-primary/70" /><span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Trend Momentum</span></div>
                     <div className="space-y-2">
                       {trendIntel.topOpportunities.slice(0, 2).map((op, i) => (
                         <div key={i} className="flex items-center gap-2">
                           <div className="flex-1 h-1 rounded-full bg-border/40 overflow-hidden">
-                            <motion.div
-                              className="h-full rounded-full bg-primary/50"
-                              initial={{ width: 0 }}
-                              animate={{ width: `${op.momentumScore}%` }}
-                              transition={{ duration: 0.8, delay: i * 0.15, ease: "easeOut" }}
-                            />
+                            <motion.div className="h-full rounded-full bg-primary/50" initial={{ width: 0 }} animate={{ width: `${op.momentumScore}%` }} transition={{ duration: 0.8, delay: i * 0.15, ease: "easeOut" }} />
                           </div>
                           <span className="text-[9px] font-mono text-muted-foreground/50 w-7 shrink-0">{op.momentumScore}</span>
                         </div>
@@ -724,6 +680,7 @@ const StudioPage = () => {
       <ModerationNotice className="mt-4 max-w-2xl" />
     </div>
   );
+
 };
 
 export default StudioPage;
