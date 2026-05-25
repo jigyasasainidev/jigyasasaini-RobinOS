@@ -47,8 +47,15 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (dbErr) {
-      console.error("[check-admin-2fa-status] db error:", dbErr);
-      return new Response(JSON.stringify({ error: "Status check failed" }), {
+      console.error("[check-admin-2fa-status] db error:", dbErr.message, dbErr.code);
+      // PGRST205 = table doesn't exist (migration not run yet)
+      // Treat as not_configured so setup screen shows
+      if (dbErr.code === "PGRST205" || dbErr.message?.includes("admin_2fa") || dbErr.message?.includes("does not exist")) {
+        return new Response(JSON.stringify({ status: "not_configured" }), {
+          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ error: "Status check failed", detail: dbErr.message }), {
         status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }

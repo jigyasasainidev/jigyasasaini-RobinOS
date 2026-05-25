@@ -28,10 +28,17 @@ async function checkTwoFAStatus(token: string): Promise<TwoFAStatus> {
 
     console.debug("[AdminRouteGuard] 2FA status HTTP:", res.status);
 
+    if (res.status === 500) {
+      // 500 most likely means the admin_2fa table doesn't exist yet
+      // (migration 27 not run). Treat as not_configured so setup screen shows.
+      const body = await res.text();
+      console.warn("[AdminRouteGuard] 2FA status 500 — table may not exist yet:", body.slice(0, 200));
+      return "not_configured";
+    }
+
     if (!res.ok) {
       const body = await res.text();
-      console.warn("[AdminRouteGuard] 2FA status error body:", body);
-      // 403 = not admin (shouldn't happen here), treat as error
+      console.warn("[AdminRouteGuard] 2FA status error body:", body.slice(0, 200));
       return "error";
     }
 
@@ -40,7 +47,7 @@ async function checkTwoFAStatus(token: string): Promise<TwoFAStatus> {
     return (data.status as TwoFAStatus) ?? "error";
   } catch (err) {
     console.error("[AdminRouteGuard] 2FA status fetch failed:", err);
-    return "error";
+    return "not_configured"; // network error → show setup (safer than blocking)
   }
 }
 
