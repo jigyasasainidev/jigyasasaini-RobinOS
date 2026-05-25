@@ -19,6 +19,7 @@ import { ScriptOutput } from "@/components/ScriptOutput";
 import { scanTrendTopic } from "@/services/trendRadarClient";
 import type { TrendIntelligence } from "@/types/trendRadar";
 import { AIStatusBadge } from "@/components/ui/status-badge";
+import { AnimatedCounter } from "@/components/ui/animated-counter";
 
 // ── Trend topic shape from scan-trends edge function ──────
 const tones = ["Casual", "Bold", "Storytelling", "Educational", "Provocative"];
@@ -244,11 +245,11 @@ const StudioPage = () => {
           <h1 className="text-chrome text-2xl md:text-3xl font-semibold">Script Engine</h1>
           <Badge variant="outline" className={`text-[10px] font-mono ${isAgencyTier ? 'border-amber-500/30 text-amber-400' : 'border-primary/30 text-primary'}`}>
             {isFree
-              ? `${scriptsLeft}/2 left`
+              ? <><AnimatedCounter value={scriptsLeft} />/2 left</>
               : dailyUsage?.quota
-                ? `${dailyUsage.used}/${dailyUsage.quota} used today`
+                ? <><AnimatedCounter value={dailyUsage.used} />/{dailyUsage.quota} used today</>
                 : isAgencyTier ? "Unlimited"
-                : `${dailyUsage?.remaining ?? 0}/${dailyUsage?.quota ?? 0} left`}
+                : <><AnimatedCounter value={dailyUsage?.remaining ?? 0} />/{dailyUsage?.quota ?? 0} left</>}
           </Badge>
         </div>
         <p className="text-muted-foreground text-sm">Enter a topic — or pick one from Trend Scanner — and generate a ready-to-record script.</p>

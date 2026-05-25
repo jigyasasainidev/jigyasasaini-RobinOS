@@ -16,6 +16,7 @@ import {
   type TrendAudio,
   type TrendHashtag,
 } from "@/services/ideaStream";
+import { AnimatedCounter } from "@/components/ui/animated-counter";
 
 // ── Constants ──────────────────────────────────────────────
 type ScanMode = "audio" | "hashtags";
@@ -222,7 +223,8 @@ const AudioHashtagPage = () => {
                 ? ["0 0 0 hsl(217 91% 60% / 0)", "0 0 12px hsl(217 91% 60% / 0.12)", "0 0 0 hsl(217 91% 60% / 0)"]
                 : "none" }}
               transition={{ duration: 3, repeat: Infinity }}>
-              <Music className="w-3 h-3" /> Audio · {audios.length}
+              <Music className="w-3 h-3" />
+              Audio · <AnimatedCounter value={audios.length} />
             </motion.span>
             <motion.span
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-mono"
@@ -231,7 +233,8 @@ const AudioHashtagPage = () => {
                 ? ["0 0 0 hsl(217 91% 60% / 0)", "0 0 12px hsl(217 91% 60% / 0.12)", "0 0 0 hsl(217 91% 60% / 0)"]
                 : "none" }}
               transition={{ duration: 3, repeat: Infinity, delay: 0.5 }}>
-              <Hash className="w-3 h-3" /> Hashtags · {hashtags.length}
+              <Hash className="w-3 h-3" />
+              Hashtags · <AnimatedCounter value={hashtags.length} />
             </motion.span>
             {isProOrAbove && (
               <Badge variant="outline" className="text-[9px] font-mono border-primary/30 text-primary py-0.5 px-2">

@@ -18,6 +18,7 @@ import { useCurrency } from "@/hooks/useCurrency";
 import { getPlans, getCurrencySymbol, getTierDisplayName } from "@/lib/pricing";
 import { BrandMark } from "@/components/BrandMark";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
+import { AnimatedCounter } from "@/components/ui/animated-counter";
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -264,12 +265,14 @@ const SettingsPage = () => {
               <h2 className="text-sm font-medium text-foreground">Script Usage</h2>
             </div>
             <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary">
-              {isAgency ? "Unlimited (Fair Usage)" : isFree ? `${scriptUsed}/2 used` : `${scriptUsed} used today`}
+              {isAgency ? "Unlimited (Fair Usage)" : isFree
+                ? <><AnimatedCounter value={scriptUsed} />/2 used</>
+                : <><AnimatedCounter value={scriptUsed} /> used today</>}
             </Badge>
           </div>
           <div className="space-y-2">
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{scriptUsed} used today</span>
+              <span><AnimatedCounter value={scriptUsed} /> used today</span>
               <span>{isAgency ? "∞" : isFree ? "2" : plan === "pro_creator" ? "100" : "20"} total</span>
             </div>
             <Progress
@@ -296,7 +299,7 @@ const SettingsPage = () => {
           </div>
           <div className="space-y-1.5">
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{captionUsed} used today</span>
+              <span><AnimatedCounter value={captionUsed} /> used today</span>
               <span>{isAgency ? "∞" : isFree ? "2" : plan === "pro_creator" ? "100" : "20"} total</span>
             </div>
             <Progress

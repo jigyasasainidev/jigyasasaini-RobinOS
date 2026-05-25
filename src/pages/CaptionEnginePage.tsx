@@ -15,6 +15,7 @@ import { moderatePrompt, getModerationBlockMessage } from "@/lib/moderation/engi
 import { ModerationNotice } from "@/components/ModerationNotice";
 import { getCaptionLimitText } from "@/lib/pricing";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
+import { AnimatedCounter } from "@/components/ui/animated-counter";
 
 // ── Types ──────────────────────────────────────────────────
 type Platform = "youtube" | "instagram" | "tiktok" | "facebook";
@@ -202,7 +203,7 @@ const CaptionEnginePage = () => {
           <h1 className="text-chrome text-2xl md:text-3xl font-semibold">Caption</h1>
           {!!usage && (
             <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary">
-              {usage.used}/{usage.quota} used today
+              <AnimatedCounter value={usage.used} />/<AnimatedCounter value={usage.quota} /> used today
             </Badge>
           )}
         </div>
