@@ -338,64 +338,6 @@ const StudioPage = () => {
         )}
       </AnimatePresence>
 
-      {/* Intelligence preview cards */}
-      <AnimatePresence>
-        {trendIntel && !trendIntel.isFallback && trendIntel.topOpportunities.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.35 }} className="mb-5 space-y-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-primary/70" />
-              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground/60">Live Trend Intelligence</span>
-              <span className="text-[9px] font-mono text-muted-foreground/35 ml-auto">
-                {trendIntel.confidence}% confidence · {trendIntel.sourceSpread} source{trendIntel.sourceSpread !== 1 ? "s" : ""}
-              </span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {trendIntel.topOpportunities.length > 0 && (
-                <div className="rounded-xl border border-border/50 bg-card/40 p-3.5">
-                  <div className="flex items-center gap-1.5 mb-2.5"><Zap className="w-3 h-3 text-primary/70" /><span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Detected Opportunities</span></div>
-                  <div className="space-y-2">
-                    {trendIntel.topOpportunities.slice(0, 2).map((op, i) => (
-                      <div key={i} className="flex items-start gap-2">
-                        <span className={`mt-0.5 text-[9px] font-mono px-1.5 py-0.5 rounded border shrink-0 ${op.maturityStage === "Hot" ? "border-red-500/25 text-red-400/80" : op.maturityStage === "Rising" ? "border-emerald-500/25 text-emerald-400/80" : "border-primary/20 text-primary/60"}`}>{op.maturityStage}</span>
-                        <p className="text-[11px] text-foreground/80 leading-snug truncate">{op.cleanTitle}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {trendIntel.lowCompetition.length > 0 && (
-                <div className="rounded-xl border border-border/50 bg-card/40 p-3.5">
-                  <div className="flex items-center gap-1.5 mb-2.5"><Target className="w-3 h-3 text-primary/70" /><span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Low Competition Angles</span></div>
-                  <div className="space-y-1.5">{trendIntel.lowCompetition.slice(0, 2).map((op, i) => (<p key={i} className="text-[11px] text-muted-foreground/70 leading-snug truncate">· {op.opportunityType}: {op.cleanTitle}</p>))}</div>
-                </div>
-              )}
-              {trendIntel.viralHooks.length > 0 && (
-                <div className="rounded-xl border border-border/50 bg-card/40 p-3.5">
-                  <div className="flex items-center gap-1.5 mb-2.5"><Brain className="w-3 h-3 text-primary/70" /><span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Viral Signal Patterns</span></div>
-                  <div className="space-y-1.5">{trendIntel.viralHooks.slice(0, 2).map((hook, i) => (<p key={i} className="text-[11px] text-muted-foreground/70 leading-snug line-clamp-2">· {hook}</p>))}</div>
-                </div>
-              )}
-              {trendIntel.topOpportunities.length > 0 && (
-                <div className="rounded-xl border border-border/50 bg-card/40 p-3.5">
-                  <div className="flex items-center gap-1.5 mb-2.5"><TrendingUp className="w-3 h-3 text-primary/70" /><span className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">Trend Momentum</span></div>
-                  <div className="space-y-2">
-                    {trendIntel.topOpportunities.slice(0, 2).map((op, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <div className="flex-1 h-1 rounded-full bg-border/40 overflow-hidden">
-                          <motion.div className="h-full rounded-full bg-primary/50" initial={{ width: 0 }} animate={{ width: `${op.momentumScore}%` }} transition={{ duration: 0.8, delay: i * 0.15, ease: "easeOut" }} />
-                        </div>
-                        <span className="text-[9px] font-mono text-muted-foreground/50 w-7 shrink-0">{op.momentumScore}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Script output */}
       <ScriptOutput
         output={output}

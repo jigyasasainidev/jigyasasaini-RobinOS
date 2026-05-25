@@ -14,7 +14,7 @@
 //
 // This module is provider-agnostic. It uses a tiered approach:
 //   Tier 1: local keyword/pattern classifier (zero latency)
-//   Tier 2: AI-based content classification (low latency)
+//   Tier 2: Groq-based content classification (low latency)
 //   Tier 3: edge function moderation hook (async, audit only)
 // ============================================================
 

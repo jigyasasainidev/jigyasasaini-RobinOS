@@ -8,10 +8,6 @@ import {
 } from "../_shared/entitlement.ts";
 import { trackFeatureUsage } from "../_shared/feature-usage.ts";
 
-// ── Groq config ───────────────────────────────────────────
-const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL    = "llama-3.3-70b-versatile";
-
 // ============================================================
 // STRUCTURED LOGGER — no secrets, no tokens, no API keys
 // ============================================================
@@ -24,15 +20,75 @@ function logError(phase: string, meta: Record<string, unknown> = {}) {
 }
 
 // ============================================================
+// GROQ CONSTANTS
+// ============================================================
+const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
+const GROQ_MODEL    = "llama-3.3-70b-versatile";
+
+// ============================================================
+// GROQ API CALL (OpenAI-compatible)
+// ============================================================
+async function callGroq(
+  apiKey: string,
+  messages: Array<{ role: string; content: string }>,
+  timeoutMs = 25_000
+): Promise<string> {
+  const ctrl  = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+
+  let res: Response;
+  try {
+    res = await fetch(GROQ_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type":  "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model:       GROQ_MODEL,
+        temperature: 0.7,
+        max_tokens:  4096,
+        messages,
+      }),
+      signal: ctrl.signal,
+    });
+  } catch (err) {
+    clearTimeout(timer);
+    const isTimeout = err instanceof Error && err.name === "AbortError";
+    throw new Error(isTimeout ? "Groq request timed out" : `Groq network error: ${err}`);
+  }
+  clearTimeout(timer);
+
+  if (res.status === 429) throw new Error("Groq rate limit exceeded. Please retry shortly.");
+  if (res.status === 401 || res.status === 403) throw new Error("Groq API key invalid or quota exhausted.");
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    console.error("[generate-script] Groq HTTP error", res.status, errText.slice(0, 200));
+    throw new Error(`Groq returned HTTP ${res.status}`);
+  }
+
+  const data = await res.json();
+  const content: string | null = data?.choices?.[0]?.message?.content?.trim() ?? null;
+
+  if (!content) {
+    console.error("[generate-script] Groq empty response:", JSON.stringify(data).slice(0, 400));
+    throw new Error("Groq returned empty content");
+  }
+
+  log("GROQ_RESPONSE_OK", { content_length: content.length });
+  return content;
+}
+
+// ============================================================
 // MAIN HANDLER
 // ============================================================
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
 
-  // ── Startup: validate Groq config ────────────────────────
+  // ── Startup: validate Groq key ────────────────────────────
   const groqKey = Deno.env.get("GROQ_API_KEY");
   if (!groqKey) {
-    logError("GROQ_API_KEY not configured");
+    logError("MISSING_GROQ_KEY");
     return new Response(
       JSON.stringify({ success: false, code: "PROVIDER_CONFIG_ERROR", error: "AI provider not configured." }),
       { status: 503, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
@@ -122,31 +178,17 @@ serve(async (req) => {
 
   log("AUTH_VERIFIED", { user_id: user.id, elapsed_ms: Date.now() - startMs });
 
-  // ── PHASE 4: AI generation ────────────────────────────────
+  // ── PHASE 4: AI generation via Groq ─────────────────────────
   log("AI_REQUEST_STARTED", { model: GROQ_MODEL, topic_length: topic.length });
 
   const aiStart = Date.now();
+  let content: string;
 
-  // ── Direct Groq call (OpenAI-compatible) ─────────────────
-  let aiContent: string | null = null;
   try {
-    const ctrl  = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 25_000);
-
-    const groqRes = await fetch(GROQ_ENDPOINT, {
-      method:  "POST",
-      headers: {
-        "Content-Type":  "application/json",
-        "Authorization": `Bearer ${groqKey}`,
-      },
-      body: JSON.stringify({
-        model:       GROQ_MODEL,
-        temperature: 0.7,
-        max_tokens:  4096,
-        messages: [
-          {
-            role:    "system",
-            content: `You are an elite viral script writer for short-form and long-form content. Write scripts that maximize retention, emotional impact, and shareability. When a trend signal is mentioned in the topic, reference it naturally to make the script feel current.
+    content = await callGroq(groqKey, [
+      {
+        role: "system",
+        content: `You are an elite viral script writer for short-form and long-form content. Write scripts that maximize retention, emotional impact, and shareability. When a trend signal is mentioned in the topic, reference it naturally to make the script feel current.
 
 Generate:
 1. **3 HOOKS** (different styles: question, bold statement, story opener)
@@ -154,75 +196,23 @@ Generate:
 3. **EDITING DIRECTIONS** (5 specific visual instructions)
 
 Be specific, concise, and ruthlessly engaging.`,
-          },
-          {
-            role:    "user",
-            content: `Topic: "${topic}"\nTone: ${tone}\nLength: ${length}`,
-          },
-        ],
-      }),
-      signal: ctrl.signal,
-    });
-
-    clearTimeout(timer);
-
-    if (groqRes.status === 429) {
-      logError("GROQ_RATE_LIMITED");
-      return new Response(
-        JSON.stringify({ success: false, code: "RATE_LIMITED", error: "Rate limit exceeded. Please try again in a moment." }),
-        { status: 429, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
-      );
-    }
-    if (groqRes.status === 401 || groqRes.status === 403) {
-      logError("GROQ_AUTH_ERROR", { status: groqRes.status });
-      return new Response(
-        JSON.stringify({ success: false, code: "PROVIDER_AUTH_ERROR", error: "AI provider authentication failed." }),
-        { status: 503, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
-      );
-    }
-    if (!groqRes.ok) {
-      const errText = await groqRes.text().catch(() => "");
-      logError("GROQ_HTTP_ERROR", { status: groqRes.status, body: errText.slice(0, 200) });
-      return new Response(
-        JSON.stringify({ success: false, code: "AI_UNAVAILABLE", error: "AI provider returned an error. Please try again." }),
-        { status: 503, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
-      );
-    }
-
-    const groqData = await groqRes.json();
-    aiContent = String(groqData?.choices?.[0]?.message?.content ?? "").trim() || null;
-
-  } catch (fetchErr) {
-    const isTimeout = fetchErr instanceof Error && fetchErr.name === "AbortError";
-    logError("GROQ_FETCH_ERROR", { timeout: isTimeout, message: fetchErr instanceof Error ? fetchErr.message : "unknown" });
+      },
+      {
+        role: "user",
+        content: `Topic: "${topic}"\nTone: ${tone}\nLength: ${length}`,
+      },
+    ]);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown AI error";
+    logError("AI_PROVIDER_ERROR", { error: msg, elapsed_ms: Date.now() - aiStart });
+    const status = msg.includes("rate limit") ? 429 : 503;
     return new Response(
-      JSON.stringify({ success: false, code: isTimeout ? "AI_TIMEOUT" : "AI_UNAVAILABLE", error: "Generation timed out. Please try again." }),
-      { status: 503, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
+      JSON.stringify({ success: false, code: "AI_UNAVAILABLE", error: msg }),
+      { status, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
     );
   }
 
   const aiElapsed = Date.now() - aiStart;
-  const content   = aiContent;
-
-  if (!content) {
-    logError("AI_EMPTY_CONTENT", { model: GROQ_MODEL, elapsed_ms: Date.now() - aiStart });
-    // Non-fatal persist of empty result for debugging
-    await supabase.from("script_generations").insert({
-      user_id: user.id,
-      request_id: requestId,
-      prompt: topic,
-      tone,
-      content_length: length,
-      generated_output: "",
-      generation_status: "empty",
-    }).then(({ error }) => { if (error) logError("PERSISTENCE_ERROR", { table: "script_generations", note: "empty_record" }); });
-
-    return new Response(
-      JSON.stringify({ success: false, code: "AI_UNAVAILABLE", error: "Generation returned empty result. Please try again." }),
-      { status: 503, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
-    );
-  }
-
   log("AI_RESPONSE_OK", { content_length: content.length, elapsed_ms: aiElapsed });
 
   // ── PHASE 5: Persistence + analytics (non-fatal fire-and-forget) ──

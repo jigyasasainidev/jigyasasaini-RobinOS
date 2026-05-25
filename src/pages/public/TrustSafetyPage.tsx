@@ -194,7 +194,7 @@ export function TrustSafetyPage() {
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   {[
                     { icon: Search, label: "Tier 1 — Prompt Scanning", desc: "Instant local classifier checks every prompt against prohibited content patterns before any AI call is made." },
-                  { icon: Zap, label: "Tier 2 — AI Classification", desc: "AI-powered safety classification runs on ambiguous prompts for deeper semantic analysis." },
+                    { icon: Zap, label: "Tier 2 — AI Classification", desc: "Groq-powered safety classification runs on ambiguous prompts for deeper semantic analysis." },
                     { icon: Eye, label: "Tier 3 — Output Validation", desc: "Generated content is analyzed post-generation to detect any safety-filter bypass attempts." },
                     { icon: Server, label: "Tier 4 — Audit Logging", desc: "All moderation events are logged to a structured audit trail with severity, category, and timestamp." },
                   ].map((tier) => (
@@ -431,7 +431,7 @@ export function TrustSafetyPage() {
                   "AI-generated content is clearly identified as AI-generated throughout the platform",
                   "Users retain responsibility for how they use AI-generated content",
                   "RobinOS does not use user prompts to train AI models",
-                  "AI providers are selected based on responsible AI commitments",
+                  "AI providers (Groq) are selected based on responsible AI commitments",
                   "AI transparency disclosure is maintained at /ai-transparency",
                   "RobinOS aligns with the EU AI Act principles of transparency, safety, and human oversight",
                 ]} />
