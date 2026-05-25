@@ -131,23 +131,47 @@ const AudioHashtagPage = () => {
     if (mode === "audio") {
       const res = await getTrendingAudio(platform);
       if (!res.ok) {
-        if (isEntitlementError(res)) { toast.error(res.message); setShowUpgrade(true); }
-        else toast.error("Could not load trending audio. Check your connection and try again.");
+        if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+        if (isEntitlementError(res)) {
+          if (res.code === "FEATURE_DISABLED") {
+            toast.error("Trend audio scanning requires Creator plan or above.");
+            setShowUpgrade(true);
+          } else {
+            toast.error(res.message || "Daily scan limit reached. Upgrade to continue.");
+            setShowUpgrade(true);
+          }
+        } else {
+          toast.error("Could not load trending audio. Check your connection and try again.");
+        }
         setAudios([]);
-      } else {
-        setAudios(res.audios);
-        setHashtags([]);
+        setScanning(false);
+        setScanned(true);
+        return;
       }
+      setAudios(res.audios);
+      setHashtags([]);
     } else {
       const res = await getTrendingHashtags(platform);
       if (!res.ok) {
-        if (isEntitlementError(res)) { toast.error(res.message); setShowUpgrade(true); }
-        else toast.error("Could not load trending hashtags. Check your connection and try again.");
+        if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+        if (isEntitlementError(res)) {
+          if (res.code === "FEATURE_DISABLED") {
+            toast.error("Hashtag scanning is available on Creator plan and above.");
+            setShowUpgrade(true);
+          } else {
+            toast.error(res.message || "Daily hashtag scan limit reached. Upgrade to continue.");
+            setShowUpgrade(true);
+          }
+        } else {
+          toast.error("Could not load trending hashtags. Check your connection and try again.");
+        }
         setHashtags([]);
-      } else {
-        setHashtags(res.hashtags);
-        setAudios([]);
+        setScanning(false);
+        setScanned(true);
+        return;
       }
+      setHashtags(res.hashtags);
+      setAudios([]);
     }
 
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
