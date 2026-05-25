@@ -228,7 +228,6 @@ const TrendScannerPage = () => {
                 {topics.length} signals detected for "{niche}"
               </span>
               <StatusBadge status="completed" label="AI Complete" />
-              </span>
             </div>
 
             {topics.map((t, i) => (
