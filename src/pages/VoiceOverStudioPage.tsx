@@ -81,15 +81,7 @@ const VOICE_CATALOG: VoiceEntry[] = [
     badge:      "Trending",
     badgeColor: "hsl(38 90% 55%)",
   },
-  {
-    id:         "AZnzlk1XvdvUeBnXmlld",
-    name:       "Isabella",
-    tagline:    "Expressive Viral",
-    useCases:   ["Hooks", "Short-form", "Reels", "TikTok"],
-    gender:     "female",
-    badge:      "Viral Pick",
-    badgeColor: "hsl(0 75% 60%)",
-  },
+
   {
     id:         "XrExE9yKIg1WjnnlVkGX",
     name:       "Zara",
