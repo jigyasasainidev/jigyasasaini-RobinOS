@@ -21,8 +21,8 @@ import {
 type ScanMode = "audio" | "hashtags";
 
 const PLATFORMS: IdeaPlatform[] = ["Instagram", "TikTok", "Facebook", "YouTube"];
-const STORAGE_KEY  = "robinos_audio_hashtag_v2";
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const STORAGE_KEY  = "robinos_audio_hashtag_v3"; // bumped: v2→v3 on 12h TTL change
+const CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12 h — matches server-side refresh cadence
 
 const AUDIO_MSGS = [
   "Scanning creator audio signals...",
