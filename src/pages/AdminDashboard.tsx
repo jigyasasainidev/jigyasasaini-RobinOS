@@ -763,6 +763,39 @@ const AdminDashboard = () => {
     enabled: !!isAdmin,
   });
 
+  // ── Admin dashboard metrics — authoritative aggregation ──
+  // Reads from feature_usage + usage_tracking (the actual tables
+  // that edge functions write to). Replaces the broken ai_generations
+  // query which nothing writes to.
+  const adminMetricsQuery = useQuery({
+    queryKey: ["admin-dashboard-metrics-v1"],
+    queryFn: async (): Promise<{
+      scripts_generated: number;
+      trend_searches: number;
+      caption_generated: number;
+      voice_generated: number;
+      video_generated: number;
+      estimated_ai_cost: number;
+    }> => {
+      const { data, error } = await (db as any).rpc("get_admin_dashboard_metrics");
+      if (error) {
+        console.warn("[AdminDashboard] metrics RPC failed:", error.message);
+        return { scripts_generated: 0, trend_searches: 0, caption_generated: 0, voice_generated: 0, video_generated: 0, estimated_ai_cost: 0 };
+      }
+      return {
+        scripts_generated: Number(data?.scripts_generated ?? 0),
+        trend_searches:    Number(data?.trend_searches    ?? 0),
+        caption_generated: Number(data?.caption_generated ?? 0),
+        voice_generated:   Number(data?.voice_generated   ?? 0),
+        video_generated:   Number(data?.video_generated   ?? 0),
+        estimated_ai_cost: Number(data?.estimated_ai_cost ?? 0),
+      };
+    },
+    enabled: !!isAdmin,
+    staleTime: 60 * 1000,   // 1 min — metrics don't need sub-second freshness
+    gcTime: 5 * 60 * 1000,
+  });
+
   const featureUsageQuery = useQuery({
     queryKey: ["admin-feature-usage-v2"],
     queryFn: async (): Promise<FeatureUsageRow[]> => {
@@ -844,6 +877,10 @@ const AdminDashboard = () => {
           callback: () => queryClient.invalidateQueries({ queryKey: ["admin-ai-generations-v2"] }),
         },
         {
+          table: "feature_usage",
+          callback: () => queryClient.invalidateQueries({ queryKey: ["admin-dashboard-metrics-v1"] }),
+        },
+        {
           table: "platform_settings",
           callback: () => {
             void queryClient.invalidateQueries({ queryKey: ["admin-platform-settings-v2"] });
@@ -908,6 +945,7 @@ const AdminDashboard = () => {
     aiGenerationsQuery.isLoading,
     featureUsageQuery.isLoading,
     platformSettingsQuery.isLoading,
+    adminMetricsQuery.isLoading,
   ].some(Boolean);
 
   const queryErrors = [
@@ -946,12 +984,17 @@ const AdminDashboard = () => {
   const activeSubscribers = useMemo(() => subscriptions.filter((s) => s.is_revenue_eligible && asSubscriptionStatus(s.status) === "active").length, [subscriptions]);
   const pendingWithdrawals = useMemo(() => withdrawals.filter((w) => asWithdrawStatus(w.status) === "pending"), [withdrawals]);
   const totalAffiliateEarnings = useMemo(() => affiliateCommissions.reduce((s, c) => s + Number(c.amount || 0), 0), [affiliateCommissions]);
-  const scriptsGenerated = useMemo(() => aiGenerations.filter((g) => (g.generation_type || "").toLowerCase() === "script").length, [aiGenerations]);
-  const trendSearches = useMemo(() => aiGenerations.filter((g) => (g.generation_type || "").toLowerCase() === "trends").length, [aiGenerations]);
-  const estimatedAiCost = useMemo(() => aiGenerations.reduce((s, g) => s + estimateGenerationCost(g.provider, Number(g.credits_used || 0)), 0), [aiGenerations]);
 
-  const voiceGenerations = useMemo(() => aiGenerations.filter((g) => (g.generation_type || "").toLowerCase() === "voice").length, [aiGenerations]);
-  const videoGenerations = useMemo(() => aiGenerations.filter((g) => (g.generation_type || "").toLowerCase() === "video").length, [aiGenerations]);
+  // ── Authoritative metrics from get_admin_dashboard_metrics() ──
+  // These were previously reading from ai_generations (empty table).
+  // Now reading from feature_usage + usage_tracking (actual sources).
+  const adminMetrics = adminMetricsQuery.data;
+  const scriptsGenerated = adminMetrics?.scripts_generated ?? 0;
+  const trendSearches    = adminMetrics?.trend_searches    ?? 0;
+  const estimatedAiCost  = adminMetrics?.estimated_ai_cost ?? 0;
+
+  const voiceGenerations = adminMetrics?.voice_generated ?? 0;
+  const videoGenerations = adminMetrics?.video_generated ?? 0;
   // ── Free vs paid classification ───────────────────────────
   // Source of truth: user_subscriptions table ONLY.
   // A user is "paid" ONLY when:
@@ -1263,6 +1306,7 @@ const AdminDashboard = () => {
       "admin-ai-generations-v2",
       "admin-feature-usage-v2",
       "admin-platform-settings-v2",
+      "admin-dashboard-metrics-v1",
     ].forEach((key) => queryClient.invalidateQueries({ queryKey: [key] }));
   };
 
