@@ -349,6 +349,97 @@
     box-shadow: 0 0 12px hsl(217 91% 60% / 0.1);
   }
 
+  /* ── Mobile refinements ───────────────────────────────────
+   * Surgical mobile-first spacing and touch improvements.
+   * These override only what needs fixing on small screens.
+   * Desktop layout is untouched.
+   * ─────────────────────────────────────────────────────── */
+
+  /* Disable hover-only transforms on touch devices to prevent
+   * tap-triggered layout jitter on glass cards and buttons */
+  @media (hover: none) and (pointer: coarse) {
+    .glass-card:hover {
+      transform: none;
+      box-shadow: none;
+      border-color: hsl(0 0% 100% / 0.07);
+    }
+
+    .btn-primary:hover {
+      transform: none;
+      background-position: 0 0;
+    }
+
+    .card-glow:hover {
+      transform: none;
+      box-shadow: none;
+      border-color: inherit;
+    }
+  }
+
+  /* Minimum touch target: 44×44px for all interactive elements */
+  @media (max-width: 767px) {
+    button,
+    [role="button"],
+    a[href] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    /* Exception: icon-only buttons inside cards that are already
+     * sized intentionally (e.g. 24px copy/save buttons in cards) */
+    .touch-compact button,
+    .touch-compact [role="button"] {
+      min-height: unset;
+      min-width: unset;
+    }
+
+    /* Ensure the main content area has safe bottom padding on mobile
+     * so content doesn't hide behind the bottom nav bar */
+    main {
+      padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Prevent horizontal overflow from any card or grid */
+    .glass-card,
+    [class*="rounded-xl"],
+    [class*="rounded-2xl"] {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    /* Improve textarea usability on mobile — prevent zoom on focus
+     * (iOS zooms in when font-size < 16px) */
+    textarea,
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    select {
+      font-size: 16px !important;
+    }
+
+    /* Tighten the page header top padding on mobile — pt-14 is set
+     * by pages to clear the mobile bottom nav, keep it */
+
+    /* Improve readability of mono labels on small screens */
+    .font-mono {
+      letter-spacing: 0.01em;
+    }
+  }
+
+  /* Extra-small phones (< 390px — iPhone SE, older Androids) */
+  @media (max-width: 389px) {
+    /* Reduce heading size slightly to prevent overflow */
+    h1 {
+      font-size: clamp(1.25rem, 6vw, 1.875rem);
+    }
+
+    /* Tighten card padding on very small screens */
+    .glass-card {
+      padding: 0.875rem;
+    }
+  }
+
   /* ── Generating pulse ── */
   @keyframes gen-pulse {
     0%, 100% { opacity: 0.4; }
