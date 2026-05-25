@@ -425,16 +425,26 @@ const VoiceOverStudioPage = () => {
 
   // ── Render ─────────────────────────────────────────────────
   return (
-    <div className="pt-14 md:pt-0">
+    <div className="pt-14 md:pt-0 relative">
+
+      {/* Atmospheric depth layer */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden>
+        <div className="absolute top-[-8%] left-[2%] w-[600px] h-[600px] rounded-full"
+          style={{ background: "radial-gradient(circle, hsl(217 91% 60% / 0.04) 0%, transparent 65%)" }} />
+        <div className="absolute bottom-[10%] right-[-5%] w-[400px] h-[400px] rounded-full"
+          style={{ background: "radial-gradient(circle, hsl(217 91% 60% / 0.025) 0%, transparent 65%)" }} />
+      </div>
+
+      <div className="relative z-10">
 
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-1.5">
           <Mic className="w-4 h-4 text-primary" />
-          <span className="text-xs font-mono uppercase tracking-[0.22em] text-muted-foreground/55">AI Voice</span>
+          <span className="text-xs font-mono uppercase tracking-[0.22em] text-muted-foreground/45">AI Voice</span>
         </div>
         <div className="flex items-center gap-3 flex-wrap mb-2">
-          <h1 className="text-chrome text-2xl md:text-3xl font-semibold">Voice Engine</h1>
+          <h1 className="text-chrome text-2xl md:text-3xl font-semibold tracking-tight">Voice Engine</h1>
           <Badge variant="outline" className={`text-[10px] font-mono ${
             isVoiceEnabled ? "border-primary/30 text-primary" : "border-border text-muted-foreground"
           }`}>
@@ -443,9 +453,9 @@ const VoiceOverStudioPage = () => {
         </div>
         {isVoiceEnabled && (
           <div className="flex items-center gap-3 flex-wrap">
-            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono border ${
-              hasKey ? "border-emerald-500/25 bg-emerald-500/6 text-emerald-400/80"
-                     : "border-amber-500/25 bg-amber-500/6 text-amber-400/70"
+            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono border transition-all ${
+              hasKey ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-400/75"
+                     : "border-amber-500/20 bg-amber-500/5 text-amber-400/65"
             }`}>
               <motion.div
                 className={`w-1.5 h-1.5 rounded-full ${hasKey ? "bg-emerald-400" : "bg-amber-400"}`}
@@ -456,15 +466,15 @@ const VoiceOverStudioPage = () => {
             </div>
             {!hasKey && (
               <button onClick={() => navigate("/dashboard/settings")}
-                className="inline-flex items-center gap-1 text-[10px] font-mono text-primary/60 hover:text-primary transition-colors">
+                className="inline-flex items-center gap-1 text-[10px] font-mono text-primary/55 hover:text-primary transition-colors">
                 <Settings className="w-3 h-3" /> Open Settings
               </button>
             )}
-            <span className="text-[10px] font-mono text-muted-foreground/22">⌘↵ generate · Space play/pause · Esc stop</span>
+            <span className="text-[10px] font-mono text-muted-foreground/18">⌘↵ generate · Space play/pause · Esc stop</span>
           </div>
         )}
         {!isVoiceEnabled && (
-          <p className="text-muted-foreground text-sm mt-1">Generate professional voice overs from your scripts using ElevenLabs.</p>
+          <p className="text-muted-foreground/60 text-sm mt-1">Generate professional voice overs from your scripts using ElevenLabs.</p>
         )}
       </div>
 
@@ -472,13 +482,17 @@ const VoiceOverStudioPage = () => {
       {!isVoiceEnabled ? (
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="max-w-xl">
           <div className="rounded-2xl p-8 text-center"
-            style={{ background: "hsl(222 28% 6%)", border: "1px solid hsl(217 28% 12%)" }}>
+            style={{
+              background: "linear-gradient(145deg, hsl(222 30% 7%) 0%, hsl(222 26% 6%) 100%)",
+              border: "1px solid hsl(217 28% 13%)",
+              boxShadow: "0 8px 40px hsl(0 0% 0% / 0.3), inset 0 1px 0 hsl(0 0% 100% / 0.03)",
+            }}>
             <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-              style={{ background: "hsl(217 91% 60% / 0.06)", border: "1px solid hsl(217 91% 60% / 0.15)" }}>
-              <Lock className="w-5 h-5 text-primary/50" />
+              style={{ background: "hsl(217 91% 60% / 0.06)", border: "1px solid hsl(217 91% 60% / 0.14)" }}>
+              <Lock className="w-5 h-5 text-primary/45" />
             </div>
-            <h3 className="text-foreground font-medium text-sm mb-2">Voice Engine is for Pro Creator & Agency</h3>
-            <p className="text-muted-foreground text-xs mb-6 leading-relaxed">
+            <h3 className="text-foreground/90 font-medium text-sm mb-2">Voice Engine is for Pro Creator & Agency</h3>
+            <p className="text-muted-foreground/55 text-xs mb-6 leading-relaxed">
               Upgrade to unlock unlimited voice generation using your own ElevenLabs API key.
             </p>
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
@@ -497,107 +511,142 @@ const VoiceOverStudioPage = () => {
             {/* Script */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground/55">Script</label>
-                <span className="text-[10px] font-mono text-muted-foreground/30">{script.length}/5000</span>
+                <label className="text-[10px] font-mono uppercase tracking-[0.22em] text-muted-foreground/45">Script</label>
+                <span className="text-[10px] font-mono text-muted-foreground/25">{script.length}/5000</span>
               </div>
               <textarea
                 value={script}
                 onChange={(e) => setScript(e.target.value)}
                 placeholder="Paste your script here…"
                 disabled={isGenerating}
-                className="w-full min-h-[160px] max-h-[320px] rounded-xl text-sm text-foreground placeholder:text-muted-foreground/28 resize-y focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-50 p-4"
-                style={{ background: "hsl(222 28% 6%)", border: "1px solid hsl(217 28% 12%)" }}
+                className="w-full min-h-[160px] max-h-[320px] rounded-xl text-sm text-foreground/90 placeholder:text-muted-foreground/22 resize-y focus:outline-none disabled:opacity-50 p-4 leading-relaxed"
+                style={{
+                  background: "hsl(222 28% 5.5%)",
+                  border: "1px solid hsl(217 28% 12%)",
+                  boxShadow: "inset 0 2px 8px hsl(0 0% 0% / 0.15)",
+                  transition: "border-color 0.2s",
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "hsl(217 91% 60% / 0.3)"; }}
+                onBlur={(e)  => { e.currentTarget.style.borderColor = "hsl(217 28% 12%)"; }}
               />
             </div>
 
             {/* ── Curated Voice Selector ─────────────── */}
             <div>
               <div className="flex items-center justify-between mb-3">
-                <label className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground/55">
+                <label className="text-[10px] font-mono uppercase tracking-[0.22em] text-muted-foreground/45">
                   Voice
                 </label>
-                <span className="text-[9px] font-mono text-muted-foreground/25 tracking-wider">
+                <span className="text-[9px] font-mono text-muted-foreground/20 tracking-wider">
                   Curated · {VOICE_CATALOG.length} voices
                 </span>
               </div>
 
-              {/* 2-column grid — no scroll, fits above fold */}
+              {/* 2-column grid */}
               <div className="grid grid-cols-2 gap-2.5">
                 {VOICE_CATALOG.map((voice, idx) => {
                   const isSelected   = selectedId === voice.id;
                   const isPreviewing = previewId === voice.id && previewStatus === "playing";
                   const isLoading    = previewId === voice.id && previewStatus === "loading";
 
+                  // Dynamic card styles per state
+                  const cardStyle = isSelected ? {
+                    background: `linear-gradient(145deg, ${voice.badgeColor.replace(")", " / 0.09)")} 0%, hsl(222 28% 6%) 100%)`,
+                    border: `1px solid ${voice.badgeColor.replace(")", " / 0.32)")}`,
+                    boxShadow: `0 4px 24px ${voice.badgeColor.replace(")", " / 0.10)")}, inset 0 1px 0 hsl(0 0% 100% / 0.04)`,
+                  } : isPreviewing ? {
+                    background: `linear-gradient(145deg, ${voice.badgeColor.replace(")", " / 0.07)")} 0%, hsl(222 28% 6%) 100%)`,
+                    border: `1px solid ${voice.badgeColor.replace(")", " / 0.22)")}`,
+                    boxShadow: `0 4px 20px ${voice.badgeColor.replace(")", " / 0.08)")}`,
+                  } : {
+                    background: "linear-gradient(145deg, hsl(222 28% 7%) 0%, hsl(222 26% 6%) 100%)",
+                    border: "1px solid hsl(217 28% 12%)",
+                    boxShadow: "0 2px 12px hsl(0 0% 0% / 0.2), inset 0 1px 0 hsl(0 0% 100% / 0.025)",
+                  };
+
                   return (
                     <motion.div
                       key={voice.id}
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.04, duration: 0.25 }}
-                      className="rounded-xl overflow-hidden flex flex-col transition-all duration-200"
-                      style={isSelected ? {
-                        background: "hsl(217 91% 60% / 0.07)",
-                        border: "1px solid hsl(217 91% 60% / 0.28)",
-                        boxShadow: `0 0 20px ${voice.badgeColor.replace("hsl(", "hsl(").replace(")", " / 0.08)")}`,
-                      } : isPreviewing ? {
-                        background: `${voice.badgeColor.replace(")", " / 0.06)")}`,
-                        border: `1px solid ${voice.badgeColor.replace(")", " / 0.25)")}`,
-                        boxShadow: `0 0 16px ${voice.badgeColor.replace(")", " / 0.1)")}`,
-                      } : {
-                        background: "hsl(222 28% 6%)",
-                        border: "1px solid hsl(217 28% 11%)",
-                      }}
-                      whileHover={!isSelected ? {
+                      transition={{ delay: idx * 0.04, duration: 0.3 }}
+                      className="rounded-xl overflow-hidden flex flex-col"
+                      style={cardStyle}
+                      whileHover={!isSelected && !isPreviewing ? {
+                        y: -2,
+                        boxShadow: `0 8px 28px hsl(0 0% 0% / 0.3), inset 0 1px 0 hsl(0 0% 100% / 0.035)`,
                         borderColor: "hsl(217 28% 18%)",
-                        background: "hsl(217 28% 8%)",
+                      } : isSelected ? {
+                        boxShadow: `0 6px 32px ${voice.badgeColor.replace(")", " / 0.15)")}, inset 0 1px 0 hsl(0 0% 100% / 0.04)`,
                       } : {}}
                     >
+                      {/* Top edge shimmer on selected */}
+                      {isSelected && (
+                        <div className="h-px w-full"
+                          style={{ background: `linear-gradient(90deg, transparent 10%, ${voice.badgeColor.replace(")", " / 0.4)")} 50%, transparent 90%)` }} />
+                      )}
+
                       {/* Selectable card body */}
                       <button
                         onClick={() => setSelectedId(voice.id)}
                         disabled={isGenerating}
-                        className="text-left p-4 pb-2.5 flex flex-col gap-2 disabled:opacity-40 flex-1"
+                        className="text-left p-4 pb-2 flex flex-col gap-2.5 disabled:opacity-40 flex-1"
                       >
-                        {/* Name row */}
+                        {/* Name + badge row */}
                         <div className="flex items-start justify-between gap-1.5">
                           <div>
-                            <p className={`text-sm font-semibold leading-tight ${isSelected ? "text-primary" : "text-foreground/88"}`}>
+                            <p className={`text-sm font-semibold leading-tight tracking-tight ${isSelected ? "text-primary" : "text-foreground/88"}`}>
                               {voice.name}
                             </p>
-                            <p className="text-[10px] text-muted-foreground/45 mt-0.5">{voice.tagline}</p>
+                            <p className="text-[10px] mt-0.5 leading-tight"
+                              style={{ color: isSelected ? voice.badgeColor.replace(")", " / 0.65)") : "hsl(215 16% 38%)" }}>
+                              {voice.tagline}
+                            </p>
                           </div>
-                          {/* Single elegant badge */}
+                          {/* Single refined badge */}
                           <span
-                            className="shrink-0 text-[8px] font-mono px-2 py-0.5 rounded-full border mt-0.5"
+                            className="shrink-0 text-[7.5px] font-mono px-1.5 py-0.5 rounded-full border mt-0.5 leading-none tracking-wide"
                             style={{
-                              color:            voice.badgeColor,
-                              borderColor:      voice.badgeColor.replace(")", " / 0.28)"),
-                              background:       voice.badgeColor.replace(")", " / 0.07)"),
+                              color:       voice.badgeColor.replace(")", " / 0.85)"),
+                              borderColor: voice.badgeColor.replace(")", " / 0.22)"),
+                              background:  voice.badgeColor.replace(")", " / 0.06)"),
                             }}
                           >
                             {voice.badge}
                           </span>
                         </div>
 
-                        {/* Use-case bullets */}
+                        {/* Use-case chips */}
                         <div className="flex flex-wrap gap-1">
                           {voice.useCases.map((uc) => (
                             <span key={uc}
-                              className="text-[8.5px] font-mono px-1.5 py-0.5 rounded"
-                              style={{ background: "hsl(217 28% 10%)", color: "hsl(215 16% 38%)" }}>
+                              className="text-[8px] font-mono px-1.5 py-0.5 rounded-md leading-none"
+                              style={{
+                                background: isSelected
+                                  ? voice.badgeColor.replace(")", " / 0.08)")
+                                  : "hsl(217 28% 9%)",
+                                color: isSelected
+                                  ? voice.badgeColor.replace(")", " / 0.7)")
+                                  : "hsl(215 16% 35%)",
+                                border: `1px solid ${isSelected ? voice.badgeColor.replace(")", " / 0.14)") : "hsl(217 28% 12%)"}`,
+                              }}>
                               {uc}
                             </span>
                           ))}
                         </div>
 
                         {/* Mini waveform */}
-                        <div className="flex justify-end pt-0.5">
+                        <div className="flex justify-end">
                           <MiniWave active={isSelected} preview={isPreviewing} color={voice.badgeColor} />
                         </div>
                       </button>
 
-                      {/* Preview button — docked at bottom */}
-                      <div className="px-3 pb-3">
+                      {/* Separator */}
+                      <div className="mx-3"
+                        style={{ height: 1, background: isSelected ? `${voice.badgeColor.replace(")", " / 0.12)")}` : "hsl(217 28% 10%)" }} />
+
+                      {/* Preview button */}
+                      <div className="px-3 py-2.5">
                         <motion.button
                           whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                           onClick={(e) => {
@@ -606,15 +655,16 @@ const VoiceOverStudioPage = () => {
                             playPreview(voice.id);
                           }}
                           disabled={isLoading || isGenerating}
-                          className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[10px] font-mono transition-all duration-200 disabled:opacity-40"
+                          className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[9.5px] font-mono tracking-wide transition-all duration-200 disabled:opacity-35"
                           style={isPreviewing ? {
                             background: voice.badgeColor.replace(")", " / 0.1)"),
                             border:     `1px solid ${voice.badgeColor.replace(")", " / 0.28)")}`,
                             color:      voice.badgeColor,
+                            boxShadow:  `0 0 10px ${voice.badgeColor.replace(")", " / 0.08)")}`,
                           } : {
-                            background: "hsl(217 28% 9%)",
-                            border:     "1px solid hsl(217 28% 14%)",
-                            color:      "hsl(215 16% 40%)",
+                            background: "hsl(217 28% 8%)",
+                            border:     "1px solid hsl(217 28% 13%)",
+                            color:      "hsl(215 16% 38%)",
                           }}
                         >
                           {isLoading ? (
@@ -634,11 +684,16 @@ const VoiceOverStudioPage = () => {
 
             {/* Generate */}
             <motion.button
-              whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+              whileHover={{ scale: 1.01, boxShadow: "0 8px 32px hsl(217 91% 60% / 0.28)" }}
+              whileTap={{ scale: 0.99 }}
               onClick={handleGenerate}
               disabled={isGenerating || !hasKey || !script.trim()}
-              className="w-full h-11 rounded-xl text-sm font-medium glow-blue disabled:opacity-40 flex items-center justify-center gap-2 transition-all"
-              style={{ background: "hsl(217 91% 55%)", color: "#fff" }}
+              className="w-full h-11 rounded-xl text-sm font-medium disabled:opacity-40 flex items-center justify-center gap-2 transition-all"
+              style={{
+                background: "linear-gradient(135deg, hsl(217 91% 52%) 0%, hsl(217 91% 60%) 100%)",
+                color: "#fff",
+                boxShadow: "0 4px 20px hsl(217 91% 60% / 0.2), inset 0 1px 0 hsl(0 0% 100% / 0.12)",
+              }}
             >
               {isGenerating
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating voice...</>
@@ -650,13 +705,17 @@ const VoiceOverStudioPage = () => {
             {!hasKey && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                 className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl"
-                style={{ background: "hsl(38 95% 55% / 0.05)", border: "1px solid hsl(38 95% 55% / 0.18)" }}>
+                style={{
+                  background: "hsl(38 95% 55% / 0.04)",
+                  border: "1px solid hsl(38 95% 55% / 0.15)",
+                  boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.02)",
+                }}>
                 <div className="flex items-center gap-2">
-                  <Lock className="w-3.5 h-3.5 text-amber-400/65 shrink-0" />
-                  <p className="text-xs text-amber-400/65">ElevenLabs API key not connected</p>
+                  <Lock className="w-3.5 h-3.5 text-amber-400/60 shrink-0" />
+                  <p className="text-xs text-amber-400/60">ElevenLabs API key not connected</p>
                 </div>
                 <button onClick={() => navigate("/dashboard/settings")}
-                  className="shrink-0 flex items-center gap-1 text-[10px] font-mono text-amber-400/55 hover:text-amber-400 transition-colors">
+                  className="shrink-0 flex items-center gap-1 text-[10px] font-mono text-amber-400/50 hover:text-amber-400 transition-colors">
                   <Settings className="w-3 h-3" /> Settings
                 </button>
               </motion.div>
@@ -666,7 +725,7 @@ const VoiceOverStudioPage = () => {
           {/* ══════════════ OUTPUT PANEL ══════════════ */}
           <div ref={outputRef}>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground/55">Output</label>
+              <label className="text-[10px] font-mono uppercase tracking-[0.22em] text-muted-foreground/45">Output</label>
               {hasAudio && (
                 <span className="inline-flex items-center gap-1 text-[10px] font-mono text-emerald-400/55">
                   <Zap className="w-3 h-3" /> Ready
@@ -678,14 +737,14 @@ const VoiceOverStudioPage = () => {
               className="rounded-2xl p-6 min-h-[420px] flex flex-col items-center justify-center"
               animate={{
                 boxShadow: isPlaying
-                  ? "0 0 60px hsl(217 91% 60% / 0.09), 0 0 120px hsl(217 91% 60% / 0.04)"
-                  : "none",
+                  ? "0 0 70px hsl(217 91% 60% / 0.1), 0 0 140px hsl(217 91% 60% / 0.05), inset 0 1px 0 hsl(217 91% 60% / 0.06)"
+                  : "0 8px 40px hsl(0 0% 0% / 0.25), inset 0 1px 0 hsl(0 0% 100% / 0.025)",
               }}
               transition={{ duration: 0.7 }}
               style={{
-                background: "hsl(222 28% 5.5%)",
+                background: "linear-gradient(160deg, hsl(222 30% 6.5%) 0%, hsl(222 26% 5%) 100%)",
                 border: isPlaying
-                  ? "1px solid hsl(217 91% 60% / 0.20)"
+                  ? "1px solid hsl(217 91% 60% / 0.22)"
                   : "1px solid hsl(217 28% 11%)",
               }}
             >
@@ -697,7 +756,7 @@ const VoiceOverStudioPage = () => {
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                     className="flex flex-col items-center gap-6 w-full"
                   >
-                    <div style={{ filter: "drop-shadow(0 0 10px hsl(217 91% 60% / 0.25))" }}>
+                    <div style={{ filter: "drop-shadow(0 0 12px hsl(217 91% 60% / 0.28))" }}>
                       <WaveformBars isPlaying={false} isGenerating />
                     </div>
                     <div className="text-center">
@@ -717,11 +776,11 @@ const VoiceOverStudioPage = () => {
                   >
                     <motion.div
                       className="w-12 h-12 rounded-full"
-                      style={{ border: "1px solid hsl(217 91% 60% / 0.28)", background: "hsl(217 91% 60% / 0.05)" }}
-                      animate={{ opacity: [0.35, 1, 0.35], scale: [0.96, 1.04, 0.96] }}
+                      style={{ border: "1px solid hsl(217 91% 60% / 0.25)", background: "hsl(217 91% 60% / 0.04)" }}
+                      animate={{ opacity: [0.3, 1, 0.3], scale: [0.96, 1.04, 0.96] }}
                       transition={{ duration: 1.4, repeat: Infinity }}
                     />
-                    <p className="text-xs font-mono text-muted-foreground/42">Preparing audio...</p>
+                    <p className="text-xs font-mono text-muted-foreground/38">Preparing audio...</p>
                   </motion.div>
                 )}
 
@@ -734,39 +793,40 @@ const VoiceOverStudioPage = () => {
                     className="w-full space-y-5"
                   >
                     {/* Voice label */}
-                    <p className="text-center text-[10px] font-mono text-muted-foreground/35">
+                    <p className="text-center text-[10px] font-mono text-muted-foreground/30">
                       {activeVoice.name} · {activeVoice.tagline}
                     </p>
 
                     {/* Waveform */}
                     <div className="relative overflow-hidden rounded-md"
                       style={{
-                        filter: isPlaying ? "drop-shadow(0 0 7px hsl(217 91% 60% / 0.22))" : "none",
+                        filter: isPlaying ? "drop-shadow(0 0 8px hsl(217 91% 60% / 0.24))" : "none",
                         transition: "filter 0.5s ease",
                       }}>
                       <WaveformBars isPlaying={isPlaying} isGenerating={false} />
                       <div className="absolute inset-0 pointer-events-none"
                         style={{
                           background: `linear-gradient(to right, transparent ${progressPct}%, hsl(222 28% 4% / 0.72) ${progressPct}%)`,
-                          transition: "background 0.1s linear",
+                          transition: "background 0.08s linear",
                         }} />
                     </div>
 
                     {/* Scrubber */}
                     <div className="space-y-1.5">
                       <div className="relative h-5 flex items-center group cursor-pointer">
-                        <div className="absolute w-full h-[2px] rounded-full" style={{ background: "hsl(217 28% 11%)" }} />
+                        <div className="absolute w-full h-[2px] rounded-full"
+                          style={{ background: "hsl(217 28% 10%)" }} />
                         <div className="absolute h-[2px] rounded-full transition-all duration-100"
-                          style={{ width: `${progressPct}%`, background: "linear-gradient(to right, hsl(217 91% 52%), hsl(217 91% 68%))" }} />
-                        <div className="absolute w-2.5 h-2.5 rounded-full bg-white shadow opacity-0 group-hover:opacity-100 transition-opacity"
+                          style={{ width: `${progressPct}%`, background: "linear-gradient(to right, hsl(217 91% 50%), hsl(217 91% 65%))" }} />
+                        <div className="absolute w-2.5 h-2.5 rounded-full bg-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-150"
                           style={{ left: `calc(${progressPct}% - 5px)` }} />
                         <input type="range" min={0} max={duration || 1} step={0.05}
                           value={currentTime} onChange={handleSeek}
                           className="absolute w-full opacity-0 cursor-pointer h-5" />
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-[10px] font-mono text-muted-foreground/30">{fmt(currentTime)}</span>
-                        <span className="text-[10px] font-mono text-muted-foreground/30">{fmt(duration)}</span>
+                        <span className="text-[9.5px] font-mono text-muted-foreground/28">{fmt(currentTime)}</span>
+                        <span className="text-[9.5px] font-mono text-muted-foreground/28">{fmt(duration)}</span>
                       </div>
                     </div>
 
@@ -776,10 +836,20 @@ const VoiceOverStudioPage = () => {
                         whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
                         onClick={togglePlay}
                         animate={isPlaying ? {
-                          boxShadow: ["0 0 0 hsl(217 91% 60% / 0)", "0 0 24px hsl(217 91% 60% / 0.4)", "0 0 0 hsl(217 91% 60% / 0)"],
-                        } : { boxShadow: "none" }}
+                          boxShadow: [
+                            "0 0 0 hsl(217 91% 60% / 0)",
+                            "0 0 28px hsl(217 91% 60% / 0.45)",
+                            "0 0 0 hsl(217 91% 60% / 0)",
+                          ],
+                        } : {
+                          boxShadow: "0 4px 16px hsl(217 91% 60% / 0.18)",
+                        }}
                         transition={{ duration: 2, repeat: isPlaying ? Infinity : 0 }}
-                        className="w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center glow-blue"
+                        className="w-14 h-14 rounded-full text-white flex items-center justify-center"
+                        style={{
+                          background: "linear-gradient(145deg, hsl(217 91% 55%) 0%, hsl(217 91% 65%) 100%)",
+                          boxShadow: "0 4px 16px hsl(217 91% 60% / 0.2), inset 0 1px 0 hsl(0 0% 100% / 0.15)",
+                        }}
                       >
                         {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
                       </motion.button>
@@ -797,11 +867,17 @@ const VoiceOverStudioPage = () => {
                         { icon: <Download className="w-3 h-3" />, label: "Download", action: handleDownload, disabled: false },
                       ] as const).map((btn) => (
                         <motion.button key={btn.label}
-                          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                          whileHover={{ scale: 1.02, borderColor: "hsl(217 28% 20%)" }}
+                          whileTap={{ scale: 0.97 }}
                           onClick={btn.action}
                           disabled={btn.disabled}
-                          className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-medium transition-all disabled:opacity-30"
-                          style={{ background: "hsl(217 28% 8%)", border: "1px solid hsl(217 28% 13%)", color: "hsl(215 16% 46%)" }}>
+                          className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-medium transition-all disabled:opacity-25"
+                          style={{
+                            background: "hsl(217 28% 7%)",
+                            border: "1px solid hsl(217 28% 12%)",
+                            color: "hsl(215 16% 44%)",
+                            boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.02)",
+                          }}>
                           {btn.icon}
                           <span className="hidden sm:inline">{btn.label}</span>
                         </motion.button>
@@ -815,22 +891,22 @@ const VoiceOverStudioPage = () => {
                   <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                     className="text-center space-y-4">
                     <div className="w-10 h-10 rounded-xl mx-auto flex items-center justify-center"
-                      style={{ background: "hsl(0 72% 50% / 0.07)", border: "1px solid hsl(0 72% 50% / 0.18)" }}>
-                      <Mic className="w-4 h-4 text-red-400/55" />
+                      style={{ background: "hsl(0 72% 50% / 0.06)", border: "1px solid hsl(0 72% 50% / 0.15)" }}>
+                      <Mic className="w-4 h-4 text-red-400/50" />
                     </div>
-                    <p className="text-xs text-red-400/65 font-mono">Generation failed</p>
+                    <p className="text-xs text-red-400/60 font-mono">Generation failed</p>
                     <div className="flex gap-2 justify-center">
                       <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                         onClick={handleGenerate}
                         disabled={isGenerating || !hasKey || !script.trim()}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs disabled:opacity-35"
-                        style={{ background: "hsl(217 28% 9%)", border: "1px solid hsl(217 28% 14%)", color: "hsl(215 16% 48%)" }}>
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs disabled:opacity-30"
+                        style={{ background: "hsl(217 28% 8%)", border: "1px solid hsl(217 28% 13%)", color: "hsl(215 16% 46%)" }}>
                         <RefreshCw className="w-3 h-3" /> Retry
                       </motion.button>
                       {blobUrl && (
                         <motion.button whileHover={{ scale: 1.02 }} onClick={handleDownload}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"
-                          style={{ background: "hsl(217 28% 9%)", border: "1px solid hsl(217 28% 14%)", color: "hsl(215 16% 48%)" }}>
+                          style={{ background: "hsl(217 28% 8%)", border: "1px solid hsl(217 28% 13%)", color: "hsl(215 16% 46%)" }}>
                           <Download className="w-3 h-3" /> Download
                         </motion.button>
                       )}
@@ -844,13 +920,21 @@ const VoiceOverStudioPage = () => {
                     className="text-center space-y-3">
                     <motion.div
                       className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center"
-                      style={{ background: "hsl(217 28% 7%)", border: "1px solid hsl(217 28% 12%)" }}
-                      animate={{ boxShadow: ["0 0 0 hsl(217 91% 60% / 0)", "0 0 18px hsl(217 91% 60% / 0.05)", "0 0 0 hsl(217 91% 60% / 0)"] }}
+                      style={{
+                        background: "linear-gradient(145deg, hsl(217 28% 8%) 0%, hsl(217 28% 6%) 100%)",
+                        border: "1px solid hsl(217 28% 12%)",
+                        boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.03)",
+                      }}
+                      animate={{ boxShadow: [
+                        "0 0 0 hsl(217 91% 60% / 0), inset 0 1px 0 hsl(0 0% 100% / 0.03)",
+                        "0 0 20px hsl(217 91% 60% / 0.06), inset 0 1px 0 hsl(0 0% 100% / 0.03)",
+                        "0 0 0 hsl(217 91% 60% / 0), inset 0 1px 0 hsl(0 0% 100% / 0.03)",
+                      ]}}
                       transition={{ duration: 4.5, repeat: Infinity }}>
-                      <Mic className="w-5 h-5 text-primary/18" />
+                      <Mic className="w-5 h-5 text-primary/16" />
                     </motion.div>
-                    <p className="text-muted-foreground/28 text-xs font-mono">No audio generated yet</p>
-                    <p className="text-[10px] text-muted-foreground/16 font-mono">
+                    <p className="text-muted-foreground/25 text-xs font-mono">No audio generated yet</p>
+                    <p className="text-[9.5px] text-muted-foreground/14 font-mono tracking-wider">
                       Select a voice · Preview · Generate
                     </p>
                   </motion.div>
@@ -863,6 +947,7 @@ const VoiceOverStudioPage = () => {
       )}
 
       <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} />
+      </div>
     </div>
   );
 };
