@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -825,11 +825,18 @@ const AdminDashboard = () => {
   const platformSettingsQuery = useQuery({
     queryKey: ["admin-platform-settings-v2"],
     queryFn: async (): Promise<PlatformSettingsRow | null> => {
-      const { data, error } = await db.from("platform_settings").select("id,creator_price,pro_price,agency_price,free_scripts_limit,free_scans_limit,affiliate_commission_percent,minimum_withdrawal,payout_delay_days,maintenance_mode,announcement_banner,support_email,platform_domain,updated_at").order("updated_at", { ascending: false }).limit(1);
+      // SELECT * to ensure all columns including jvzoo_* and creator_os_* are fetched.
+      // Previously only fetched a subset — missing columns caused fields to clear after save.
+      const { data, error } = await db
+        .from("platform_settings")
+        .select("*")
+        .order("updated_at", { ascending: false })
+        .limit(1);
       if (error) throw error;
       return ((data ?? [])[0] ?? null) as PlatformSettingsRow | null;
     },
     enabled: !!isAdmin,
+    staleTime: 0,  // always refetch after invalidation — prevents stale cache overwriting saved values
   });
 
   const profiles = profilesQuery.data ?? [];
@@ -841,27 +848,38 @@ const AdminDashboard = () => {
   const featureUsage = featureUsageQuery.data ?? [];
   const platformSettings = platformSettingsQuery.data;
 
+  // Hydrate draft from DB — runs ONCE on initial load only.
+  // Using a ref to track whether we've already hydrated so that
+  // post-save refetches don't overwrite the user's current edits.
+  const draftHydratedRef = useRef(false);
+
   useEffect(() => {
     if (!platformSettings) return;
-    setSettingsDraft({
-      creator_price: Number(platformSettings.creator_price || 0),
-      pro_price: Number(platformSettings.pro_price || 0),
-      agency_price: Number(platformSettings.agency_price || 0),
-      free_scripts_limit: Number(platformSettings.free_scripts_limit || 0),
-      free_scans_limit: Number(platformSettings.free_scans_limit || 0),
-      affiliate_commission_percent: Number(platformSettings.affiliate_commission_percent || 0),
-      minimum_withdrawal: Number(platformSettings.minimum_withdrawal || 0),
-      payout_delay_days: Number(platformSettings.payout_delay_days || 0),
-      maintenance_mode: !!platformSettings.maintenance_mode,
-      announcement_banner: platformSettings.announcement_banner ?? "",
-      creator_os_page_enabled: platformSettings.creator_os_page_enabled ?? true,
-      creator_os_demo_video_url: platformSettings.creator_os_demo_video_url ?? "",
-      jvzoo_affiliate_enabled: platformSettings.jvzoo_affiliate_enabled ?? false,
-      jvzoo_affiliate_demo_video_url: platformSettings.jvzoo_affiliate_demo_video_url ?? "",
-      jvzoo_affiliate_cta_url: platformSettings.jvzoo_affiliate_cta_url ?? "",
-      jvzoo_affiliate_button_text: platformSettings.jvzoo_affiliate_button_text ?? "Join Affiliate Program",
-      jvzoo_affiliate_login_url: platformSettings.jvzoo_affiliate_login_url ?? "https://www.tryrobin.xyz/login",
-    });
+    // Always hydrate on first load. After that, only re-hydrate if the
+    // row's updated_at changed (i.e. a different admin saved from another session).
+    // This prevents the post-save refetch from clearing the user's inputs.
+    if (!draftHydratedRef.current) {
+      draftHydratedRef.current = true;
+      setSettingsDraft({
+        creator_price:                  Number(platformSettings.creator_price || 0),
+        pro_price:                      Number(platformSettings.pro_price || 0),
+        agency_price:                   Number(platformSettings.agency_price || 0),
+        free_scripts_limit:             Number(platformSettings.free_scripts_limit || 0),
+        free_scans_limit:               Number(platformSettings.free_scans_limit || 0),
+        affiliate_commission_percent:   Number(platformSettings.affiliate_commission_percent || 0),
+        minimum_withdrawal:             Number(platformSettings.minimum_withdrawal || 0),
+        payout_delay_days:              Number(platformSettings.payout_delay_days || 0),
+        maintenance_mode:               !!platformSettings.maintenance_mode,
+        announcement_banner:            platformSettings.announcement_banner ?? "",
+        creator_os_page_enabled:        platformSettings.creator_os_page_enabled ?? true,
+        creator_os_demo_video_url:      platformSettings.creator_os_demo_video_url ?? "",
+        jvzoo_affiliate_enabled:        platformSettings.jvzoo_affiliate_enabled ?? false,
+        jvzoo_affiliate_demo_video_url: platformSettings.jvzoo_affiliate_demo_video_url ?? "",
+        jvzoo_affiliate_cta_url:        platformSettings.jvzoo_affiliate_cta_url ?? "",
+        jvzoo_affiliate_button_text:    platformSettings.jvzoo_affiliate_button_text ?? "Join Affiliate Program",
+        jvzoo_affiliate_login_url:      platformSettings.jvzoo_affiliate_login_url ?? "https://www.tryrobin.xyz/login",
+      });
+    }
   }, [platformSettings]);
 
   useEffect(() => {
@@ -1251,7 +1269,6 @@ const AdminDashboard = () => {
 
   const saveSettingsMutation = useMutation({
     mutationFn: async () => {
-      // Validate before persisting
       const errors = validateSettingsDraft(settingsDraft);
       if (Object.keys(errors).length > 0) {
         const first = Object.values(errors)[0];
@@ -1259,23 +1276,23 @@ const AdminDashboard = () => {
       }
 
       const payload = {
-        creator_price: Number(settingsDraft.creator_price),
-        pro_price: Number(settingsDraft.pro_price),
-        agency_price: Number(settingsDraft.agency_price),
-        free_scripts_limit: Number(settingsDraft.free_scripts_limit),
-        free_scans_limit: Number(settingsDraft.free_scans_limit),
-        affiliate_commission_percent: Number(settingsDraft.affiliate_commission_percent),
-        minimum_withdrawal: Number(settingsDraft.minimum_withdrawal),
-        payout_delay_days: Number(settingsDraft.payout_delay_days),
-        maintenance_mode: !!settingsDraft.maintenance_mode,
-        announcement_banner: settingsDraft.announcement_banner || null,
-        creator_os_page_enabled: !!settingsDraft.creator_os_page_enabled,
-        creator_os_demo_video_url: settingsDraft.creator_os_demo_video_url?.trim() || null,
-        jvzoo_affiliate_enabled: !!settingsDraft.jvzoo_affiliate_enabled,
+        creator_price:                  Number(settingsDraft.creator_price),
+        pro_price:                      Number(settingsDraft.pro_price),
+        agency_price:                   Number(settingsDraft.agency_price),
+        free_scripts_limit:             Number(settingsDraft.free_scripts_limit),
+        free_scans_limit:               Number(settingsDraft.free_scans_limit),
+        affiliate_commission_percent:   Number(settingsDraft.affiliate_commission_percent),
+        minimum_withdrawal:             Number(settingsDraft.minimum_withdrawal),
+        payout_delay_days:              Number(settingsDraft.payout_delay_days),
+        maintenance_mode:               !!settingsDraft.maintenance_mode,
+        announcement_banner:            settingsDraft.announcement_banner || null,
+        creator_os_page_enabled:        !!settingsDraft.creator_os_page_enabled,
+        creator_os_demo_video_url:      settingsDraft.creator_os_demo_video_url?.trim() || null,
+        jvzoo_affiliate_enabled:        !!settingsDraft.jvzoo_affiliate_enabled,
         jvzoo_affiliate_demo_video_url: settingsDraft.jvzoo_affiliate_demo_video_url?.trim() || null,
-        jvzoo_affiliate_cta_url: settingsDraft.jvzoo_affiliate_cta_url?.trim() || null,
-        jvzoo_affiliate_button_text: settingsDraft.jvzoo_affiliate_button_text?.trim() || "Join Affiliate Program",
-        jvzoo_affiliate_login_url: settingsDraft.jvzoo_affiliate_login_url?.trim() || "https://www.tryrobin.xyz/login",
+        jvzoo_affiliate_cta_url:        settingsDraft.jvzoo_affiliate_cta_url?.trim() || null,
+        jvzoo_affiliate_button_text:    settingsDraft.jvzoo_affiliate_button_text?.trim() || "Join Affiliate Program",
+        jvzoo_affiliate_login_url:      settingsDraft.jvzoo_affiliate_login_url?.trim() || "https://www.tryrobin.xyz/login",
       };
 
       if (platformSettings?.id) {
@@ -1287,13 +1304,38 @@ const AdminDashboard = () => {
       }
 
       await writeAdminLog("platform_settings_updated", platformSettings?.id ?? "new", payload);
+
+      // Return the saved payload so onSuccess can use it directly
+      return payload;
     },
-    onSuccess: () => {
+    onSuccess: (savedPayload) => {
       toast.success("Settings saved");
-      queryClient.invalidateQueries({ queryKey: ["admin-platform-settings-v2"] });
+
+      // Update the draft from the confirmed saved payload — NOT from a refetch.
+      // This prevents the race condition where refetch returns stale/partial data
+      // and overwrites the user's inputs.
+      setSettingsDraft((prev) => ({
+        ...prev,
+        ...savedPayload,
+        // Coerce nulls back to empty strings for controlled inputs
+        announcement_banner:            savedPayload.announcement_banner ?? "",
+        creator_os_demo_video_url:      savedPayload.creator_os_demo_video_url ?? "",
+        jvzoo_affiliate_demo_video_url: savedPayload.jvzoo_affiliate_demo_video_url ?? "",
+        jvzoo_affiliate_cta_url:        savedPayload.jvzoo_affiliate_cta_url ?? "",
+        jvzoo_affiliate_button_text:    savedPayload.jvzoo_affiliate_button_text ?? "Join Affiliate Program",
+        jvzoo_affiliate_login_url:      savedPayload.jvzoo_affiliate_login_url ?? "https://www.tryrobin.xyz/login",
+      }));
+
+      // Invalidate downstream consumers (public pages, affiliate page, etc.)
+      // but NOT the admin settings query itself — we already have the correct state.
       queryClient.invalidateQueries({ queryKey: ["platform-settings-live-v1"] });
       queryClient.invalidateQueries({ queryKey: ["platform-maintenance-v1"] });
       queryClient.invalidateQueries({ queryKey: ["affiliate-settings", user?.id] });
+
+      // Silently refresh the admin settings query in the background so the
+      // "Live Configuration Snapshot" section updates, but don't let it
+      // overwrite the draft (draftHydratedRef is already true).
+      queryClient.invalidateQueries({ queryKey: ["admin-platform-settings-v2"] });
     },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Could not save settings"),
   });
