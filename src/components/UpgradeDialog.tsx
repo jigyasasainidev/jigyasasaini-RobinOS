@@ -1,6 +1,6 @@
 import { ErrorBoundary } from "react-error-boundary";
 import { motion } from "framer-motion";
-import { Crown, Check, Zap, AlertTriangle } from "lucide-react";
+import { Sparkles, Check, AlertTriangle, TrendingUp, PenTool, Mic, Film, Hash, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -19,6 +19,16 @@ interface UpgradeDialogProps {
   forced?: boolean;
 }
 
+// ── Capability highlights shown in the dialog ──────────────
+const CAPABILITIES = [
+  { icon: TrendingUp, label: "Unlimited trend scans",          plan: "creator"     },
+  { icon: PenTool,    label: "100 scripts/day",                plan: "creator"     },
+  { icon: Hash,       label: "Trending audio & hashtags",      plan: "creator"     },
+  { icon: Mic,        label: "Voice Studio (BYOK)",            plan: "pro_creator" },
+  { icon: Film,       label: "Video Studio (BYOK)",            plan: "pro_creator" },
+  { icon: Zap,        label: "Realtime trend intelligence",    plan: "pro_creator" },
+];
+
 const UpgradeDialogFallback = ({ onOpenChange }: { onOpenChange?: (open: boolean) => void }) => (
   <Dialog open={true} onOpenChange={onOpenChange}>
     <DialogContent className="bg-card border-border max-w-lg">
@@ -31,12 +41,9 @@ const UpgradeDialogFallback = ({ onOpenChange }: { onOpenChange?: (open: boolean
           Please try again later. If the issue persists, contact support.
         </DialogDescription>
       </DialogHeader>
-      <motion.button
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
+      <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
         onClick={() => onOpenChange?.(false)}
-        className="mt-4 w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium"
-      >
+        className="mt-4 w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium">
         Close
       </motion.button>
     </DialogContent>
@@ -48,124 +55,160 @@ const UpgradeDialogInner = ({ onOpenChange, forced, open }: UpgradeDialogProps) 
   const { currency } = useCurrency();
   const { data: platformSettings } = usePlatformSettings();
 
-  // Defensive: safe defaults for all data dependencies
   const safeCurrency = currency ?? "USD";
   const safeSettings = platformSettings ?? null;
 
   const plans = getPlans(safeCurrency, {
     creator_price: safeSettings?.creator_price,
-    pro_price: safeSettings?.pro_price,
-    agency_price: safeSettings?.agency_price,
+    pro_price:     safeSettings?.pro_price,
+    agency_price:  safeSettings?.agency_price,
   });
   const symbol = getCurrencySymbol(safeCurrency);
 
   const dialogPlans = (plans ?? []).slice(0, 3).map((plan) => {
-    // Defensive: safe optional chaining on every property
-    const p = plan;
-    if (!p) {
-      return {
-        name: "Plan",
-        price: `${symbol}0`,
-        tier: "free",
-        badge: undefined,
-        features: [] as string[],
-        borderClass: "border-border",
-        bgClass: "bg-card/50",
-        checkClass: "text-primary",
-      };
-    }
-
-    const colors = p.isAgency
-      ? { borderClass: "border-amber-500/30" as const, bgClass: "bg-amber-500/5" as const, checkClass: "text-amber-400" as const }
-      : p.popular
-        ? { borderClass: "border-primary/30" as const, bgClass: "bg-primary/5" as const, checkClass: "text-primary" as const }
-        : { borderClass: "border-border" as const, bgClass: "bg-card/50" as const, checkClass: "text-primary" as const };
-
+    if (!plan) return null;
+    const isAgency  = !!plan.isAgency;
+    const isPro     = plan.tier === "pro_creator";
+    const isPopular = !!plan.popular;
     return {
-      name: p.name ?? "Plan",
-      price: `${symbol}${(p.monthlyPrice ?? 0).toLocaleString()}`,
-      tier: p.tier ?? "free",
-      badge: p.badge,
-      features: (p.features ?? []).slice(0, 4),
-      ...colors,
+      name:     plan.name ?? "Plan",
+      price:    `${symbol}${(plan.monthlyPrice ?? 0).toLocaleString()}`,
+      tier:     plan.tier ?? "free",
+      badge:    plan.badge,
+      features: (plan.features ?? []).slice(0, 3),
+      isAgency, isPro, isPopular,
     };
-  });
+  }).filter(Boolean) as NonNullable<ReturnType<typeof dialogPlans[0]>>[];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="bg-card border-border max-w-lg"
+        className="max-w-lg p-0 overflow-hidden"
+        style={{
+          background: "linear-gradient(160deg, hsl(222 28% 8%) 0%, hsl(222 26% 6%) 100%)",
+          border: "1px solid hsl(217 28% 14%)",
+          boxShadow: "0 0 80px hsl(217 91% 60% / 0.08), 0 24px 64px hsl(0 0% 0% / 0.5)",
+        }}
         onPointerDownOutside={forced ? (e) => e.preventDefault() : undefined}
         onEscapeKeyDown={forced ? (e) => e.preventDefault() : undefined}
       >
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-foreground">
-            <Crown className="w-5 h-5 text-primary" />
-            {forced ? "Your Free Trial Has Ended" : "Upgrade Your Plan"}
-          </DialogTitle>
-          <DialogDescription className="text-muted-foreground">
-            {forced
-              ? "Your current access has ended. Choose a plan to continue in RobinOS."
-              : "Unlock more features and remove limits by upgrading your plan."}
-          </DialogDescription>
-        </DialogHeader>
+        {/* Top ambient glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-20 pointer-events-none"
+          style={{ background: "radial-gradient(ellipse, hsl(217 91% 60% / 0.1) 0%, transparent 70%)" }} />
 
-        <div className="space-y-3 mt-3">
-          {dialogPlans.map((plan) => (
-            <div key={plan.name} className={`rounded-lg border ${plan.borderClass} ${plan.bgClass} p-4`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-lg font-semibold text-foreground">{plan.name} — {plan.price}</span>
-                  <span className="text-xs text-muted-foreground">/mo</span>
-                </div>
-                {plan.badge && (
-                  <span className={`text-[10px] font-mono tracking-wider px-2 py-0.5 rounded-full ${
-                    plan.badge === "PREMIUM" ? "bg-amber-500/20 text-amber-400" : "bg-primary/20 text-primary"
-                  }`}>
-                    {plan.badge}
-                  </span>
-                )}
-              </div>
-              <ul className="space-y-1">
-                {plan.features.map((f) => (
-                  <li key={f} className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    <Check className={`w-3 h-3 shrink-0 ${plan.checkClass}`} />
-                    {f}
-                  </li>
-                ))}
-              </ul>
+        <div className="relative p-6">
+          <DialogHeader className="mb-5">
+            {/* Icon */}
+            <div className="flex justify-center mb-4">
+              <motion.div
+                className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                style={{ background: "hsl(217 91% 60% / 0.1)", border: "1px solid hsl(217 91% 60% / 0.25)" }}
+                animate={{ boxShadow: ["0 0 0 hsl(217 91% 60% / 0)", "0 0 24px hsl(217 91% 60% / 0.2)", "0 0 0 hsl(217 91% 60% / 0)"] }}
+                transition={{ duration: 3, repeat: Infinity }}
+              >
+                <Sparkles className="w-5 h-5 text-primary" strokeWidth={1.5} />
+              </motion.div>
             </div>
-          ))}
-        </div>
 
-        <motion.button
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.99 }}
-          onClick={() => {
-            onOpenChange?.(false);
-            navigate("/dashboard/settings");
-          }}
-          className="mt-4 w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium glow-blue flex items-center justify-center gap-2"
-        >
-          <Zap className="w-4 h-4" />
-          Choose a Plan
-        </motion.button>
+            <DialogTitle className="text-center text-foreground/90 text-base font-semibold">
+              {forced
+                ? "Your free access has ended"
+                : "Unlock deeper creator intelligence"}
+            </DialogTitle>
+            <DialogDescription className="text-center text-muted-foreground/55 text-xs mt-1 leading-relaxed">
+              {forced
+                ? "Choose a plan to continue building with RobinOS."
+                : "Advanced AI workflows, realtime trend intelligence, and creator tools — all in one OS."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Capability chips */}
+          <div className="flex flex-wrap gap-1.5 justify-center mb-5">
+            {CAPABILITIES.slice(0, 4).map(({ icon: Icon, label }) => (
+              <span key={label}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9.5px] font-mono"
+                style={{ background: "hsl(217 91% 60% / 0.07)", border: "1px solid hsl(217 91% 60% / 0.18)", color: "hsl(217 91% 65%)" }}>
+                <Icon className="w-3 h-3" strokeWidth={1.5} />{label}
+              </span>
+            ))}
+          </div>
+
+          {/* Plan cards */}
+          <div className="space-y-2 mb-5">
+            {dialogPlans.map((plan) => (
+              <div key={plan.name}
+                className="rounded-xl p-3.5 flex items-center justify-between gap-3"
+                style={plan.isPro || plan.isPopular ? {
+                  background: "hsl(217 91% 60% / 0.07)",
+                  border: "1px solid hsl(217 91% 60% / 0.25)",
+                } : plan.isAgency ? {
+                  background: "hsl(48 90% 55% / 0.06)",
+                  border: "1px solid hsl(48 90% 55% / 0.22)",
+                } : {
+                  background: "hsl(222 28% 7%)",
+                  border: "1px solid hsl(217 28% 12%)",
+                }}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-semibold text-foreground/88">{plan.name}</span>
+                    {plan.badge && (
+                      <span className="text-[8px] font-mono px-1.5 py-0.5 rounded-full"
+                        style={plan.isAgency
+                          ? { background: "hsl(48 90% 55% / 0.12)", color: "hsl(48 90% 62%)", border: "1px solid hsl(48 90% 55% / 0.25)" }
+                          : { background: "hsl(217 91% 60% / 0.12)", color: "hsl(217 91% 68%)", border: "1px solid hsl(217 91% 60% / 0.25)" }}>
+                        {plan.badge}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                    {plan.features.map((f) => (
+                      <span key={f} className="text-[10px] text-muted-foreground/45 flex items-center gap-1">
+                        <Check className="w-2.5 h-2.5 text-primary/50 shrink-0" />{f}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-sm font-semibold text-foreground/80">{plan.price}</p>
+                  <p className="text-[9px] text-muted-foreground/35 font-mono">/month</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Primary CTA */}
+          <motion.button
+            whileHover={{ scale: 1.01, boxShadow: "0 8px 32px hsl(217 91% 60% / 0.28)" }}
+            whileTap={{ scale: 0.99 }}
+            onClick={() => { onOpenChange?.(false); navigate("/dashboard/settings"); }}
+            className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
+            style={{
+              background: "linear-gradient(135deg, hsl(217 91% 52%) 0%, hsl(217 91% 62%) 100%)",
+              color: "#fff",
+              boxShadow: "0 4px 20px hsl(217 91% 60% / 0.22), inset 0 1px 0 hsl(0 0% 100% / 0.12)",
+            }}
+          >
+            <Sparkles className="w-4 h-4" />
+            View Plans & Upgrade
+          </motion.button>
+
+          {!forced && (
+            <button onClick={() => onOpenChange?.(false)}
+              className="w-full mt-2 py-2 text-[10.5px] text-muted-foreground/35 hover:text-muted-foreground/55 transition-colors">
+              Continue with current plan
+            </button>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
 };
 
-export const UpgradeDialog = (props: UpgradeDialogProps) => {
-  return (
-    <ErrorBoundary
-      fallback={<UpgradeDialogFallback onOpenChange={props.onOpenChange} />}
-      onError={(error) => {
-        if (import.meta.env.DEV) {
-          console.error("[UpgradeDialog] Crash caught by ErrorBoundary:", error);
-        }
-      }}
-    >
-      <UpgradeDialogInner {...props} />
-    </ErrorBoundary>
-  );
-};
+export const UpgradeDialog = (props: UpgradeDialogProps) => (
+  <ErrorBoundary
+    fallback={<UpgradeDialogFallback onOpenChange={props.onOpenChange} />}
+    onError={(error) => { if (import.meta.env.DEV) console.error("[UpgradeDialog]", error); }}
+  >
+    <UpgradeDialogInner {...props} />
+  </ErrorBoundary>
+);

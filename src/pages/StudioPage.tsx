@@ -21,6 +21,7 @@ import type { TrendIntelligence } from "@/types/trendRadar";
 import { AIStatusBadge } from "@/components/ui/status-badge";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { GenerationState, SCRIPT_STAGES } from "@/components/ai/generation-state";
+import { UsageNudge } from "@/components/ui/locked-feature";
 
 // ── Trend topic shape from scan-trends edge function ──────
 const tones = ["Casual", "Bold", "Storytelling", "Educational", "Provocative"];
@@ -344,6 +345,17 @@ const StudioPage = () => {
 
       <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} />
       <ModerationNotice className="mt-4 max-w-2xl" />
+
+      {/* Usage nudge — shown after generation when approaching limit */}
+      {!isFree && !isAgencyTier && dailyUsage && (
+        <UsageNudge
+          used={dailyUsage.used}
+          quota={dailyUsage.quota ?? 20}
+          feature="script generations"
+          upgradeMessage="Pro Creator gets 100 scripts/day + realtime trend intelligence."
+          className="mt-4 max-w-2xl"
+        />
+      )}
     </div>
   );
 };
