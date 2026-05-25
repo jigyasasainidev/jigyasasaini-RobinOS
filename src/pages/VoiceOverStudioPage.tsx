@@ -70,15 +70,15 @@ const VOICE_LIBRARY: VoiceEntry[] = [
   { id: "FGY2WhTYpPnrIDTdsKH5", name: "Sophia",  personality: "Luxury Elegant",      useCase: "Premium Ads · Fashion",    gender: "female", badge: "popular"     },
   { id: "pFZP5JQG7iQjIQuC4Bku", name: "Olivia",  personality: "Friendly Creator",    useCase: "YouTube · Social",         gender: "female", badge: "creator"     },
   { id: "21m00Tcm4TlvDq8ikWAM", name: "Ava",     personality: "Soft & Calm",         useCase: "Wellness · Meditation",    gender: "female", badge: "recommended" },
-  { id: "LcfcDJNUP1GQjkzn1xUU", name: "Isabella",personality: "Expressive Viral",    useCase: "Hooks · Short-form",       gender: "female", badge: "viral"       },
+  { id: "MF3mGyEYCl7XYWbV9V6O", name: "Isabella",personality: "Expressive Viral",    useCase: "Hooks · Short-form",       gender: "female", badge: "viral"       },
   { id: "cgSgspJ2msm6clMCkdW9", name: "Mia",     personality: "Conversational",      useCase: "Podcasts · Interviews",    gender: "female", badge: "podcast"     },
   { id: "ThT5KcBeYPX3keUQqHPh", name: "Charlotte",personality: "Documentary Clear",  useCase: "Education · Explainers",   gender: "female"                      },
   { id: "AZnzlk1XvdvUeBnXmlld", name: "Amelia",  personality: "Emotional Cinematic", useCase: "Storytelling · Drama",     gender: "female", badge: "recommended" },
   { id: "XB0fDUnXU5powFXDhCwa", name: "Harper",  personality: "Gen-Z Fast Energy",   useCase: "Viral Content · TikTok",   gender: "female", badge: "trending"    },
-  { id: "oWAxZDx7w5VEj9dCyTzz", name: "Grace",   personality: "Premium Corporate",   useCase: "SaaS · Product Demo",      gender: "female", badge: "recommended" },
+  { id: "XrExE9yKIg1WjnnlVkGX", name: "Grace",   personality: "Premium Corporate",   useCase: "SaaS · Product Demo",      gender: "female", badge: "recommended" },
 ];
 
-const TRENDING_IDS = new Set(["TX3LPaxmHKxFdv7VOQHJ", "EXAVITQu4vr4xnSDxMaL", "LcfcDJNUP1GQjkzn1xUU", "XB0fDUnXU5powFXDhCwa", "cgSgspJ2msm6clMCkdW9", "JBFqnCBsd6RMkjVDRZzb"]);
+const TRENDING_IDS = new Set(["TX3LPaxmHKxFdv7VOQHJ", "EXAVITQu4vr4xnSDxMaL", "MF3mGyEYCl7XYWbV9V6O", "XB0fDUnXU5powFXDhCwa", "cgSgspJ2msm6clMCkdW9", "JBFqnCBsd6RMkjVDRZzb"]);
 
 // ── Types ──────────────────────────────────────────────────
 type AudioStatus   = "idle" | "generating" | "preparing" | "ready" | "playing" | "error";
@@ -186,7 +186,7 @@ function useVoicePreview(getToken: () => Promise<string | null>) {
         const res = await fetch(TTS_ENDPOINT, {
           method:  "POST",
           headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-          body:    JSON.stringify({ text: PREVIEW_TEXT, voiceId }),
+          body:    JSON.stringify({ text: PREVIEW_TEXT, voiceId, isPreview: true }),
         });
 
         if (!res.ok) {
