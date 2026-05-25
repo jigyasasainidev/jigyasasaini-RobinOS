@@ -12,6 +12,7 @@ import { AdminRouteGuard } from "@/components/admin/AdminRouteGuard";
 import { warmCriticalRoutes } from "@/lib/routePrefetch";
 import { TopScrollProgress } from "@/components/TopScrollProgress";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 
 const EntryPage = lazy(() => import("./pages/EntryPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
@@ -128,6 +129,7 @@ const App = () => (
         <ScrollManager />
         <AuthProvider>
           <CurrencyProvider>
+          <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<EntryPage />} />
@@ -195,6 +197,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          </ErrorBoundary>
           </CurrencyProvider>
         </AuthProvider>
       </BrowserRouter>

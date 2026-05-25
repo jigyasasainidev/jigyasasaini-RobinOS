@@ -82,11 +82,11 @@ const TrendScannerPage = () => {
         } catch { /* ignore */ }
 
         if (status === 429) {
-          toast.error("Too many scans. Please wait 1 minute before trying again.");
+          toast.error("Scan limit reached — please wait a minute before scanning again.");
         } else if (status === 403) {
-          toast.error(String(parsed.error ?? parsed.message ?? "Scan limit reached. Upgrade your plan."));
+          toast.error(String(parsed.error ?? parsed.message ?? "Daily scan limit reached. Upgrade for more scans."));
         } else {
-          toast.error("Scan failed. Try again in a moment.");
+          toast.error("Creator signals temporarily unavailable. Try again in a moment.");
         }
         return;
       }
@@ -97,7 +97,7 @@ const TrendScannerPage = () => {
     } catch {
       if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
       setLoading(false);
-      toast.error("Network error. Try again.");
+      toast.error("Connection interrupted. Check your network and try again.");
     }
   };
 

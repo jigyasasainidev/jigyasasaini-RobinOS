@@ -13,6 +13,7 @@ import robinosLogo from "@/assets/robinos-logo.png";
 import { AlertTriangle, ShieldX, X } from "lucide-react";
 import { subscribePostgresChanges } from "@/lib/realtime/channelManager";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
+import { RouteErrorBoundary } from "@/components/ui/error-boundary";
 
 const DashboardLayout = () => {
   const { user, loading, signOut } = useAuth();
@@ -244,9 +245,11 @@ const DashboardLayout = () => {
               </motion.div>
             ) : null}
           </AnimatePresence>
-          <Suspense fallback={<PageSkeleton />}>
-            <Outlet />
-          </Suspense>
+          <RouteErrorBoundary>
+            <Suspense fallback={<PageSkeleton />}>
+              <Outlet />
+            </Suspense>
+          </RouteErrorBoundary>
         </div>
       </main>
 

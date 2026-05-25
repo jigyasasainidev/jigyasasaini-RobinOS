@@ -362,7 +362,7 @@ const VoiceOverStudioPage = () => {
     } catch (err: any) {
       justGenRef.current = false;
       setAudioStatus("error");
-      toast.error(err.message || "Voice generation failed.");
+      toast.error(err.message || "Voice generation interrupted. Your script is preserved — try again.");
     }
   }, [script, selectedId, audioStatus, isVoiceEnabled, hasKey, bindAudio, getToken, stopPreview]);
 

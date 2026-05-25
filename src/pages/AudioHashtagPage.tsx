@@ -131,7 +131,7 @@ const AudioHashtagPage = () => {
       const res = await getTrendingAudio(platform);
       if (!res.ok) {
         if (isEntitlementError(res)) { toast.error(res.message); setShowUpgrade(true); }
-        else toast.error("Could not load trending audio. Try again.");
+        else toast.error("Could not load trending audio. Check your connection and try again.");
         setAudios([]);
       } else {
         setAudios(res.audios);
@@ -141,7 +141,7 @@ const AudioHashtagPage = () => {
       const res = await getTrendingHashtags(platform);
       if (!res.ok) {
         if (isEntitlementError(res)) { toast.error(res.message); setShowUpgrade(true); }
-        else toast.error("Could not load trending hashtags. Try again.");
+        else toast.error("Could not load trending hashtags. Check your connection and try again.");
         setHashtags([]);
       } else {
         setHashtags(res.hashtags);
