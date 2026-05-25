@@ -282,18 +282,32 @@ serve(async (req) => {
     if (!cacheErr && cached && cached.length > 0) {
       console.log("[scan-trends] cache HIT — returning", cached.length, "topics");
       if (analyticsUserId) trackFeatureUsage({ supabase, userId: analyticsUserId, feature: FEATURES.TREND_SCAN });
+
+      const cachedTopics = cached.map((t: any) => ({
+        title:       t.title,
+        description: t.description,
+        platforms:   t.platforms,
+        heat:        t.heat,
+        hook_types:  Array.isArray(t.hook_types)
+          ? t.hook_types
+          : (() => { try { return JSON.parse(t.hook_types ?? "[]"); } catch { return []; } })(),
+        volume: t.volume ?? "Medium",
+      }));
+
+      // Persist to scan_history even on cache hit — user still performed a scan
+      if (analyticsUserId) {
+        supabase.from("scan_history").insert({
+          user_id: analyticsUserId,
+          niche,
+          topics:  cachedTopics,
+        }).then(({ error }) => {
+          if (error) console.error("[scan-trends] scan_history (cache hit) insert failed:", error.message);
+        });
+      }
+
       return new Response(
         JSON.stringify({
-          topics: cached.map((t: any) => ({
-            title:       t.title,
-            description: t.description,
-            platforms:   t.platforms,
-            heat:        t.heat,
-            hook_types:  Array.isArray(t.hook_types)
-              ? t.hook_types
-              : (() => { try { return JSON.parse(t.hook_types ?? "[]"); } catch { return []; } })(),
-            volume: t.volume ?? "Medium",
-          })),
+          topics:  cachedTopics,
           cached:  true,
           niche:   nicheKey,
           usage:   entitlement,
@@ -366,6 +380,27 @@ serve(async (req) => {
     }
 
     if (analyticsUserId) trackFeatureUsage({ supabase, userId: analyticsUserId, feature: FEATURES.TREND_SCAN });
+
+    // ── Phase 5: Persist to scan_history (fire-and-forget) ─
+    // This is what populates the History page. Without this write,
+    // the user's scan archive stays empty even after successful scans.
+    if (analyticsUserId && topics.length > 0) {
+      supabase.from("scan_history").insert({
+        user_id:    analyticsUserId,
+        niche,
+        topics:     topics.map((t) => ({
+          title:       t.title,
+          description: t.description,
+          platforms:   t.platforms,
+          heat:        t.heat,
+          hook_types:  t.hook_types,
+          volume:      t.volume,
+        })),
+      }).then(({ error }) => {
+        if (error) console.error("[scan-trends] scan_history insert failed:", error.message, error.code);
+        else console.log("[scan-trends] scan_history persisted for user:", analyticsUserId);
+      });
+    }
 
     return new Response(
       JSON.stringify({ topics, cached: false, niche: nicheKey, usage: entitlement }),

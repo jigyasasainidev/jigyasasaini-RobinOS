@@ -8,6 +8,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 import { AIStatusBadge, StatusBadge } from "@/components/ui/status-badge";
 import { LivePipeline, TREND_PIPELINE } from "@/components/ai/live-pipeline";
 import { ConfidenceBar } from "@/components/ai/confidence-visual";
@@ -34,6 +36,8 @@ const SCAN_ICONS = [Zap, Radio, Globe, Wifi, Sparkles, Search, TrendingUp];
 
 const TrendScannerPage = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const [niche,       setNiche]       = useState("");
   const [loading,     setLoading]     = useState(false);
@@ -95,7 +99,14 @@ const TrendScannerPage = () => {
 
       const result = (data?.topics ?? []) as TrendTopic[];
       setTopics(result);
-      if (!result.length) toast.error("No trends found. Try a different niche.");
+      if (!result.length) {
+        toast.error("No trends found. Try a different niche.");
+      } else {
+        // Invalidate scan history so History page reflects the new scan immediately
+        if (user?.id) {
+          void queryClient.invalidateQueries({ queryKey: ["scans", user.id] });
+        }
+      }
     } catch {
       if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
       setLoading(false);
