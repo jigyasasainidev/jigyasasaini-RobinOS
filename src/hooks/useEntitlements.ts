@@ -274,3 +274,66 @@ export function useAvailableScriptLengths(
   if (isCreator) return creatorLengths;
   return allLengths;
 }
+
+// ── useFeatureUsage — live usage status for a single feature ──
+// Calls get_usage_status_v2 RPC. Used by pages to show counters.
+// Refreshes after every generation via queryClient.invalidateQueries.
+
+export interface FeatureUsageStatus {
+  allowed:    boolean;
+  used:       number;
+  quota:      number | null;
+  remaining:  number;
+  near_limit: boolean;
+  fair_usage: boolean;
+  unlimited:  boolean;
+  reset_at:   string | null;
+  message:    string;
+}
+
+const USAGE_FALLBACK: FeatureUsageStatus = {
+  allowed: true, used: 0, quota: null, remaining: 999,
+  near_limit: false, fair_usage: false, unlimited: false,
+  reset_at: null, message: "",
+};
+
+export function useFeatureUsage(featureKey: string): {
+  data: FeatureUsageStatus;
+  isLoading: boolean;
+  refetch: () => void;
+} {
+  const { user } = useAuth();
+
+  const query = useQuery({
+    queryKey: ["feature-usage", user?.id, featureKey],
+    queryFn: async (): Promise<FeatureUsageStatus> => {
+      if (!user?.id) return USAGE_FALLBACK;
+      const { data, error } = await (supabase as any).rpc("get_usage_status_v2", {
+        p_user_id:    user.id,
+        p_feature_key: featureKey,
+      });
+      if (error || !data) return USAGE_FALLBACK;
+      return {
+        allowed:    Boolean(data.allowed),
+        used:       Number(data.used    ?? 0),
+        quota:      data.quota != null ? Number(data.quota) : null,
+        remaining:  Number(data.remaining ?? 0),
+        near_limit: Boolean(data.near_limit),
+        fair_usage: Boolean(data.fair_usage),
+        unlimited:  Boolean(data.unlimited),
+        reset_at:   data.reset_at ?? null,
+        message:    String(data.message ?? ""),
+      };
+    },
+    enabled: !!user,
+    staleTime: 15 * 1000,   // 15s — refresh frequently after generation
+    gcTime:    2 * 60 * 1000,
+    placeholderData: USAGE_FALLBACK,
+  });
+
+  return {
+    data:      query.data ?? USAGE_FALLBACK,
+    isLoading: query.isLoading,
+    refetch:   query.refetch,
+  };
+}

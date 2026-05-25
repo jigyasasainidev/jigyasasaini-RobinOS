@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/cloudDb";
 import { toast } from "sonner";
 import { useProfile } from "@/hooks/useProfile";
-import { useIsByokEnabled, usePlanKey } from "@/hooks/useEntitlements";
+import { useIsByokEnabled, usePlanKey, useScriptDailyLimit, useCaptionDailyLimit } from "@/hooks/useEntitlements";
 import { useSubscriptionLifecycle } from "@/hooks/useSubscriptionLifecycle";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +51,8 @@ const SettingsPage = () => {
   const { data: profile } = useProfile();
   const plan = usePlanKey();
   const isByokEnabled = useIsByokEnabled();
+  const scriptDailyLimit = useScriptDailyLimit();
+  const captionDailyLimit = useCaptionDailyLimit();
   const { data: lifecycle, isLoading: lifecycleLoading } = useSubscriptionLifecycle();
 
   const isFree = plan === "free";
@@ -273,10 +275,10 @@ const SettingsPage = () => {
           <div className="space-y-2">
             <div className="flex justify-between text-xs text-muted-foreground">
               <span><AnimatedCounter value={scriptUsed} /> used today</span>
-              <span>{isAgency ? "∞" : isFree ? "2" : plan === "pro_creator" ? "100" : "20"} total</span>
+              <span>{isAgency ? "∞" : isFree ? "2" : String(scriptDailyLimit)} total</span>
             </div>
             <Progress
-              value={isAgency ? 15 : isFree ? (scriptUsed / 2) * 100 : plan === "pro_creator" ? (scriptUsed / 100) * 100 : (scriptUsed / 20) * 100}
+              value={isAgency ? 15 : isFree ? (scriptUsed / 2) * 100 : (scriptUsed / Math.max(scriptDailyLimit, 1)) * 100}
               className="h-1.5"
             />
             <p className="text-[10px] text-muted-foreground/60 font-mono">
@@ -300,10 +302,10 @@ const SettingsPage = () => {
           <div className="space-y-1.5">
             <div className="flex justify-between text-xs text-muted-foreground">
               <span><AnimatedCounter value={captionUsed} /> used today</span>
-              <span>{isAgency ? "∞" : isFree ? "2" : plan === "pro_creator" ? "100" : "20"} total</span>
+              <span>{isAgency ? "∞" : isFree ? "2" : String(captionDailyLimit)} total</span>
             </div>
             <Progress
-              value={isAgency ? 15 : isFree ? (captionUsed / 2) * 100 : plan === "pro_creator" ? (captionUsed / 100) * 100 : (captionUsed / 20) * 100}
+              value={isAgency ? 15 : isFree ? (captionUsed / 2) * 100 : (captionUsed / Math.max(captionDailyLimit, 1)) * 100}
               className="h-1.5"
             />
             <p className="text-[10px] text-muted-foreground/60 font-mono">Caption Engine generation quota scales with your current tier.</p>

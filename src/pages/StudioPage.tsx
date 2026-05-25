@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/cloudDb";
 import { useTierLevel, useFreeTrialStatus } from "@/hooks/useProfile";
-import { usePlanKey, useIsAgency, useAvailableScriptLengths } from "@/hooks/useEntitlements";
+import { usePlanKey, useIsAgency, useAvailableScriptLengths, useFeatureUsage } from "@/hooks/useEntitlements";
 import { moderatePrompt, getModerationBlockMessage } from "@/lib/moderation/engine";
 import { ModerationNotice } from "@/components/ModerationNotice";
 import { useQueryClient } from "@tanstack/react-query";
@@ -44,6 +44,7 @@ const StudioPage = () => {
   const { expired, scriptsLeft, isFree } = useFreeTrialStatus();
   const isAgencyTier = useIsAgency();
   const availableLengths = useAvailableScriptLengths(allLengths, freeLengths, starterLengths);
+  const { data: scriptUsageData, refetch: refetchScriptUsage } = useFeatureUsage("script_generation");
 
   const [topic, setTopic] = useState(() => sessionStorage.getItem("studio_topic") || "");
   const [selectedTone, setSelectedTone] = useState(() => sessionStorage.getItem("studio_tone") || "Casual");
@@ -58,35 +59,19 @@ const StudioPage = () => {
   const [trendIntel, setTrendIntel]     = useState<TrendIntelligence | null>(null);
   const scanPhaseRef                    = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const [dailyUsage, setDailyUsage] = useState<{
-    used: number;
-    quota: number | null;
-    remaining: number;
-    allowed: boolean;
-    near_limit: boolean;
-    fair_usage: boolean;
-    message: string;
-  } | null>(null);
-
-  const loadUsageStatus = async () => {
-    if (!user || isFree) return;
-    const { data, error } = await db.rpc("get_usage_status", { p_feature_name: "scripts" });
-    if (error) return;
-    const row = Array.isArray(data) ? data[0] : data;
-    if (!row) return;
-    setDailyUsage({
-      used: Number(row.used ?? 0),
-      quota: row.quota == null ? null : Number(row.quota),
-      remaining: Number(row.remaining ?? 0),
-      allowed: Boolean(row.allowed),
-      near_limit: Boolean(row.near_limit),
-      fair_usage: Boolean(row.fair_usage),
-      message: String(row.message ?? ""),
-    });
+  // Derive dailyUsage from the hook for backward compat with existing JSX
+  const dailyUsage = isFree ? null : {
+    used:       scriptUsageData.used,
+    quota:      scriptUsageData.quota,
+    remaining:  scriptUsageData.remaining,
+    allowed:    scriptUsageData.allowed,
+    near_limit: scriptUsageData.near_limit,
+    fair_usage: scriptUsageData.fair_usage,
+    message:    scriptUsageData.message,
   };
 
-  // Persist state
-  useEffect(() => { sessionStorage.setItem("studio_topic", topic); }, [topic]);
+  const loadUsageStatus = () => { void refetchScriptUsage(); };
+
   useEffect(() => { sessionStorage.setItem("studio_tone", selectedTone); }, [selectedTone]);
   useEffect(() => { sessionStorage.setItem("studio_length", selectedLength); }, [selectedLength]);
   useEffect(() => { sessionStorage.setItem("studio_output", output); }, [output]);
@@ -96,10 +81,6 @@ const StudioPage = () => {
     const t = searchParams.get("topic");
     if (t) setTopic(decodeURIComponent(t));
   }, [searchParams]);
-
-  useEffect(() => {
-    void loadUsageStatus();
-  }, [user?.id, isFree, currentTier]);
 
   const SCAN_MESSAGES = [
     "Scanning creator signals...",
@@ -122,18 +103,10 @@ const StudioPage = () => {
     }
 
     if (!isFree) {
-      const { data, error } = await db.rpc("get_usage_status", { p_feature_name: "scripts" });
-      if (error) { toast.error(error.message || "Unable to verify your usage limits right now."); return; }
-      const row = Array.isArray(data) ? data[0] : data;
-      if (!row?.allowed) {
+      // Use hook data for pre-check (already fetched, no extra RPC needed)
+      if (dailyUsage && !dailyUsage.allowed) {
         toast.warning("Daily generation limit reached.", { description: "Upgrade to Pro Creator for higher limits." });
         setShowUpgrade(true);
-        setDailyUsage({
-          used: Number(row?.used ?? 0), quota: row?.quota == null ? null : Number(row.quota),
-          remaining: Number(row?.remaining ?? 0), allowed: false,
-          near_limit: Boolean(row?.near_limit), fair_usage: Boolean(row?.fair_usage),
-          message: String(row?.message ?? "Daily limit reached"),
-        });
         return;
       }
     }
@@ -191,17 +164,9 @@ const StudioPage = () => {
         } catch { /* keep empty */ }
 
         if (status === 403) {
-          const usage = parsed.usage as Record<string, unknown> | undefined;
-          if (usage) {
-            setDailyUsage({
-              used: Number(usage.used ?? 0), quota: usage.quota == null ? null : Number(usage.quota),
-              remaining: Number(usage.remaining ?? 0), allowed: false,
-              near_limit: Boolean(usage.near_limit), fair_usage: Boolean(usage.fair_usage),
-              message: String(usage.message ?? "Daily limit reached"),
-            });
-          }
           toast.error(String(parsed.message ?? parsed.error ?? "Script limit reached. Upgrade your plan!"));
           setShowUpgrade(true);
+          void refetchScriptUsage();
           setGenerating(false);
           return;
         }

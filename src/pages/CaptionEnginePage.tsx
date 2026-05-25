@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/cloudDb";
 import { usePlanKey } from "@/hooks/useEntitlements";
+import { useFeatureUsage } from "@/hooks/useEntitlements";
 import { moderatePrompt, getModerationBlockMessage } from "@/lib/moderation/engine";
 import { ModerationNotice } from "@/components/ModerationNotice";
 import { getCaptionLimitText } from "@/lib/pricing";
@@ -54,6 +55,7 @@ const CaptionEnginePage = () => {
   const { user } = useAuth();
   const plan      = usePlanKey();
   const tier      = plan;
+  const { data: captionUsageData, refetch: refetchCaptionUsage } = useFeatureUsage("caption_generation");
 
   const [platform,    setPlatform]    = useState<Platform>("youtube");
   const [style,       setStyle]       = useState<GenerationStyle>("seo_optimized");
@@ -83,25 +85,20 @@ const CaptionEnginePage = () => {
     setHistory((data ?? []) as CaptionGeneration[]);
   };
 
-  const loadUsage = async () => {
-    const { data, error } = await db.rpc("get_usage_status", { p_feature_name: "captions" });
-    if (error) return;
-    setUsage({
-      used:       Number(data?.used      ?? 0),
-      quota:      Number(data?.quota     ?? 0),
-      remaining:  Number(data?.remaining ?? 0),
-      allowed:    Boolean(data?.allowed),
-      near_limit: Boolean(data?.near_limit),
-      fair_usage: Boolean(data?.fair_usage),
-      message:    String(data?.message   ?? ""),
-    });
-  };
-
+  // Sync usage state from the hook (replaces old get_usage_status RPC call)
   useEffect(() => {
-    if (!user) return;
-    void loadHistory();
-    void loadUsage();
-  }, [user?.id]);
+    setUsage({
+      used:       captionUsageData.used,
+      quota:      captionUsageData.quota ?? 0,
+      remaining:  captionUsageData.remaining,
+      allowed:    captionUsageData.allowed,
+      near_limit: captionUsageData.near_limit,
+      fair_usage: captionUsageData.fair_usage,
+      message:    captionUsageData.message,
+    });
+  }, [captionUsageData]);
+
+  const loadUsage = () => { void refetchCaptionUsage(); };
 
   // ── Caption generation ─────────────────────────────────────
   const handleGenerate = async () => {
