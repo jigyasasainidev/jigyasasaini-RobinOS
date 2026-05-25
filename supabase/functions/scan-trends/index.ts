@@ -1,14 +1,15 @@
 // ============================================================
-// ROBINOS SCAN TRENDS — Gemini Direct REST, Cache-First
+// ROBINOS SCAN TRENDS — Groq (OpenAI-compatible), Cache-First
 // ============================================================
 // FLOW:
-// 1. Validate GEMINI_API_KEY (fast fail)
+// 1. Validate GROQ_API_KEY (fast fail)
 // 2. Auth + entitlement check in parallel (quota enforced)
 // 3. Cache lookup — return instantly if fresh results exist
-// 4. Cache miss → Gemini REST API (direct, no tool_choice) → return
+// 4. Cache miss → per-user rate limit → Groq API → cache write → return
 //
-// AI approach: plain JSON prompt — no function calling.
-// Gemini responds with raw JSON text; we strip any markdown fences.
+// AI approach: Groq OpenAI-compatible endpoint with tool calling.
+// llama-3.3-70b-versatile natively supports function calling,
+// so we get structured JSON without any markdown-stripping hacks.
 // ============================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -21,9 +22,9 @@ import {
 import { trackFeatureUsage } from "../_shared/feature-usage.ts";
 
 // ── Per-user in-memory rate limiter ───────────────────────
-// Limits each user to 8 Gemini calls per 60 seconds.
+// Limits each user to 8 Groq calls per 60 seconds.
 // Resets automatically after the window expires.
-// This prevents one user from burning the Gemini free tier quota.
+// Cache hits bypass this entirely — no Groq call needed.
 const USER_RL_MAX    = 8;
 const USER_RL_WINDOW = 60_000; // 60 seconds
 const userRlStore    = new Map<string, { count: number; windowStart: number }>();
@@ -48,21 +49,19 @@ function checkUserRateLimit(userId: string): { allowed: boolean; retryAfterSecon
 
 // ── Types ──────────────────────────────────────────────────
 interface TrendTopic {
-  title:      string;
-  description:string;
-  platforms:  string;
-  heat:       number;
-  hook_types: string[];
-  volume:     "High" | "Medium" | "Emerging";
+  title:       string;
+  description: string;
+  platforms:   string;
+  heat:        number;
+  hook_types:  string[];
+  volume:      "High" | "Medium" | "Emerging";
 }
 
 // ── Constants ──────────────────────────────────────────────
-const GEMINI_ENDPOINT =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
+const GROQ_MODEL    = "llama-3.3-70b-versatile";
 
 const SYSTEM_PROMPT = `You are an expert viral content analyst with deep knowledge of internet trends and social media dynamics. When given a niche, you must identify 3-5 ACTUALLY trending topics that are currently gaining momentum or about to explode.
-
-CRITICAL: Respond with ONLY valid JSON. No markdown, no code blocks, no explanation. Just raw JSON.
 
 Your analysis must be based on real-world signals. For each topic provide:
 - title: The exact trending topic, hashtag, or content angle
@@ -72,26 +71,59 @@ Your analysis must be based on real-world signals. For each topic provide:
 - hook_types: Array of hook formats that are working for this trend (e.g. "POV", "Did you know", "Story time", "3 things about", "Watch till the end")
 - volume: Estimated daily content volume - "High" (1000+ posts/day), "Medium" (100-999), "Emerging" (under 100)
 
-Focus ONLY on verifiable, current trends. Be specific with numbers and platform data.
+Focus ONLY on verifiable, current trends. Be specific with numbers and platform data. Do NOT fabricate metrics — use your best estimates based on pattern analysis.`;
 
-Return JSON in this format:
-{"topics": [{"title": "string","description": "string","platforms": "string","heat": 85,"hook_types": ["string"],"volume": "High"}]}`;
-
-// ── Call Gemini REST directly (no tool_choice / function calling) ──
-async function callGeminiDirect(niche: string, apiKey: string): Promise<TrendTopic[]> {
+// ── Groq API call (OpenAI-compatible with tool calling) ───
+async function callGroq(niche: string, apiKey: string): Promise<TrendTopic[]> {
   const userPrompt = `Analyze the "${niche}" niche and find 3-5 ACTUALLY trending topics that are viral or about to go viral right now in May 2026.`;
 
   const body = {
-    contents: [{
-      role: "user",
-      parts: [{ text: `${SYSTEM_PROMPT}\n\n${userPrompt}` }],
+    model:       GROQ_MODEL,
+    temperature: 0.7,
+    max_tokens:  8192,
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user",   content: userPrompt    },
+    ],
+    tools: [{
+      type: "function",
+      function: {
+        name:        "return_trending_topics",
+        description: "Return 3-5 trending topics for the given niche",
+        parameters: {
+          type: "object",
+          properties: {
+            topics: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  title:       { type: "string",  description: "Short catchy topic title" },
+                  description: { type: "string",  description: "2-3 sentence explanation with specific data points on why this is trending" },
+                  platforms:   { type: "string",  description: "Comma-separated platforms with specific signals" },
+                  heat:        { type: "number",  description: "Heat score from 70-99 based on growth velocity" },
+                  hook_types: {
+                    type:  "array",
+                    items: { type: "string" },
+                    description: "Hook formats working for this trend",
+                  },
+                  volume: {
+                    type: "string",
+                    enum: ["High", "Medium", "Emerging"],
+                    description: "Daily content volume",
+                  },
+                },
+                required: ["title", "description", "platforms", "heat", "hook_types", "volume"],
+                additionalProperties: false,
+              },
+            },
+          },
+          required: ["topics"],
+          additionalProperties: false,
+        },
+      },
     }],
-    generationConfig: {
-      temperature:     0.7,
-      topP:            0.95,
-      topK:            40,
-      maxOutputTokens: 8192,
-    },
+    tool_choice: { type: "function", function: { name: "return_trending_topics" } },
   };
 
   const ctrl  = new AbortController();
@@ -99,75 +131,61 @@ async function callGeminiDirect(niche: string, apiKey: string): Promise<TrendTop
 
   let res: Response;
   try {
-    res = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
+    res = await fetch(GROQ_ENDPOINT, {
       method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify(body),
-      signal:  ctrl.signal,
+      headers: {
+        "Content-Type":  "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body:   JSON.stringify(body),
+      signal: ctrl.signal,
     });
   } catch (err) {
     clearTimeout(timer);
     const isTimeout = err instanceof Error && err.name === "AbortError";
-    throw new Error(isTimeout ? "Gemini request timed out" : `Gemini network error: ${err}`);
+    throw new Error(isTimeout ? "Groq request timed out" : `Groq network error: ${err}`);
   }
   clearTimeout(timer);
 
-  if (res.status === 429) throw new Error("Gemini rate limit exceeded. Please retry shortly.");
-  if (res.status === 403) throw new Error("Gemini API key invalid or quota exhausted.");
+  if (res.status === 429) throw new Error("Groq rate limit exceeded. Please retry shortly.");
+  if (res.status === 401 || res.status === 403) throw new Error("Groq API key invalid.");
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
-    console.error("[scan-trends] Gemini HTTP error", res.status, errText.slice(0, 200));
-    throw new Error(`Gemini returned HTTP ${res.status}`);
+    console.error("[scan-trends] Groq HTTP error", res.status, errText.slice(0, 200));
+    throw new Error(`Groq returned HTTP ${res.status}`);
   }
 
   const data = await res.json();
-  const rawText: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
 
-  if (!rawText) {
-    console.error("[scan-trends] Gemini returned empty text. Full response:", JSON.stringify(data).slice(0, 500));
-    throw new Error("Gemini returned empty response");
+  if (!toolCall) {
+    console.error("[scan-trends] Groq: no tool_calls in response:", JSON.stringify(data).slice(0, 400));
+    throw new Error("No results generated from Groq");
   }
-
-  // ── Strip markdown fences if present ────────────────────
-  // Gemini sometimes wraps JSON in ```json ... ``` even when told not to.
-  let cleaned = rawText.trim();
-  cleaned = cleaned.replace(/^```json\s*/i, "").replace(/^```\s*/i, "");
-  cleaned = cleaned.replace(/\s*```$/,    "").trim();
-
-  console.log("[scan-trends] Gemini raw text (first 300):", cleaned.slice(0, 300));
 
   let parsed: { topics?: TrendTopic[] };
   try {
-    parsed = JSON.parse(cleaned);
-  } catch (e) {
-    // Try extracting JSON object from surrounding text as last resort
-    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      try {
-        parsed = JSON.parse(jsonMatch[0]);
-      } catch {
-        console.error("[scan-trends] JSON parse failed even after extraction. Text:", cleaned.slice(0, 400));
-        throw new Error("Failed to parse Gemini JSON response");
-      }
-    } else {
-      console.error("[scan-trends] No JSON found in response:", cleaned.slice(0, 400));
-      throw new Error("Gemini response did not contain valid JSON");
-    }
+    parsed = JSON.parse(toolCall.function.arguments);
+  } catch {
+    console.error("[scan-trends] Groq: failed to parse tool arguments:", toolCall.function.arguments?.slice(0, 300));
+    throw new Error("Failed to parse Groq tool response");
   }
 
   const topics = parsed?.topics ?? [];
   if (!Array.isArray(topics) || topics.length === 0) {
-    throw new Error("Gemini returned no topics");
+    throw new Error("Groq returned no topics");
   }
 
-  // ── Validate / normalise each topic ──────────────────────
+  console.log("[scan-trends] Groq returned", topics.length, "topics");
+
+  // Validate / normalise each topic
   return topics.map((t: any): TrendTopic => ({
     title:       String(t.title       ?? "").trim(),
     description: String(t.description ?? "").trim(),
     platforms:   String(t.platforms   ?? "").trim(),
     heat:        Math.min(99, Math.max(70, Number(t.heat) || 75)),
     hook_types:  Array.isArray(t.hook_types) ? t.hook_types.map(String) : [],
-    volume:      (["High","Medium","Emerging"] as const).includes(t.volume) ? t.volume : "Medium",
+    volume:      (["High", "Medium", "Emerging"] as const).includes(t.volume) ? t.volume : "Medium",
   })).filter(t => t.title && t.description);
 }
 
@@ -175,10 +193,10 @@ async function callGeminiDirect(niche: string, apiKey: string): Promise<TrendTop
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
 
-  // ── Fast fail: Gemini key must be present ────────────────
-  const geminiKey = Deno.env.get("GEMINI_API_KEY");
-  if (!geminiKey) {
-    console.error("[scan-trends] GEMINI_API_KEY not configured");
+  // ── Fast fail: Groq key must be present ─────────────────
+  const groqKey = Deno.env.get("GROQ_API_KEY");
+  if (!groqKey) {
+    console.error("[scan-trends] GROQ_API_KEY not configured");
     return new Response(
       JSON.stringify({ success: false, code: "PROVIDER_CONFIG_ERROR", error: "AI provider not configured." }),
       { status: 503, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
@@ -249,11 +267,7 @@ serve(async (req) => {
     }
 
     const analyticsUserId = userResult.data?.user?.id ?? "";
-
-    // ── Per-user rate limit (protects Gemini free tier) ───
-    // Only applied on cache-miss path (checked after cache lookup).
-    // We store the userId for the check below.
-    const rlUserId = analyticsUserId || `ip:${req.headers.get("x-forwarded-for") ?? "unknown"}`;
+    const rlUserId        = analyticsUserId || `ip:${req.headers.get("x-forwarded-for") ?? "unknown"}`;
 
     // ── Phase 2: Cache lookup ──────────────────────────────
     const now = new Date().toISOString();
@@ -288,39 +302,32 @@ serve(async (req) => {
       );
     }
 
-    console.log("[scan-trends] cache MISS — calling Gemini");
+    console.log("[scan-trends] cache MISS — calling Groq");
 
-    // ── Per-user rate limit check (only on cache miss) ────
-    // Cache hits bypass this — they don't call Gemini at all.
+    // ── Per-user rate limit (only on cache miss) ──────────
     const rl = checkUserRateLimit(rlUserId);
     if (!rl.allowed) {
       console.warn("[scan-trends] user rate limited:", rlUserId, "retry in", rl.retryAfterSeconds, "s");
       return new Response(
         JSON.stringify({
-          error: `Too many scans. Please wait ${rl.retryAfterSeconds} seconds before scanning again.`,
-          code:  "USER_RATE_LIMITED",
+          error:             `Too many scans. Please wait ${rl.retryAfterSeconds} seconds before scanning again.`,
+          code:              "USER_RATE_LIMITED",
           retryAfterSeconds: rl.retryAfterSeconds,
         }),
         {
-          status: 429,
-          headers: {
-            ...CORS_HEADERS,
-            "Content-Type": "application/json",
-            "Retry-After":  String(rl.retryAfterSeconds),
-          },
+          status:  429,
+          headers: { ...CORS_HEADERS, "Content-Type": "application/json", "Retry-After": String(rl.retryAfterSeconds) },
         },
       );
     }
 
-    // ── Phase 3: Gemini direct REST call ──────────────────
+    // ── Phase 3: Groq API call ─────────────────────────────
     let topics: TrendTopic[];
     try {
-      topics = await callGeminiDirect(niche, geminiKey);
-      console.log("[scan-trends] Gemini returned", topics.length, "topics");
+      topics = await callGroq(niche, groqKey);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error("[scan-trends] Gemini call failed:", msg);
-      // Return 429 specifically for rate limits
+      console.error("[scan-trends] Groq call failed:", msg);
       const status = msg.includes("rate limit") ? 429 : 503;
       return new Response(
         JSON.stringify({ error: msg, code: "AI_ERROR" }),
