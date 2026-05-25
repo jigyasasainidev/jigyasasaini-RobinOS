@@ -246,13 +246,12 @@ Be specific, concise, and ruthlessly engaging.`,
   const totalElapsed = Date.now() - startMs;
   log("RESPONSE_SENT", { status: 200, elapsed_ms: totalElapsed });
 
-  const streamPayload = `data: ${JSON.stringify({
-    choices: [{ delta: { content } }],
+  return new Response(JSON.stringify({
+    success: true,
+    output: content,
     usage: entitlement,
-  })}\n\ndata: [DONE]\n\n`;
-
-  return new Response(streamPayload, {
-    headers: { ...CORS_HEADERS, "Content-Type": "text/event-stream" },
+  }), {
+    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
   });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown runtime error";

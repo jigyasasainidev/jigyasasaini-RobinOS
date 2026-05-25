@@ -206,22 +206,11 @@ const StudioPage = () => {
         return;
       }
 
-      const rawText: string = typeof invokeData === "string"
-        ? invokeData
-        : invokeData instanceof Blob ? await invokeData.text() : "";
+      const fullOutput = typeof invokeData === "object" && invokeData !== null && "output" in invokeData
+        ? String((invokeData as any).output)
+        : typeof invokeData === "string" ? invokeData : "";
 
-      let fullOutput = "";
-      for (const line of rawText.split("\n")) {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith("data: ")) continue;
-        const jsonStr = trimmed.slice(6).trim();
-        if (jsonStr === "[DONE]") break;
-        try {
-          const p = JSON.parse(jsonStr);
-          const content = p.choices?.[0]?.delta?.content as string | undefined;
-          if (content) { fullOutput += content; setOutput(fullOutput); }
-        } catch { /* skip */ }
-      }
+      if (fullOutput) setOutput(fullOutput);
 
       if (user && fullOutput.trim()) {
         queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
