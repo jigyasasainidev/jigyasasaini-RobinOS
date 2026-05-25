@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AIStatusBadge, StatusBadge } from "@/components/ui/status-badge";
+import { LivePipeline, TREND_PIPELINE } from "@/components/ai/live-pipeline";
+import { ConfidenceBar } from "@/components/ai/confidence-visual";
 
 interface TrendTopic {
   title:       string;
@@ -163,52 +165,66 @@ const TrendScannerPage = () => {
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.97 }}
-            className="relative rounded-2xl overflow-hidden mb-5 flex flex-col items-center justify-center py-16"
+            className="relative rounded-2xl overflow-hidden mb-5"
             style={{ background: "hsl(222 28% 5.5% / 0.95)", border: "1px solid hsl(217 91% 60% / 0.12)" }}
           >
-            {[0,1,2,3].map((i) => (
-              <motion.div key={`r-${i}`}
-                className="absolute rounded-full border border-primary/10"
-                style={{ width: 80 + i * 38, height: 80 + i * 38 }}
-                initial={{ scale: 0.3, opacity: 0 }}
-                animate={{ scale: [0.3, 2.5, 3.5], opacity: [0, 0.5, 0] }}
-                transition={{ duration: 3, repeat: Infinity, delay: i * 0.55, ease: "easeOut" }}
-              />
-            ))}
-            <motion.div
-              className="absolute w-40 h-[1.5px] origin-left"
-              style={{ background: "linear-gradient(90deg, hsl(217 91% 60% / 0.7), transparent)" }}
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2.8, repeat: Infinity, ease: "linear" }}
-            />
-            <motion.div
-              className="relative z-10 w-16 h-16 rounded-full flex items-center justify-center mb-5"
-              style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.2)" }}
-            >
-              {(() => {
-                const Icon = SCAN_ICONS[iconIdx % SCAN_ICONS.length];
-                return (
-                  <motion.div key={iconIdx} initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }}>
-                    <Icon className="w-7 h-7 text-primary" strokeWidth={1.5} />
-                  </motion.div>
-                );
-              })()}
-            </motion.div>
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={msgIdx}
-                initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
-                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                exit={{ opacity: 0, y: -10, filter: "blur(4px)" }}
-                transition={{ duration: 0.35 }}
-                className="relative z-10 text-sm font-mono text-primary tracking-wider"
-              >
-                {SCANNER_MESSAGES[msgIdx]}
-              </motion.p>
-            </AnimatePresence>
-            <p className="relative z-10 mt-2 text-[11px] text-muted-foreground/50 font-mono">
-              Target: "{niche}"
-            </p>
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-6 px-6 py-10">
+
+              {/* Left: radar + message */}
+              <div className="relative flex flex-col items-center justify-center shrink-0 w-48">
+                {[0,1,2,3].map((i) => (
+                  <motion.div key={`r-${i}`}
+                    className="absolute rounded-full border border-primary/10"
+                    style={{ width: 60 + i * 28, height: 60 + i * 28 }}
+                    initial={{ scale: 0.3, opacity: 0 }}
+                    animate={{ scale: [0.3, 2.5, 3.5], opacity: [0, 0.5, 0] }}
+                    transition={{ duration: 3, repeat: Infinity, delay: i * 0.55, ease: "easeOut" }}
+                  />
+                ))}
+                <motion.div
+                  className="absolute w-32 h-[1.5px] origin-left"
+                  style={{ background: "linear-gradient(90deg, hsl(217 91% 60% / 0.7), transparent)" }}
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 2.8, repeat: Infinity, ease: "linear" }}
+                />
+                <motion.div
+                  className="relative z-10 w-14 h-14 rounded-full flex items-center justify-center mb-4"
+                  style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.2)" }}
+                >
+                  {(() => {
+                    const Icon = SCAN_ICONS[iconIdx % SCAN_ICONS.length];
+                    return (
+                      <motion.div key={iconIdx} initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }}>
+                        <Icon className="w-6 h-6 text-primary" strokeWidth={1.5} />
+                      </motion.div>
+                    );
+                  })()}
+                </motion.div>
+                <AnimatePresence mode="wait">
+                  <motion.p
+                    key={msgIdx}
+                    initial={{ opacity: 0, y: 6, filter: "blur(4px)" }}
+                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                    exit={{ opacity: 0, y: -6, filter: "blur(4px)" }}
+                    transition={{ duration: 0.3 }}
+                    className="relative z-10 text-[10.5px] font-mono text-primary/80 tracking-wider text-center"
+                  >
+                    {SCANNER_MESSAGES[msgIdx]}
+                  </motion.p>
+                </AnimatePresence>
+                <p className="relative z-10 mt-1.5 text-[9.5px] text-muted-foreground/35 font-mono">
+                  "{niche}"
+                </p>
+              </div>
+
+              {/* Right: live pipeline steps */}
+              <div className="flex-1 min-w-0 pt-1">
+                <p className="text-[9px] font-mono uppercase tracking-[0.22em] text-muted-foreground/30 mb-3">
+                  Intelligence Pipeline
+                </p>
+                <LivePipeline active={loading} steps={TREND_PIPELINE} />
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -279,6 +295,9 @@ const TrendScannerPage = () => {
                         ))}
                       </div>
                     )}
+
+                    {/* Confidence bar */}
+                    <ConfidenceBar heat={t.heat} className="mt-2.5" />
                   </div>
 
                   {/* CTA */}
