@@ -1381,7 +1381,7 @@ const AdminDashboard = () => {
   const dashboardMetrics = [
     { label: "Total Users", value: formatNumber(profiles.length), growth: userGrowthPercent, icon: Users, spark: sparkFrom(dailySeries.map((d) => d.users)) },
     { label: "Active Subscribers", value: formatNumber(activeSubscribers), growth: growthPercent, icon: UserCheck, spark: sparkFrom(dailySeries.map((d) => d.subscriptions)) },
-    { label: "Active Plan Value", value: formatCurrency(monthlyRevenue), growth: growthPercent, icon: Wallet, spark: sparkFrom(dailySeries.map((d) => d.revenue)) },
+    { label: "Active Plan Value", value: formatCurrency(mrr), growth: growthPercent, icon: Wallet, spark: sparkFrom(dailySeries.map((d) => d.revenue)) },
     { label: "Pending Withdrawals", value: formatNumber(pendingWithdrawals.length), icon: Clock3, spark: sparkFrom(pendingWithdrawals.map((w) => Number(w.amount || 0))) },
     { label: "Affiliate Earnings", value: formatCurrency(totalAffiliateEarnings), icon: TrendingUp, spark: sparkFrom(affiliateCommissions.map((a) => Number(a.amount || 0))) },
     { label: "Scripts Generated", value: formatNumber(scriptsGenerated), icon: Sparkles, spark: sparkFrom(dailySeries.map((d) => d.scripts)) },
@@ -2066,8 +2066,22 @@ const AdminDashboard = () => {
     </div>
   );
 
-  const atRiskSubscriptions = useMemo(() => subscriptions.filter((s) => ["past_due", "cancelled"].includes((s.status || "").toLowerCase())), [subscriptions]);
-  const cancelledSubs = useMemo(() => subscriptions.filter((s) => asSubscriptionStatus(s.status) === "cancelled"), [subscriptions]);
+  // At-risk: subscriptions in lifecycle states that indicate likely churn.
+  // Includes all new statuses from migration 30/31.
+  const atRiskSubscriptions = useMemo(() =>
+    subscriptions.filter((s) => {
+      const st = (s.status || "").toLowerCase();
+      return ["past_due", "expiring", "grace_period", "payment_failed"].includes(st);
+    }),
+  [subscriptions]);
+
+  // Cancelled: all terminated subscriptions (both spellings)
+  const cancelledSubs = useMemo(() =>
+    subscriptions.filter((s) => {
+      const st = (s.status || "").toLowerCase();
+      return st === "cancelled" || st === "canceled";
+    }),
+  [subscriptions]);
 
   const renderSubscriptionsPage = () => (
     <div className="space-y-6">
@@ -2103,7 +2117,7 @@ const AdminDashboard = () => {
       </motion.div>
 
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Active Plan Value"   value={formatCurrency(monthlyRevenue)}           icon={Wallet}       spark={sparkFrom(dailySeries.map((d) => d.revenue))}              growth={growthPercent} />
+        <MetricCard label="Active Plan Value"   value={formatCurrency(mrr)}                      icon={Wallet}       spark={sparkFrom(dailySeries.map((d) => d.revenue))}              growth={growthPercent} />
         <MetricCard label="Active Subscribers"  value={formatNumber(activeSubscribers)}           icon={UserCheck}    spark={sparkFrom(dailySeries.map((d) => d.subscriptions))} />
         <MetricCard label="Churn Rate"          value={`${churnRate.toFixed(2)}%`}               icon={ArrowDownRight} spark={sparkFrom(cancelledSubs.map((s) => Number(s.amount || 0)))} />
         <MetricCard label="At-Risk Subs"        value={formatNumber(atRiskSubscriptions.length)} icon={Clock3}       spark={sparkFrom(atRiskSubscriptions.map((s) => Number(s.amount || 0)))} />
