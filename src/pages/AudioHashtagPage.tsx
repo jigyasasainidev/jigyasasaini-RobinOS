@@ -444,7 +444,7 @@ const AudioHashtagPage = () => {
   );
 };
 
-// ── Audio Card — premium grid card ────────────────────────
+// ── Audio Card — image-based premium trend card ───────────
 interface AudioCardProps {
   audio:     TrendAudio;
   index:     number;
@@ -455,112 +455,189 @@ interface AudioCardProps {
   onSave:    () => void;
 }
 
+// Deterministic cinematic gradient fallback per card index
+// (used when no image_url is returned from the API)
+const THUMB_GRADIENTS = [
+  "linear-gradient(135deg, hsl(222 60% 8%) 0%, hsl(260 50% 14%) 60%, hsl(217 80% 18%) 100%)",
+  "linear-gradient(135deg, hsl(240 30% 6%) 0%, hsl(200 70% 10%) 60%, hsl(195 80% 16%) 100%)",
+  "linear-gradient(135deg, hsl(280 40% 7%) 0%, hsl(300 50% 12%) 60%, hsl(217 60% 16%) 100%)",
+  "linear-gradient(135deg, hsl(210 40% 6%) 0%, hsl(220 70% 10%) 60%, hsl(230 80% 18%) 100%)",
+  "linear-gradient(135deg, hsl(250 35% 7%) 0%, hsl(210 60% 11%) 60%, hsl(200 70% 16%) 100%)",
+  "linear-gradient(135deg, hsl(220 50% 7%) 0%, hsl(240 60% 12%) 60%, hsl(260 70% 17%) 100%)",
+];
+
+// Mini sparkline — lightweight, GPU-friendly
+const Sparkline = ({ vel }: { vel: string | undefined }) => {
+  // Deterministic "organic" shape based on velocity tier
+  const shapes: Record<string, string> = {
+    exploding: "M0,20 L8,16 L16,10 L24,6 L32,2 L40,0",
+    hot:       "M0,20 L8,17 L16,13 L24,9  L32,5  L40,2",
+    rising:    "M0,20 L8,18 L16,15 L24,12 L32,8  L40,5",
+    stable:    "M0,20 L8,19 L16,18 L24,17 L32,16 L40,15",
+  };
+  const colors: Record<string, string> = {
+    exploding: "hsl(0 80% 62%)",
+    hot:       "hsl(38 90% 58%)",
+    rising:    "hsl(142 65% 52%)",
+    stable:    "hsl(215 30% 45%)",
+  };
+  const path  = shapes[vel ?? "stable"] ?? shapes.stable;
+  const color = colors[vel ?? "stable"] ?? colors.stable;
+  return (
+    <svg width="40" height="20" viewBox="0 0 40 20" fill="none" style={{ display: "block" }}>
+      <defs>
+        <linearGradient id={`sg-${vel}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.55" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {/* Area fill */}
+      <path d={`${path} L40,20 L0,20 Z`} fill={`url(#sg-${vel})`} />
+      {/* Line */}
+      <path d={path} stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"
+        style={{ filter: `drop-shadow(0 0 3px ${color})` }} />
+      {/* Endpoint dot */}
+      <circle cx="40" cy={vel === "exploding" ? 0 : vel === "hot" ? 2 : vel === "rising" ? 5 : 15}
+        r="2" fill={color} style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
+    </svg>
+  );
+};
+
 const AudioCard = ({ audio, index, copiedKey, isSaved, copyKey, onCopy, onSave }: AudioCardProps) => {
-  const vel = getVel(audio.velocity);
+  const vel      = getVel(audio.velocity);
+  const fallback = THUMB_GRADIENTS[index % THUMB_GRADIENTS.length];
+  const hasImg   = !!audio.image_url;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ delay: index * 0.03, duration: 0.3 }}
-      className="group relative flex flex-col rounded-xl overflow-hidden cursor-default"
+      className="group relative flex flex-col rounded-2xl overflow-hidden cursor-default"
       style={{
-        background: "linear-gradient(145deg, hsl(222 28% 8%) 0%, hsl(222 26% 6.5%) 100%)",
+        background: "hsl(222 28% 6%)",
         border: "1px solid hsl(217 28% 12%)",
-        boxShadow: "0 2px 12px hsl(0 0% 0% / 0.22), inset 0 1px 0 hsl(0 0% 100% / 0.025)",
+        boxShadow: "0 4px 20px hsl(0 0% 0% / 0.28), inset 0 1px 0 hsl(0 0% 100% / 0.03)",
       }}
       whileHover={{
-        y: -3,
-        boxShadow: "0 12px 32px hsl(0 0% 0% / 0.35), 0 0 0 1px hsl(217 91% 60% / 0.18), inset 0 1px 0 hsl(0 0% 100% / 0.04)",
+        y: -4,
+        boxShadow: "0 16px 40px hsl(0 0% 0% / 0.4), 0 0 0 1px hsl(217 91% 60% / 0.2), inset 0 1px 0 hsl(0 0% 100% / 0.05)",
       }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
+      transition={{ duration: 0.22, ease: "easeOut" }}
     >
-      {/* Top accent line — visible on hover */}
-      <div className="h-px w-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        style={{ background: `linear-gradient(90deg, transparent 0%, ${vel.color} 50%, transparent 100%)`, opacity: 0 }}
-      />
-      {/* Hover glow overlay */}
-      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-        style={{ background: "radial-gradient(ellipse 80% 40% at 50% 0%, hsl(217 91% 60% / 0.04), transparent)" }} />
+      {/* ── Thumbnail ──────────────────────────────────── */}
+      <div className="relative w-full overflow-hidden"
+        style={{ aspectRatio: "16/9", background: fallback }}>
+        {hasImg && (
+          <img
+            src={audio.image_url!}
+            alt={audio.title}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+          />
+        )}
 
-      {/* Card content */}
-      <div className="flex flex-col gap-3 p-4 flex-1">
+        {/* Cinematic gradient overlay — always present */}
+        <div className="absolute inset-0"
+          style={{ background: "linear-gradient(180deg, hsl(222 28% 5% / 0.25) 0%, hsl(222 28% 4% / 0.85) 100%)" }} />
 
-        {/* Top row: index + velocity badge + copy btn */}
-        <div className="flex items-center justify-between gap-1.5">
-          <span className="text-[9px] font-mono text-muted-foreground/30"
-            style={{ letterSpacing: "0.1em" }}>
+        {/* Rank badge — top left */}
+        <div className="absolute top-2.5 left-2.5 flex items-center gap-1">
+          <span className="text-[9px] font-mono text-white/55 px-1.5 py-0.5 rounded-md leading-none"
+            style={{ background: "hsl(0 0% 0% / 0.45)", backdropFilter: "blur(6px)", border: "1px solid hsl(0 0% 100% / 0.08)" }}>
             #{String(index + 1).padStart(2, "0")}
           </span>
-          <div className="flex items-center gap-1.5 ml-auto">
-            {audio.velocity && (
-              <span className="text-[8px] font-mono px-1.5 py-0.5 rounded-full border leading-none"
-                style={{ color: vel.color, background: vel.bg, borderColor: vel.border }}>
-                {vel.label}
-              </span>
-            )}
-            {/* Copy button */}
-            <motion.button
-              whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-              onClick={onCopy}
-              className="w-6 h-6 rounded-md flex items-center justify-center transition-all"
-              style={{
-                background: copiedKey === copyKey ? "hsl(217 91% 60% / 0.12)" : "hsl(217 28% 10%)",
-                border: copiedKey === copyKey ? "1px solid hsl(217 91% 60% / 0.3)" : "1px solid hsl(217 28% 15%)",
-              }}
-              title="Copy">
-              {copiedKey === copyKey
-                ? <Check className="w-3 h-3 text-primary" />
-                : <Copy className="w-3 h-3 text-muted-foreground/45" />}
-            </motion.button>
-          </div>
         </div>
+
+        {/* Action buttons — top right */}
+        <div className="absolute top-2.5 right-2.5 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+            onClick={onSave}
+            className="w-6 h-6 rounded-lg flex items-center justify-center"
+            style={{
+              background: isSaved ? "hsl(217 91% 60% / 0.25)" : "hsl(0 0% 0% / 0.55)",
+              border: isSaved ? "1px solid hsl(217 91% 60% / 0.4)" : "1px solid hsl(0 0% 100% / 0.1)",
+              backdropFilter: "blur(8px)",
+            }}>
+            {isSaved
+              ? <BookmarkCheck className="w-3 h-3 text-primary" />
+              : <Bookmark className="w-3 h-3 text-white/65" />}
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+            onClick={onCopy}
+            className="w-6 h-6 rounded-lg flex items-center justify-center"
+            style={{
+              background: copiedKey === copyKey ? "hsl(217 91% 60% / 0.25)" : "hsl(0 0% 0% / 0.55)",
+              border: copiedKey === copyKey ? "1px solid hsl(217 91% 60% / 0.4)" : "1px solid hsl(0 0% 100% / 0.1)",
+              backdropFilter: "blur(8px)",
+            }}>
+            {copiedKey === copyKey
+              ? <Check className="w-3 h-3 text-primary" />
+              : <Copy className="w-3 h-3 text-white/65" />}
+          </motion.button>
+        </div>
+
+        {/* Velocity badge — bottom left (on thumbnail) */}
+        {audio.velocity && (
+          <div className="absolute bottom-2.5 left-2.5">
+            <span className="text-[8px] font-mono px-2 py-0.5 rounded-full border leading-none"
+              style={{
+                color:            vel.color,
+                background:       "hsl(0 0% 0% / 0.55)",
+                borderColor:      vel.border,
+                backdropFilter:   "blur(8px)",
+              }}>
+              {vel.label}
+            </span>
+          </div>
+        )}
+
+        {/* Music icon placeholder — shown when no image */}
+        {!hasImg && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Music className="w-8 h-8 text-white/10" strokeWidth={1} />
+          </div>
+        )}
+      </div>
+
+      {/* ── Card body ──────────────────────────────────── */}
+      <div className="flex flex-col gap-2.5 p-3.5 flex-1">
 
         {/* Title + artist */}
         <div className="space-y-0.5 min-w-0">
-          <p className="text-[13px] font-semibold text-foreground/90 leading-tight tracking-tight line-clamp-2">
+          <p className="text-[12.5px] font-semibold text-foreground/92 leading-tight tracking-tight line-clamp-1">
             {audio.title}
           </p>
           {audio.artist && (
-            <p className="text-[10px] text-muted-foreground/45 truncate">{audio.artist}</p>
+            <p className="text-[10px] text-muted-foreground/42 truncate">{audio.artist}</p>
           )}
         </div>
 
-        {/* Category chip */}
-        {audio.category && (
-          <span className="self-start text-[8px] font-mono px-2 py-0.5 rounded-md leading-none truncate max-w-full"
-            style={{ background: "hsl(217 28% 10%)", border: "1px solid hsl(217 28% 14%)", color: "hsl(215 16% 40%)" }}>
-            {audio.category}
-          </span>
-        )}
+        {/* Category + uses row */}
+        <div className="flex items-center justify-between gap-2">
+          {audio.category && (
+            <span className="text-[8px] font-mono px-1.5 py-0.5 rounded-md leading-none truncate max-w-[50%]"
+              style={{ background: "hsl(217 28% 10%)", border: "1px solid hsl(217 28% 14%)", color: "hsl(215 16% 38%)" }}>
+              {audio.category}
+            </span>
+          )}
+          {audio.uses && (
+            <span className="text-[9px] font-mono leading-none shrink-0"
+              style={{ color: "hsl(142 65% 52%)" }}>
+              {audio.uses} uses
+            </span>
+          )}
+        </div>
 
-        {/* Bottom: uses + tip + save */}
-        <div className="mt-auto pt-2 flex items-end justify-between gap-2"
+        {/* Bottom: tip + sparkline */}
+        <div className="flex items-end justify-between gap-2 mt-auto pt-2"
           style={{ borderTop: "1px solid hsl(217 28% 10%)" }}>
-          <div className="space-y-0.5 min-w-0 flex-1">
-            {audio.uses && (
-              <p className="text-[10px] font-mono leading-none" style={{ color: "hsl(217 91% 62%)" }}>
-                {audio.uses} uses
-              </p>
-            )}
-            {audio.tip && (
-              <p className="text-[9.5px] text-muted-foreground/40 leading-snug line-clamp-2 mt-0.5">
-                {audio.tip}
-              </p>
-            )}
+          <p className="text-[9px] text-muted-foreground/38 leading-snug line-clamp-2 flex-1">
+            {audio.tip || `Trending on ${audio.category || "social media"}`}
+          </p>
+          <div className="shrink-0">
+            <Sparkline vel={audio.velocity} />
           </div>
-          <motion.button
-            whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-            onClick={onSave}
-            className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center transition-all"
-            style={{
-              background: isSaved ? "hsl(217 91% 60% / 0.1)" : "hsl(217 28% 10%)",
-              border: isSaved ? "1px solid hsl(217 91% 60% / 0.25)" : "1px solid hsl(217 28% 15%)",
-            }}
-            title={isSaved ? "Unsave" : "Save"}>
-            {isSaved
-              ? <BookmarkCheck className="w-3 h-3 text-primary" />
-              : <Bookmark className="w-3 h-3 text-muted-foreground/40" />}
-          </motion.button>
         </div>
       </div>
     </motion.div>
