@@ -28,7 +28,7 @@ const voiceSettings: Record<string, { stability: number; similarity_boost: numbe
   "pFZP5JQG7iQjIQuC4Bku": { stability: 0.55, similarity_boost: 0.78, style: 0.52, use_speaker_boost: true  }, // Olivia  — Friendly Creator (Lily)
   "21m00Tcm4TlvDq8ikWAM": { stability: 0.78, similarity_boost: 0.68, style: 0.18, use_speaker_boost: false }, // Ava     — Soft & Calm (Rachel)
   "MF3mGyEYCl7XYWbV9V6O": { stability: 0.40, similarity_boost: 0.90, style: 0.70, use_speaker_boost: true  }, // Isabella — Expressive Viral (Elli)
-  "cgSgspJ2msm6clMCkdW9": { stability: 0.50, similarity_boost: 0.85, style: 0.60, use_speaker_boost: true  }, // Mia     — Conversational (Jessica)
+  "cgSgspJ2msm6clMCkdW9": { stability: 0.55, similarity_boost: 0.82, style: 0.48, use_speaker_boost: true  }, // Mia — Soft Modern Creator (Jessica)
   "ThT5KcBeYPX3keUQqHPh": { stability: 0.80, similarity_boost: 0.72, style: 0.14, use_speaker_boost: false }, // Charlotte — Documentary (Dorothy)
   "AZnzlk1XvdvUeBnXmlld": { stability: 0.62, similarity_boost: 0.78, style: 0.48, use_speaker_boost: true  }, // Amelia  — Emotional Cinematic (Bella)
   "XB0fDUnXU5powFXDhCwa": { stability: 0.36, similarity_boost: 0.90, style: 0.75, use_speaker_boost: true  }, // Harper  — Gen-Z Fast Energy (Charlotte)

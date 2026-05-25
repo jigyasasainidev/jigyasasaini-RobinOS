@@ -82,7 +82,7 @@ const VOICE_CATALOG: VoiceEntry[] = [
     badgeColor: "hsl(38 90% 55%)",
   },
   {
-    id:         "pFZP5JQG7iQjIQuC4Bku",
+    id:         "cgSgspJ2msm6clMCkdW9",
     name:       "Mia",
     tagline:    "Soft Modern Creator",
     useCases:   ["Lifestyle", "Beauty", "UGC", "Aesthetic"],
