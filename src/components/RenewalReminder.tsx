@@ -299,6 +299,9 @@ export function RenewalReminder() {
   if (dismissed) return null;
   if (!status.show_reminder) return null;
   if (status.granted_by_admin) return null;
+  // Never show renewal popup for free users — they should see upgrade prompts
+  // triggered by usage exhaustion, not expiry urgency.
+  if (status.plan === "free" || !status.subscription_active) return null;
 
   const showPopup = status.reminder_urgency !== "low";
 
@@ -348,6 +351,8 @@ export function RenewalBannerInline() {
   if (!status.show_reminder) return null;
   if (status.reminder_urgency !== "low") return null;
   if (status.granted_by_admin) return null;
+  // Never show for free users
+  if (status.plan === "free" || !status.subscription_active) return null;
 
   return (
     <AnimatePresence mode="wait">
