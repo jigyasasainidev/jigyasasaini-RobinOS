@@ -34,10 +34,15 @@ export function Admin2FAVerify({ onVerified, onSignOut }: Admin2FAVerifyProps) {
       const token = session?.session?.access_token;
       if (!token) throw new Error("Session expired. Please sign in again.");
 
-      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+      const SUPABASE_URL      = import.meta.env.VITE_SUPABASE_URL as string;
+      const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
       const res = await fetch(`${SUPABASE_URL}/functions/v1/verify-admin-2fa`, {
         method: "POST",
-        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "apikey":         SUPABASE_ANON_KEY,
+          "Content-Type":   "application/json",
+        },
         body: JSON.stringify({ code: trimmed, mode: "login", is_backup_code: useBackup }),
       });
 

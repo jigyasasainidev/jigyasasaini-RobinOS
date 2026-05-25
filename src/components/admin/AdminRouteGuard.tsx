@@ -8,7 +8,8 @@ import { useAdmin2FA } from "@/hooks/useAdmin2FA";
 import { Admin2FASetup } from "@/components/admin/Admin2FASetup";
 import { Admin2FAVerify } from "@/components/admin/Admin2FAVerify";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_URL      = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
 // ── 2FA status values ──────────────────────────────────────
 // "loading"       — not yet checked
@@ -23,7 +24,11 @@ async function checkTwoFAStatus(token: string): Promise<TwoFAStatus> {
     console.debug("[AdminRouteGuard] checking 2FA status...");
     const res = await fetch(`${SUPABASE_URL}/functions/v1/check-admin-2fa-status`, {
       method: "POST",
-      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "apikey":         SUPABASE_ANON_KEY,
+        "Content-Type":   "application/json",
+      },
     });
 
     console.debug("[AdminRouteGuard] 2FA status HTTP:", res.status);

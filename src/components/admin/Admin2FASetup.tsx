@@ -47,10 +47,15 @@ export function Admin2FASetup({ onComplete }: Admin2FASetupProps) {
       const token = session?.session?.access_token;
       if (!token) throw new Error("Not authenticated");
 
-      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+      const SUPABASE_URL      = import.meta.env.VITE_SUPABASE_URL as string;
+      const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
       const res = await fetch(`${SUPABASE_URL}/functions/v1/generate-admin-2fa`, {
         method: "POST",
-        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "apikey":         SUPABASE_ANON_KEY,
+          "Content-Type":   "application/json",
+        },
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to generate 2FA secret");
@@ -72,10 +77,15 @@ export function Admin2FASetup({ onComplete }: Admin2FASetupProps) {
       const token = session?.session?.access_token;
       if (!token) throw new Error("Not authenticated");
 
-      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+      const SUPABASE_URL      = import.meta.env.VITE_SUPABASE_URL as string;
+      const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
       const res = await fetch(`${SUPABASE_URL}/functions/v1/verify-admin-2fa`, {
         method: "POST",
-        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "apikey":         SUPABASE_ANON_KEY,
+          "Content-Type":   "application/json",
+        },
         body: JSON.stringify({ code, mode: "setup" }),
       });
       const data = await res.json();
