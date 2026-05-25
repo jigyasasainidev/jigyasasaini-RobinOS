@@ -106,7 +106,7 @@ const TrendScannerPage = () => {
   };
 
   return (
-    <div className="pt-14 md:pt-0">
+    <div className="pt-14 md:pt-0 content-reveal">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-1">

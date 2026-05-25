@@ -232,7 +232,7 @@ const StudioPage = () => {
 
 
   return (
-    <div className="pt-14 md:pt-0">
+    <div className="pt-14 md:pt-0 content-reveal">
 
       {/* Header */}
       <div className="mb-6">

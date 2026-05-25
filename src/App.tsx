@@ -13,6 +13,14 @@ import { warmCriticalRoutes } from "@/lib/routePrefetch";
 import { TopScrollProgress } from "@/components/TopScrollProgress";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import {
+  PageSkeleton,
+  SplitPageSkeleton,
+  GridPageSkeleton,
+  TrendScannerSkeleton,
+  ScriptEngineSkeleton,
+  SettingsSkeleton,
+} from "@/components/ui/page-skeleton";
 
 const EntryPage = lazy(() => import("./pages/EntryPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
@@ -144,17 +152,17 @@ const App = () => (
                 <Route path="trending"     element={<Navigate to="audio-hashtag" replace />} />
                 <Route path="caption-engine" element={<Navigate to="caption" replace />} />
                 <Route path="intelligence" element={<IntelligencePage />} />
-                <Route path="studio" element={<StudioPage />} />
-                <Route path="caption" element={<CaptionEnginePage />} />
-                <Route path="audio-hashtag" element={<AudioHashtagPage />} />
-                <Route path="voice" element={<VoiceOverStudioPage />} />
+                <Route path="studio" element={<Suspense fallback={<ScriptEngineSkeleton />}><StudioPage /></Suspense>} />
+                <Route path="caption" element={<Suspense fallback={<SplitPageSkeleton />}><CaptionEnginePage /></Suspense>} />
+                <Route path="audio-hashtag" element={<Suspense fallback={<GridPageSkeleton />}><AudioHashtagPage /></Suspense>} />
+                <Route path="voice" element={<Suspense fallback={<SplitPageSkeleton />}><VoiceOverStudioPage /></Suspense>} />
                 <Route path="trending" element={<TrendingAudioPage />} />
-                <Route path="video" element={<VideoStudioPage />} />
-                <Route path="history" element={<HistoryPage />} />
-                <Route path="referrals" element={<ReferralsPage />} />
-                <Route path="analytics" element={<AnalyticsPage />} />
-                <Route path="trend-scanner" element={<TrendScannerPage />} />
-                <Route path="settings" element={<SettingsPage />} />
+                <Route path="video" element={<Suspense fallback={<SplitPageSkeleton />}><VideoStudioPage /></Suspense>} />
+                <Route path="history" element={<Suspense fallback={<PageSkeleton />}><HistoryPage /></Suspense>} />
+                <Route path="referrals" element={<Suspense fallback={<PageSkeleton />}><ReferralsPage /></Suspense>} />
+                <Route path="analytics" element={<Suspense fallback={<PageSkeleton />}><AnalyticsPage /></Suspense>} />
+                <Route path="trend-scanner" element={<Suspense fallback={<TrendScannerSkeleton />}><TrendScannerPage /></Suspense>} />
+                <Route path="settings" element={<Suspense fallback={<SettingsSkeleton />}><SettingsPage /></Suspense>} />
               </Route>
               <Route path="/adminsh/auth" element={<AdminAuthPage />} />
               <Route path="/adminsh/auth/callback" element={<AdminAuthCallbackPage />} />

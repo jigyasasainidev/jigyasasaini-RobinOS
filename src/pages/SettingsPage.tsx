@@ -112,7 +112,7 @@ const SettingsPage = () => {
   const captionUsed = Number((lifecycle?.caption_usage as any)?.usage_count ?? 0);
 
   return (
-    <div className="pt-14 md:pt-0">
+    <div className="pt-14 md:pt-0 content-reveal">
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-1">
           <BrandMark size={18} withWordmark={false} className="drop-shadow-[0_0_12px_hsl(217_91%_60%/0.2)]" />
