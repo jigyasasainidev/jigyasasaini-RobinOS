@@ -49,6 +49,7 @@ import { BrandMark } from "@/components/BrandMark";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { subscribeMultiTable } from "@/lib/realtime/channelManager";
+import { AdminPWAInstall } from "@/components/admin/AdminPWAInstall";
 import {
   Sidebar,
   SidebarContent,
@@ -1790,6 +1791,14 @@ const AdminDashboard = () => {
                 </div>
               ))}
             </div>
+          </SectionCard>
+
+          {/* ── Admin PWA Install ── */}
+          <SectionCard
+            title="Admin App"
+            subtitle="Install RobinOS Admin as a native app on your device"
+          >
+            <AdminPWAInstall />
           </SectionCard>
         </div>
       </div>

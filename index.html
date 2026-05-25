@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
 
-    <!-- Viewport -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Viewport — viewport-fit=cover for iPhone notch / Dynamic Island -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <!-- Theme color (browser chrome) -->
     <meta name="theme-color" content="#0b1220" />
@@ -17,6 +17,12 @@
     <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64x64.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
+
+    <!-- Admin PWA: standalone fullscreen, safe-area support -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="RobinOS" />
 
     <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -154,5 +160,14 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- Service Worker registration — admin PWA shell caching -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' })
+            .catch(function (err) { console.warn('[SW] Registration failed:', err); });
+        });
+      }
+    </script>
   </body>
 </html>
