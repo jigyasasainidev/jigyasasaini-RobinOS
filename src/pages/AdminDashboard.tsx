@@ -1000,7 +1000,17 @@ const AdminDashboard = () => {
       .reduce((sum, s) => sum + Number(s.amount || 0), 0);
   }, [subscriptions]);
 
-  const activeSubscribers = useMemo(() => subscriptions.filter((s) => s.is_revenue_eligible && asSubscriptionStatus(s.status) === "active").length, [subscriptions]);
+  // Active subscribers: all users on a non-free plan with an active lifecycle state.
+  // Does NOT require is_revenue_eligible — admin grants are real active subscribers.
+  // is_revenue_eligible only gates MRR/revenue counting, not user counts.
+  const activeSubscribers = useMemo(() =>
+    subscriptions.filter((s) => {
+      const plan   = (s.plan ?? "").toLowerCase();
+      const status = (s.status ?? "").toLowerCase();
+      return plan !== "free" && plan !== ""
+        && ["active", "trialing", "expiring", "grace_period"].includes(status);
+    }).length,
+  [subscriptions]);
   const pendingWithdrawals = useMemo(() => withdrawals.filter((w) => asWithdrawStatus(w.status) === "pending"), [withdrawals]);
   const totalAffiliateEarnings = useMemo(() => affiliateCommissions.reduce((s, c) => s + Number(c.amount || 0), 0), [affiliateCommissions]);
 
@@ -1019,20 +1029,18 @@ const AdminDashboard = () => {
   const voiceGenerations = adminMetrics?.voice_generated   ?? 0;
   const videoGenerations = adminMetrics?.video_generated   ?? 0;
   // ── Free vs paid classification ───────────────────────────
-  // Source of truth: user_subscriptions table ONLY.
-  // A user is "paid" ONLY when:
-  //   1. They have an active/trialing subscription on a non-free plan AND
-  //   2. is_revenue_eligible = true (backed by a real verified payment)
-  // Manual admin upgrades set is_revenue_eligible = false and must never
-  // count toward paid user or revenue totals.
+  // Paid = any user on a non-free plan with an active/expiring/grace_period
+  // subscription — regardless of is_revenue_eligible.
+  // is_revenue_eligible only gates revenue counting (MRR), not user counts.
+  // Admin-granted plans are real paid users even if not revenue-eligible.
   const paidUserIds = useMemo(() => {
     const ids = new Set<string>();
     subscriptions.forEach((s) => {
-      const normalizedPlan = (s.plan ?? "").toLowerCase();
-      const normalizedStatus = (s.status ?? "").toLowerCase();
-      const isPaidPlan = normalizedPlan !== "free" && normalizedPlan !== "";
-      const isActiveBilling = normalizedStatus === "active" || normalizedStatus === "trialing";
-      if (isPaidPlan && isActiveBilling && s.is_revenue_eligible) ids.add(s.user_id);
+      const plan   = (s.plan ?? "").toLowerCase();
+      const status = (s.status ?? "").toLowerCase();
+      const isPaidPlan    = plan !== "free" && plan !== "";
+      const isActiveSub   = ["active", "trialing", "expiring", "grace_period"].includes(status);
+      if (isPaidPlan && isActiveSub) ids.add(s.user_id);
     });
     return ids;
   }, [subscriptions]);
