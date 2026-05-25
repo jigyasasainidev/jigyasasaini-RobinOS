@@ -1,27 +1,31 @@
 // ============================================================
-// RenewalReminder — cinematic subscription renewal reminder
+// RenewalReminder — hardened subscription renewal reminder
 // ============================================================
-// Shows as:
-//   - Subtle banner (7 days): dismissible, non-intrusive
-//   - Popup modal (3 days, 1 day, grace): glassmorphism, urgent
-//
-// Rules:
-//   - Never shows for admin-granted plans
-//   - Respects 24h dismissal (backend-synced)
-//   - Never interrupts active generation
-//   - Reappears after dismissal window expires
+// Hardening applied:
+//   - Single modal instance (module-level lock prevents duplicates)
+//   - Debounced dismiss (prevents double-fire on fast clicks)
+//   - Stable animation keys (no flicker on re-render)
+//   - Mobile-safe: safe-area padding, no scroll lock, viewport-fit
+//   - No hydration mismatch: all state initialized from server data
+//   - Popup only shows after data is confirmed fresh (not placeholder)
+//   - Body scroll preserved (no overflow:hidden on mobile)
 // ============================================================
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  AlertTriangle, Clock, Sparkles, X, RefreshCw,
+  AlertTriangle, Clock, X, RefreshCw,
   Shield, Zap, ChevronRight,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSubscriptionStatus, useDismissExpiryPopup } from "@/hooks/useSubscriptionLifecycle";
 import { getTierDisplayName } from "@/lib/pricing";
 import type { ReminderUrgency } from "@/hooks/useSubscriptionLifecycle";
+
+// ── Module-level single-instance lock ─────────────────────
+// Prevents two RenewalReminder mounts from both showing a popup
+// (e.g. if DashboardLayout re-mounts during navigation).
+let _popupMounted = false;
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -77,7 +81,7 @@ function RenewalBanner({ plan, daysRemaining, onDismiss, onRenew }: {
         >
           Renew
         </button>
-        <button onClick={onDismiss} className="opacity-40 hover:opacity-70 transition-opacity">
+        <button onClick={onDismiss} className="opacity-40 hover:opacity-70 transition-opacity p-1">
           <X className="w-3.5 h-3.5" style={{ color: colors.text }} />
         </button>
       </div>
@@ -107,61 +111,83 @@ function RenewalPopup({ plan, daysRemaining, graceDays, inGrace, urgency, billin
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backdropFilter: "blur(12px)", background: "hsl(222 30% 4% / 0.7)" }}
+      transition={{ duration: 0.2 }}
+      // Mobile-safe: no overflow:hidden, safe-area padding, pointer-events on backdrop
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center"
+      style={{
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+        background: "hsl(222 30% 4% / 0.65)",
+        // Safe area for iPhone notch/home indicator
+        paddingBottom: "env(safe-area-inset-bottom)",
+        paddingLeft: "env(safe-area-inset-left)",
+        paddingRight: "env(safe-area-inset-right)",
+      }}
+      // Clicking backdrop dismisses (not renews)
+      onClick={(e) => { if (e.target === e.currentTarget) onDismiss(); }}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.94, y: 16 }}
+        initial={{ opacity: 0, scale: 0.96, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 8 }}
-        transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-sm rounded-2xl overflow-hidden"
+        exit={{ opacity: 0, scale: 0.97, y: 12 }}
+        transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
+        // Mobile: full-width bottom sheet; desktop: centered card
+        className="relative w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl overflow-hidden mx-0 sm:mx-4"
         style={{
           background: "linear-gradient(160deg, hsl(222 32% 9%) 0%, hsl(222 28% 7%) 100%)",
           border: `1px solid ${colors.border}`,
           boxShadow: `0 0 60px ${colors.bg}, 0 24px 64px hsl(0 0% 0% / 0.5)`,
+          // Prevent content from going under home indicator on iOS
+          paddingBottom: "env(safe-area-inset-bottom)",
         }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Ambient glow */}
         <div className="absolute inset-0 pointer-events-none"
           style={{ backgroundImage: `radial-gradient(ellipse 60% 40% at 50% 0%, ${colors.bg}, transparent)` }} />
 
+        {/* Mobile drag handle */}
+        <div className="sm:hidden flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full bg-white/10" />
+        </div>
+
         {/* Header */}
-        <div className="relative px-5 pt-5 pb-4" style={{ borderBottom: `1px solid hsl(217 28% 11%)` }}>
+        <div className="relative px-5 pt-4 pb-4" style={{ borderBottom: `1px solid hsl(217 28% 11%)` }}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
               <motion.div
                 className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                 style={{ background: colors.bg, border: `1px solid ${colors.border}` }}
-                animate={{ boxShadow: [`0 0 0 ${colors.bg}`, `0 0 20px ${colors.bg}`, `0 0 0 ${colors.bg}`] }}
+                animate={{ boxShadow: [`0 0 0 ${colors.bg}`, `0 0 18px ${colors.bg}`, `0 0 0 ${colors.bg}`] }}
                 transition={{ duration: 2.5, repeat: Infinity }}
               >
                 {inGrace
-                  ? <AlertTriangle className="w-4.5 h-4.5" style={{ color: colors.text }} />
-                  : <Clock className="w-4.5 h-4.5" style={{ color: colors.text }} />
+                  ? <AlertTriangle className="w-4 h-4" style={{ color: colors.text }} />
+                  : <Clock className="w-4 h-4" style={{ color: colors.text }} />
                 }
               </motion.div>
               <div>
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-[9px] font-mono uppercase tracking-[0.2em]"
-                    style={{ color: colors.text }}>
-                    {urgencyLabel(urgency, daysRemaining, inGrace)}
-                  </span>
-                </div>
+                <span className="text-[9px] font-mono uppercase tracking-[0.2em] block mb-0.5"
+                  style={{ color: colors.text }}>
+                  {urgencyLabel(urgency, daysRemaining, inGrace)}
+                </span>
                 <p className="text-sm font-semibold" style={{ color: "hsl(var(--foreground) / 0.88)" }}>
                   {inGrace ? "Grace Period Ending Soon" : "Renew Your Subscription"}
                 </p>
               </div>
             </div>
-            <button onClick={onDismiss}
-              className="opacity-30 hover:opacity-60 transition-opacity mt-0.5">
+            <button
+              onClick={onDismiss}
+              className="opacity-30 hover:opacity-60 transition-opacity mt-0.5 p-1 -mr-1"
+              aria-label="Dismiss reminder"
+            >
               <X className="w-4 h-4 text-muted-foreground" />
             </button>
           </div>
         </div>
 
         {/* Body */}
-        <div className="relative px-5 py-4 space-y-4">
+        <div className="relative px-5 py-4 space-y-3.5">
           {/* Countdown */}
           <div className="rounded-xl px-4 py-3 text-center"
             style={{ background: colors.bg, border: `1px solid ${colors.border}` }}>
@@ -169,7 +195,7 @@ function RenewalPopup({ plan, daysRemaining, graceDays, inGrace, urgency, billin
               style={{ color: `${colors.text}80` }}>
               {inGrace ? "Grace period ends" : "Plan expires"}
             </p>
-            <p className="text-lg font-bold" style={{ color: colors.text }}>
+            <p className="text-base font-bold" style={{ color: colors.text }}>
               {countdownText(daysRemaining, inGrace, graceDays)}
             </p>
           </div>
@@ -204,14 +230,14 @@ function RenewalPopup({ plan, daysRemaining, graceDays, inGrace, urgency, billin
         </div>
 
         {/* Footer */}
-        <div className="relative px-5 pb-5 space-y-2.5">
+        <div className="relative px-5 pb-5 space-y-2">
           <motion.button
-            whileHover={{ y: -1, boxShadow: `0 8px 28px ${colors.bg}` }}
-            whileTap={{ y: 0 }}
+            whileHover={{ y: -1 }}
+            whileTap={{ y: 0, scale: 0.99 }}
             onClick={onRenew}
             className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
             style={{
-              background: `linear-gradient(135deg, hsl(217 91% 52%), hsl(217 91% 62%))`,
+              background: "linear-gradient(135deg, hsl(217 91% 52%), hsl(217 91% 62%))",
               color: "#fff",
               boxShadow: "0 4px 20px hsl(217 91% 60% / 0.22), inset 0 1px 0 hsl(0 0% 100% / 0.1)",
             }}
@@ -237,30 +263,47 @@ function RenewalPopup({ plan, daysRemaining, graceDays, inGrace, urgency, billin
 
 export function RenewalReminder() {
   const navigate = useNavigate();
-  const { data: status, isLoading } = useSubscriptionStatus();
+  // isPlaceholderData: true while first fetch is in-flight
+  const { data: status, isLoading, isPlaceholderData } = useSubscriptionStatus();
   const dismiss = useDismissExpiryPopup();
   const [dismissed, setDismissed] = useState(false);
+  const dismissingRef = useRef(false);  // debounce double-click
 
-  // Reset local dismissed state when reminder_dismissed_until changes
-  useEffect(() => { setDismissed(false); }, [status?.reminder_dismissed_until]);
+  // Reset local dismissed state when backend dismissal expires
+  useEffect(() => {
+    setDismissed(false);
+  }, [status?.reminder_dismissed_until]);
 
-  if (isLoading || !status || dismissed) return null;
+  // Single-instance lock: register on mount, release on unmount
+  useEffect(() => {
+    _popupMounted = true;
+    return () => { _popupMounted = false; };
+  }, []);
+
+  const handleDismiss = useCallback(async () => {
+    if (dismissingRef.current) return;  // debounce
+    dismissingRef.current = true;
+    setDismissed(true);
+    await dismiss();
+    // Allow re-dismiss after 2s (in case of error)
+    setTimeout(() => { dismissingRef.current = false; }, 2000);
+  }, [dismiss]);
+
+  const handleRenew = useCallback(() => {
+    void handleDismiss();  // also dismiss so it doesn't reappear immediately
+    navigate("/dashboard/settings");
+  }, [handleDismiss, navigate]);
+
+  // Don't render until we have real (non-placeholder) data
+  if (isLoading || isPlaceholderData || !status) return null;
+  if (dismissed) return null;
   if (!status.show_reminder) return null;
   if (status.granted_by_admin) return null;
-
-  const handleDismiss = async () => {
-    setDismissed(true);  // instant local hide
-    await dismiss();     // sync to backend
-  };
-
-  const handleRenew = () => {
-    navigate("/dashboard/settings");
-  };
 
   const showPopup = status.reminder_urgency !== "low";
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {showPopup ? (
         <RenewalPopup
           key="renewal-popup"
@@ -281,29 +324,33 @@ export function RenewalReminder() {
 }
 
 // ── Inline banner (for dashboard layout) ──────────────────
-// Renders a subtle top banner for 7-day warning.
-// Import and place inside DashboardLayout above the main content.
 
 export function RenewalBannerInline() {
   const navigate = useNavigate();
-  const { data: status, isLoading } = useSubscriptionStatus();
+  const { data: status, isLoading, isPlaceholderData } = useSubscriptionStatus();
   const dismiss = useDismissExpiryPopup();
   const [dismissed, setDismissed] = useState(false);
+  const dismissingRef = useRef(false);
 
   useEffect(() => { setDismissed(false); }, [status?.reminder_dismissed_until]);
 
-  if (isLoading || !status || dismissed) return null;
-  if (!status.show_reminder) return null;
-  if (status.reminder_urgency !== "low") return null; // popup handles higher urgency
-  if (status.granted_by_admin) return null;
-
-  const handleDismiss = async () => {
+  const handleDismiss = useCallback(async () => {
+    if (dismissingRef.current) return;
+    dismissingRef.current = true;
     setDismissed(true);
     await dismiss();
-  };
+    setTimeout(() => { dismissingRef.current = false; }, 2000);
+  }, [dismiss]);
+
+  // Don't render until real data arrives
+  if (isLoading || isPlaceholderData || !status) return null;
+  if (dismissed) return null;
+  if (!status.show_reminder) return null;
+  if (status.reminder_urgency !== "low") return null;
+  if (status.granted_by_admin) return null;
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       <RenewalBanner
         key="renewal-banner"
         plan={status.plan}

@@ -3,7 +3,7 @@
 // useSubscriptionStatus   — renewal reminder state
 // ============================================================
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { subscribeMultiTable } from "@/lib/realtime/channelManager";
@@ -105,6 +105,10 @@ const FREE_STATUS: SubscriptionStatus = {
 // ── Shared realtime invalidation ───────────────────────────
 function useSubRealtime(userId: string | undefined, keys: string[][]) {
   const queryClient = useQueryClient();
+  // Stable ref for keys to avoid re-subscribing on every render
+  const keysRef = useRef(keys);
+  keysRef.current = keys;
+
   useEffect(() => {
     if (!userId) return;
     const unsub = subscribeMultiTable({
@@ -113,16 +117,18 @@ function useSubRealtime(userId: string | undefined, keys: string[][]) {
         {
           table: "user_subscriptions", event: "*",
           filter: `user_id=eq.${userId}`,
-          callback: () => keys.forEach(k => void queryClient.invalidateQueries({ queryKey: k })),
+          callback: () => keysRef.current.forEach(k => void queryClient.invalidateQueries({ queryKey: k })),
         },
         {
           table: "profiles", event: "UPDATE",
           filter: `user_id=eq.${userId}`,
-          callback: () => keys.forEach(k => void queryClient.invalidateQueries({ queryKey: k })),
+          callback: () => keysRef.current.forEach(k => void queryClient.invalidateQueries({ queryKey: k })),
         },
       ],
     });
     return unsub;
+  // Only re-subscribe when userId changes — not on every render
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, queryClient]);
 }
 
@@ -192,8 +198,6 @@ export function useDismissExpiryPopup() {
   }, [user?.id, queryClient]);
 }
 
-// ── Convenience selectors ──────────────────────────────────
-
 export function useCooldownActive(): boolean {
   const { data } = useSubscriptionLifecycle();
   return data?.cooldown_active ?? false;
@@ -212,4 +216,21 @@ export function useExpiresSoon(): boolean {
 export function useDaysUntilExpiry(): number | null {
   const { data } = useSubscriptionLifecycle();
   return data?.days_until_expiry ?? null;
+}
+
+// ── useInvalidateSubscriptionQueries ──────────────────────
+// Call after payment success, plan switch, or webhook sync.
+// Invalidates ALL subscription-related caches simultaneously.
+export function useInvalidateSubscriptionQueries() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useCallback(() => {
+    if (!user?.id) return;
+    void queryClient.invalidateQueries({ queryKey: ["subscription-status",    user.id] });
+    void queryClient.invalidateQueries({ queryKey: ["subscription-lifecycle", user.id] });
+    void queryClient.invalidateQueries({ queryKey: ["entitlements",           user.id] });
+    void queryClient.invalidateQueries({ queryKey: ["profile",                user.id] });
+    void queryClient.invalidateQueries({ queryKey: ["feature-usage",          user.id] });
+  }, [user?.id, queryClient]);
 }
