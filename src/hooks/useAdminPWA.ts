@@ -1,11 +1,15 @@
 // ============================================================
 // useAdminPWA — PWA install prompt + SW registration
 // ============================================================
-// Manages:
-//   1. Service worker registration (admin SW at /sw.js)
-//   2. beforeinstallprompt capture for custom install UI
-//   3. Install state persistence (localStorage)
-//   4. iOS detection for manual install instructions
+// Key insight: Chrome fires `beforeinstallprompt` on page load,
+// BEFORE React renders. We must capture it globally as early as
+// possible. This module uses a module-level variable to store
+// the deferred prompt so it survives React re-renders.
+//
+// Manifest swap: AdminRouteGuard injects admin-manifest.json via
+// Helmet. On first visit Chrome may have already evaluated the
+// default manifest.json. The DOM swap + SW registration together
+// make the app installable on subsequent visits / page reloads.
 // ============================================================
 
 import { useCallback, useEffect, useState } from "react";
@@ -20,6 +24,33 @@ interface BeforeInstallPromptEvent extends Event {
 type InstallState = "idle" | "available" | "installing" | "installed" | "ios" | "unsupported";
 
 const INSTALLED_KEY = "robinos_admin_pwa_installed";
+
+// ── Module-level deferred prompt store ────────────────────
+// Captured as early as possible — before React mounts.
+// This survives component unmount/remount cycles.
+let _deferredPrompt: BeforeInstallPromptEvent | null = null;
+let _promptListeners: Array<() => void> = [];
+
+function notifyListeners() {
+  _promptListeners.forEach((fn) => fn());
+}
+
+// Attach the global listener immediately when this module loads.
+// This runs before any React component mounts, ensuring we never
+// miss the beforeinstallprompt event.
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeinstallprompt", (e: Event) => {
+    e.preventDefault();
+    _deferredPrompt = e as BeforeInstallPromptEvent;
+    notifyListeners();
+  });
+
+  window.addEventListener("appinstalled", () => {
+    _deferredPrompt = null;
+    localStorage.setItem(INSTALLED_KEY, "true");
+    notifyListeners();
+  });
+}
 
 function isIOS(): boolean {
   return (
@@ -36,8 +67,15 @@ function isInStandaloneMode(): boolean {
 }
 
 export function useAdminPWA() {
-  const [installState, setInstallState] = useState<InstallState>("idle");
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [installState, setInstallState] = useState<InstallState>(() => {
+    // Compute initial state synchronously
+    if (isInStandaloneMode()) return "installed";
+    if (localStorage.getItem(INSTALLED_KEY) === "true") return "installed";
+    if (isIOS()) return "ios";
+    if (_deferredPrompt) return "available";
+    return "idle";
+  });
+
   const [swRegistered, setSwRegistered] = useState(false);
 
   // ── Register service worker ────────────────────────────
@@ -50,10 +88,8 @@ export function useAdminPWA() {
           scope: "/",
           updateViaCache: "none",
         });
-
         setSwRegistered(true);
-
-        // Check for updates every 60 minutes
+        // Check for SW updates every 60 minutes
         const interval = setInterval(() => reg.update(), 60 * 60 * 1000);
         return () => clearInterval(interval);
       } catch (err) {
@@ -64,71 +100,68 @@ export function useAdminPWA() {
     void register();
   }, []);
 
-  // ── Detect install state ───────────────────────────────
+  // ── Subscribe to global prompt store changes ───────────
   useEffect(() => {
-    // Already running as installed PWA
-    if (isInStandaloneMode()) {
-      setInstallState("installed");
-      return;
-    }
+    // If already in a terminal state, no need to listen
+    if (installState === "installed" || installState === "ios") return;
 
-    // Previously installed (user dismissed or installed)
-    if (localStorage.getItem(INSTALLED_KEY) === "true") {
-      setInstallState("installed");
-      return;
-    }
-
-    // iOS — no beforeinstallprompt, show manual instructions
-    if (isIOS()) {
-      setInstallState("ios");
-      return;
-    }
-
-    // Listen for Chrome/Edge/Android install prompt
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setInstallState("available");
+    const listener = () => {
+      if (localStorage.getItem(INSTALLED_KEY) === "true" || isInStandaloneMode()) {
+        setInstallState("installed");
+      } else if (_deferredPrompt) {
+        setInstallState("available");
+      } else {
+        setInstallState("idle");
+      }
     };
 
-    window.addEventListener("beforeinstallprompt", handler);
-
-    // Listen for successful install
-    const installedHandler = () => {
-      setInstallState("installed");
-      localStorage.setItem(INSTALLED_KEY, "true");
-    };
-    window.addEventListener("appinstalled", installedHandler);
+    _promptListeners.push(listener);
+    // Also check immediately in case prompt arrived between render and effect
+    listener();
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handler);
-      window.removeEventListener("appinstalled", installedHandler);
+      _promptListeners = _promptListeners.filter((fn) => fn !== listener);
+    };
+  }, [installState]);
+
+  // ── Swap manifest link in DOM immediately ──────────────
+  // Helmet handles this declaratively, but we also do it imperatively
+  // here so it happens as early as possible on mount.
+  useEffect(() => {
+    const existing = document.querySelector('link[rel="manifest"]') as HTMLLinkElement | null;
+    if (existing && existing.href !== `${window.location.origin}/admin-manifest.json`) {
+      existing.href = "/admin-manifest.json";
+    }
+    return () => {
+      // Restore original manifest when leaving admin area
+      const link = document.querySelector('link[rel="manifest"]') as HTMLLinkElement | null;
+      if (link) link.href = "/manifest.json";
     };
   }, []);
 
   // ── Trigger install prompt ─────────────────────────────
   const triggerInstall = useCallback(async () => {
-    if (!deferredPrompt) return;
+    if (!_deferredPrompt) return;
 
     setInstallState("installing");
+    const prompt = _deferredPrompt;
     try {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
+      await prompt.prompt();
+      const { outcome } = await prompt.userChoice;
 
       if (outcome === "accepted") {
         setInstallState("installed");
         localStorage.setItem(INSTALLED_KEY, "true");
+        _deferredPrompt = null;
       } else {
         setInstallState("available");
       }
     } catch {
       setInstallState("available");
-    } finally {
-      setDeferredPrompt(null);
     }
-  }, [deferredPrompt]);
+  }, []);
 
-  // ── Dismiss (don't show again this session) ────────────
+  // ── Dismiss ────────────────────────────────────────────
   const dismissInstall = useCallback(() => {
     setInstallState("idle");
   }, []);

@@ -1,9 +1,9 @@
 {
   "name": "RobinOS Admin",
-  "short_name": "RobinOS",
+  "short_name": "RobinOS Admin",
   "description": "RobinOS Founder Command Center — manage users, revenue, affiliates, and platform operations.",
   "start_url": "/adminsh/dashboard",
-  "scope": "/adminsh/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#030507",

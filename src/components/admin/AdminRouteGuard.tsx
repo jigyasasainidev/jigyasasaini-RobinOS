@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useState, useCallback } from "react";
+import { Helmet } from "react-helmet-async";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -186,5 +187,14 @@ export function AdminRouteGuard({ children }: { children: ReactNode }) {
 
   // All checks passed
   console.debug("[AdminRouteGuard] all checks passed → rendering dashboard");
-  return <>{children}</>;
+  return (
+    <>
+      {/* Swap manifest to admin-manifest.json so Chrome fires beforeinstallprompt
+          for the admin PWA (scope /adminsh/, start_url /adminsh/dashboard) */}
+      <Helmet>
+        <link rel="manifest" href="/admin-manifest.json" />
+      </Helmet>
+      {children}
+    </>
+  );
 }
