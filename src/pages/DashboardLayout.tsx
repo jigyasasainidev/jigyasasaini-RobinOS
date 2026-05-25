@@ -7,6 +7,7 @@ import { useFreeTrialStatus, useProfile, useSubscriptionExpiry } from "@/hooks/u
 import { useEntitlementsLoading, useIsFree } from "@/hooks/useEntitlements";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { OnboardingPopup } from "@/components/OnboardingPopup";
+import { RenewalReminder, RenewalBannerInline } from "@/components/RenewalReminder";
 import { db } from "@/lib/cloudDb";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
@@ -252,6 +253,9 @@ const DashboardLayout = () => {
           </AnimatePresence>
           <RouteErrorBoundary>
             <Suspense fallback={<PageSkeleton />}>
+          {/* Renewal banner — 7-day warning, inline above content */}
+          <RenewalBannerInline />
+
               <Outlet />
             </Suspense>
           </RouteErrorBoundary>
@@ -260,6 +264,9 @@ const DashboardLayout = () => {
 
       {/* Forced upgrade for expired users (free trial OR paid subscription) */}
       <UpgradeDialog open={showUpgrade} forced onOpenChange={setShowUpgrade} />
+
+      {/* Renewal reminder — popup for 3d/1d/grace, banner for 7d */}
+      <RenewalReminder />
 
       {/* Onboarding popup for new users */}
       {showOnboarding && <OnboardingPopup onComplete={() => setShowOnboarding(false)} />}

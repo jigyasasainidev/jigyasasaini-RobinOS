@@ -144,6 +144,24 @@ const SettingsPage = () => {
           </motion.div>
         )}
 
+        {/* ── Grace period banner ── */}
+        {(lifecycle as any)?.in_grace_period && !isFree && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 flex items-start gap-3"
+          >
+            <AlertTriangle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-foreground">Grace Period Active</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Your subscription has expired. You have {(lifecycle as any).grace_days_remaining ?? 3} day{((lifecycle as any).grace_days_remaining ?? 3) === 1 ? "" : "s"} of grace period remaining.
+                Renew now to avoid losing access.
+              </p>
+            </div>
+          </motion.div>
+        )}
+
         {/* ── Cooldown warning ── */}
         {lifecycle?.cooldown_active && (
           <motion.div
