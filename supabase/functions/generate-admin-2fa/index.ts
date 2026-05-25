@@ -57,12 +57,19 @@ function toBase32(bytes: Uint8Array): string {
 
 // ── Admin verification ─────────────────────────────────────
 async function verifyAdmin(authHeader: string): Promise<{ userId: string; email: string } | null> {
-  const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
-  const token    = authHeader.replace("Bearer ", "");
-  const { data: { user }, error } = await supabase.auth.getUser(token);
+  const serviceClient = createClient(SUPABASE_URL, SERVICE_KEY);
+  const token         = authHeader.replace("Bearer ", "");
+
+  // Verify JWT with service client (has permission to call auth.getUser)
+  const { data: { user }, error } = await serviceClient.auth.getUser(token);
   if (error || !user) return null;
 
-  const { data } = await supabase.rpc("get_admin_access");
+  // Use anon key + user's JWT so auth.uid() works inside the RPC
+  const ANON_KEY   = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data } = await userClient.rpc("get_admin_access");
   const access = (data ?? {}) as { is_admin?: boolean };
   if (!access.is_admin) return null;
 
