@@ -1713,18 +1713,19 @@ const AdminDashboard = () => {
             </div>
           </SectionCard>
 
-          <SectionCard title="JVZoo Affiliate Launch Controls" subtitle="Affiliate page visibility, video, CTA, and button text">
+          <SectionCard title="Launch Partners Page Controls" subtitle="Affiliate page visibility, video, CTA, and button text — controls /launch-partners route">
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Affiliate Page</p>
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Affiliate Page Visibility</p>
                 <select
                   value={settingsDraft.jvzoo_affiliate_enabled ? "true" : "false"}
                   onChange={(e) => setSettingsDraft((s) => ({ ...s, jvzoo_affiliate_enabled: e.target.value === "true" }))}
                   className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground"
                 >
-                  <option value="false">⬤ HIDDEN — /jvzooaffiliate redirects to homepage</option>
-                  <option value="true">● VISIBLE — /jvzooaffiliate publicly accessible</option>
+                  <option value="false">⬤ HIDDEN — /launch-partners redirects to homepage</option>
+                  <option value="true">● VISIBLE — /launch-partners publicly accessible</option>
                 </select>
+                <p className="text-[9px] font-mono text-muted-foreground/25">Current: {settingsDraft.jvzoo_affiliate_enabled ? "● VISIBLE" : "⬤ HIDDEN"} · Save to apply</p>
               </div>
               <div className="space-y-1.5">
                 <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Demo Video URL</p>

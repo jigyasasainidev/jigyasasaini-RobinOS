@@ -227,7 +227,7 @@ function StickyJoinCTA({ ctaUrl, btnText }: { ctaUrl: string; btnText: string })
           className="fixed bottom-6 right-6 z-50"
         >
           <motion.a
-            href={affiliateCtaUrl} target="_blank" rel="noopener noreferrer"
+            href={ctaUrl} target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold text-white backdrop-blur-xl"
             style={{
               background: "linear-gradient(135deg, hsl(142 70% 38%), hsl(142 65% 31%))",
@@ -273,13 +273,17 @@ export default function JVZooAffiliatePage() {
   const { data: promoAssets = [] }     = useAffiliatePromoAssets();
 
   useEffect(() => {
-    if (!isLoading && settings && settings.jvzoo_affiliate_enabled === false) {
+    // Only redirect if settings loaded AND explicitly set to false
+    // null settings (no DB row) or undefined = don't redirect
+    if (!isLoading && settings !== null && settings !== undefined && settings.jvzoo_affiliate_enabled === false) {
       navigate("/", { replace: true });
     }
   }, [settings, isLoading, navigate]);
 
   if (isLoading) return null;
-  if (settings && settings.jvzoo_affiliate_enabled === false) return null;
+  // Show page when: settings is null (no row), undefined, or jvzoo_affiliate_enabled is true/null
+  // Only block when explicitly false
+  if (settings !== null && settings !== undefined && settings.jvzoo_affiliate_enabled === false) return null;
 
   const videoUrl = settings?.jvzoo_affiliate_demo_video_url ?? null;
   const btnText  = settings?.jvzoo_affiliate_button_text?.trim() || "Join Affiliate Program";
