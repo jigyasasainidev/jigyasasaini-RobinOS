@@ -21,6 +21,7 @@ const DashboardLayout = lazy(() => import("./pages/DashboardLayout"));
 const IntelligencePage = lazy(lazyWithRetry(() => import("./pages/IntelligencePage"), "dashboard-intelligence"));
 const StudioPage = lazy(lazyWithRetry(() => import("./pages/StudioPage"), "dashboard-studio"));
 const CaptionEnginePage = lazy(lazyWithRetry(() => import("./pages/CaptionEnginePage"), "dashboard-caption"));
+const AudioHashtagPage = lazy(lazyWithRetry(() => import("./pages/AudioHashtagPage"), "dashboard-audio-hashtag"));
 const VoiceOverStudioPage = lazy(lazyWithRetry(() => import("./pages/VoiceOverStudioPage"), "dashboard-voice"));
 const TrendingAudioPage = lazy(lazyWithRetry(() => import("./pages/TrendingAudioPage"), "dashboard-trending"));
 const VideoStudioPage = lazy(lazyWithRetry(() => import("./pages/VideoStudioPage"), "dashboard-video"));
@@ -136,12 +137,14 @@ const App = () => (
               <Route path="/auth" element={<Navigate to="/login" replace />} />
               <Route path="/auth/callback" element={<AuthCallbackPage />} />
               <Route path="/dashboard" element={<DashboardLayout />}>
-                <Route index element={<Navigate to="caption-engine" replace />} />
-                <Route path="intelligence" element={<Navigate to="caption-engine" replace />} />
-                <Route path="trending"     element={<Navigate to="caption-engine" replace />} />
+                <Route index element={<Navigate to="trend-scanner" replace />} />
+                <Route path="intelligence" element={<Navigate to="trend-scanner" replace />} />
+                <Route path="trending"     element={<Navigate to="audio-hashtag" replace />} />
+                <Route path="caption-engine" element={<Navigate to="caption" replace />} />
                 <Route path="intelligence" element={<IntelligencePage />} />
                 <Route path="studio" element={<StudioPage />} />
-                <Route path="caption-engine" element={<CaptionEnginePage />} />
+                <Route path="caption" element={<CaptionEnginePage />} />
+                <Route path="audio-hashtag" element={<AudioHashtagPage />} />
                 <Route path="voice" element={<VoiceOverStudioPage />} />
                 <Route path="trending" element={<TrendingAudioPage />} />
                 <Route path="video" element={<VideoStudioPage />} />

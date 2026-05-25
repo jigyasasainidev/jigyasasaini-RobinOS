@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Zap, PenTool, Settings, LogOut, Clock, Link2, Crown, Mic, Film, BarChart3, Type, Flag, TrendingUp } from "lucide-react";
+import { Zap, PenTool, Settings, LogOut, Clock, Link2, Crown, Mic, Film, BarChart3, Type, Flag, TrendingUp, Music, Hash } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlanKey, useIsProOrAbove, useIsAgency } from "@/hooks/useEntitlements";
 import { Badge } from "@/components/ui/badge";
@@ -16,11 +16,12 @@ const sidebarSections = [
   {
     label: "CREATE",
     items: [
-      { to: "/dashboard/trend-scanner",  label: "Trend Scanner",      icon: TrendingUp },
-      { to: "/dashboard/studio",         label: "Script Engine",      icon: PenTool },
-      { to: "/dashboard/voice",          label: "Voice Studio",       icon: Mic },
-      { to: "/dashboard/video",          label: "Video Studio",       icon: Film },
-      { to: "/dashboard/caption-engine", label: "Caption & Hashtags", icon: Type },
+      { to: "/dashboard/trend-scanner",  label: "Trend Scanner",  icon: TrendingUp },
+      { to: "/dashboard/studio",         label: "Script Engine",  icon: PenTool },
+      { to: "/dashboard/voice",          label: "Voice Studio",   icon: Mic },
+      { to: "/dashboard/video",          label: "Video Studio",   icon: Film },
+      { to: "/dashboard/audio-hashtag",  label: "Audio & Hashtag",icon: Music },
+      { to: "/dashboard/caption",        label: "Caption",        icon: Type },
     ],
   },
   {
@@ -43,10 +44,10 @@ const sidebarSections = [
 const bottomNavItems = [
   { to: "/dashboard/trend-scanner",  label: "Trends",    icon: TrendingUp },
   { to: "/dashboard/studio",         label: "Script",    icon: PenTool },
-  { to: "/dashboard/caption-engine", label: "Publish",   icon: Type },
+  { to: "/dashboard/audio-hashtag",  label: "Audio",     icon: Music },
+  { to: "/dashboard/caption",        label: "Caption",   icon: Type },
   { to: "/dashboard/voice",          label: "Voice",     icon: Mic },
   { to: "/dashboard/video",          label: "Video",     icon: Film },
-  { to: "/dashboard/analytics",      label: "Analytics", icon: BarChart3 },
   { to: "/dashboard/settings",       label: "Settings",  icon: Settings },
 ];
 
