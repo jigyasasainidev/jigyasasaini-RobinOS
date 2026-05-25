@@ -765,34 +765,50 @@ const AdminDashboard = () => {
 
   // ── Admin dashboard metrics — authoritative aggregation ──
   // Reads from feature_usage + usage_tracking (the actual tables
-  // that edge functions write to). Replaces the broken ai_generations
-  // query which nothing writes to.
+  // ── Platform analytics — single authoritative RPC ─────────
+  // get_platform_analytics() aggregates from:
+  //   - user_subscriptions (MRR via plan key prices, not amount field)
+  //   - feature_usage + usage_tracking (AI telemetry)
+  //   - subscription history (growth/churn)
   const adminMetricsQuery = useQuery({
     queryKey: ["admin-dashboard-metrics-v1"],
     queryFn: async (): Promise<{
-      scripts_generated: number;
-      trend_searches: number;
-      caption_generated: number;
-      voice_generated: number;
-      video_generated: number;
-      estimated_ai_cost: number;
+      mrr: number; arr: number; growth_rate: number; churn_rate: number;
+      total_users: number; active_subscribers: number;
+      scripts_generated: number; trend_searches: number;
+      caption_generated: number; voice_generated: number; video_generated: number;
+      estimated_ai_cost: number; affiliate_earnings: number; pending_withdrawals: number;
     }> => {
-      const { data, error } = await (db as any).rpc("get_admin_dashboard_metrics");
+      const { data, error } = await (db as any).rpc("get_platform_analytics");
       if (error) {
-        console.warn("[AdminDashboard] metrics RPC failed:", error.message);
-        return { scripts_generated: 0, trend_searches: 0, caption_generated: 0, voice_generated: 0, video_generated: 0, estimated_ai_cost: 0 };
+        console.warn("[AdminDashboard] platform analytics RPC failed:", error.message);
+        return {
+          mrr: 0, arr: 0, growth_rate: 0, churn_rate: 0,
+          total_users: 0, active_subscribers: 0,
+          scripts_generated: 0, trend_searches: 0,
+          caption_generated: 0, voice_generated: 0, video_generated: 0,
+          estimated_ai_cost: 0, affiliate_earnings: 0, pending_withdrawals: 0,
+        };
       }
       return {
-        scripts_generated: Number(data?.scripts_generated ?? 0),
-        trend_searches:    Number(data?.trend_searches    ?? 0),
-        caption_generated: Number(data?.caption_generated ?? 0),
-        voice_generated:   Number(data?.voice_generated   ?? 0),
-        video_generated:   Number(data?.video_generated   ?? 0),
-        estimated_ai_cost: Number(data?.estimated_ai_cost ?? 0),
+        mrr:                 Number(data?.mrr                 ?? 0),
+        arr:                 Number(data?.arr                 ?? 0),
+        growth_rate:         Number(data?.growth_rate         ?? 0),
+        churn_rate:          Number(data?.churn_rate          ?? 0),
+        total_users:         Number(data?.total_users         ?? 0),
+        active_subscribers:  Number(data?.active_subscribers  ?? 0),
+        scripts_generated:   Number(data?.scripts_generated   ?? 0),
+        trend_searches:      Number(data?.trend_searches      ?? 0),
+        caption_generated:   Number(data?.caption_generated   ?? 0),
+        voice_generated:     Number(data?.voice_generated     ?? 0),
+        video_generated:     Number(data?.video_generated     ?? 0),
+        estimated_ai_cost:   Number(data?.estimated_ai_cost   ?? 0),
+        affiliate_earnings:  Number(data?.affiliate_earnings  ?? 0),
+        pending_withdrawals: Number(data?.pending_withdrawals ?? 0),
       };
     },
     enabled: !!isAdmin,
-    staleTime: 60 * 1000,   // 1 min — metrics don't need sub-second freshness
+    staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 
@@ -959,42 +975,31 @@ const AdminDashboard = () => {
     platformSettingsQuery.error,
   ].filter(Boolean);
 
+  // monthlyRevenue: frontend fallback used only while adminMetricsQuery is loading
   const monthlyRevenue = useMemo(() => {
     return subscriptions
       .filter((s) => s.is_revenue_eligible && asSubscriptionStatus(s.status) === "active")
       .reduce((sum, s) => sum + Number(s.amount || 0), 0);
   }, [subscriptions]);
 
-  const previousMonthlyRevenue = useMemo(() => {
-    const now = Date.now();
-    const month = 30 * 24 * 60 * 60 * 1000;
-    return subscriptions
-      .filter((s) => s.is_revenue_eligible && asSubscriptionStatus(s.status) === "active" && new Date(s.created_at).getTime() < now - month)
-      .reduce((sum, s) => sum + Number(s.amount || 0), 0);
-  }, [subscriptions]);
-
-  const mrr = monthlyRevenue;
-  const arr = mrr * 12;
-
-  const growthPercent = useMemo(() => {
-    if (previousMonthlyRevenue <= 0) return monthlyRevenue > 0 ? 100 : 0;
-    return ((monthlyRevenue - previousMonthlyRevenue) / previousMonthlyRevenue) * 100;
-  }, [monthlyRevenue, previousMonthlyRevenue]);
-
   const activeSubscribers = useMemo(() => subscriptions.filter((s) => s.is_revenue_eligible && asSubscriptionStatus(s.status) === "active").length, [subscriptions]);
   const pendingWithdrawals = useMemo(() => withdrawals.filter((w) => asWithdrawStatus(w.status) === "pending"), [withdrawals]);
   const totalAffiliateEarnings = useMemo(() => affiliateCommissions.reduce((s, c) => s + Number(c.amount || 0), 0), [affiliateCommissions]);
 
-  // ── Authoritative metrics from get_admin_dashboard_metrics() ──
-  // These were previously reading from ai_generations (empty table).
-  // Now reading from feature_usage + usage_tracking (actual sources).
+  // ── Authoritative metrics from get_platform_analytics() ──
+  // MRR uses plan key prices (not amount field — amount=0 for admin grants).
+  // Growth/churn from subscription history. AI telemetry from feature_usage.
   const adminMetrics = adminMetricsQuery.data;
+  const mrr           = adminMetrics?.mrr          ?? monthlyRevenue;
+  const arr           = adminMetrics?.arr          ?? mrr * 12;
+  const growthPercent = adminMetrics?.growth_rate  ?? 0;
+  const churnRate     = adminMetrics?.churn_rate   ?? 0;
+
   const scriptsGenerated = adminMetrics?.scripts_generated ?? 0;
   const trendSearches    = adminMetrics?.trend_searches    ?? 0;
   const estimatedAiCost  = adminMetrics?.estimated_ai_cost ?? 0;
-
-  const voiceGenerations = adminMetrics?.voice_generated ?? 0;
-  const videoGenerations = adminMetrics?.video_generated ?? 0;
+  const voiceGenerations = adminMetrics?.voice_generated   ?? 0;
+  const videoGenerations = adminMetrics?.video_generated   ?? 0;
   // ── Free vs paid classification ───────────────────────────
   // Source of truth: user_subscriptions table ONLY.
   // A user is "paid" ONLY when:
@@ -1017,12 +1022,9 @@ const AdminDashboard = () => {
   const paidUsers = useMemo(() => paidUserIds.size, [paidUserIds]);
   const freeUsers = useMemo(() => Math.max(0, profiles.length - paidUserIds.size), [profiles.length, paidUserIds]);
 
-  const churnRate = useMemo(() => {
-    if (!subscriptions.length) return 0;
-    const cancelled = subscriptions.filter((s) => asSubscriptionStatus(s.status) === "cancelled").length;
-    return (cancelled / subscriptions.length) * 100;
-  }, [subscriptions]);
-
+  // churnRate and growthPercent now come from get_platform_analytics() RPC above.
+  // userGrowthPercent (weekly user signup delta) is still frontend-computed for the
+  // "Total Users" metric card growth indicator.
   const userGrowthPercent = useMemo(() => {
     const now = Date.now();
     const week = 7 * 24 * 60 * 60 * 1000;
