@@ -1,189 +1,387 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, MousePointerClick, Copy, ArrowRight, X } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
+import {
+  ArrowRight, X, TrendingUp, PenTool, Mic, Hash,
+  Zap, Users, Target, Layers, Sparkles, CheckCircle2,
+} from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 
+// ── Types ──────────────────────────────────────────────────
 interface OnboardingPopupProps {
   onComplete: () => void;
 }
 
-const steps = [
-  {
-    id: 1,
-    title: "Let’s build your creator workflow.",
-    subtitle: "RobinOS adapts to your content style.",
-    content: "demo",
-  },
-  {
-    id: 2,
-    title: "Creator OS Flow",
-    subtitle: "Scan trends. Generate faster. Publish smarter.",
-    content: "steps",
-  },
-  {
-    id: 3,
-    title: "See RobinOS in Action",
-    subtitle: "From signal to script in seconds.",
-    content: "result",
-  },
-  {
-    id: 4,
-    title: "Creator Workspace Ready",
-    subtitle: "Launch your first RobinOS workflow.",
-    content: "cta",
-  },
+interface OnboardingPrefs {
+  goals:    string[];
+  platform: string | null;
+  style:    string | null;
+}
+
+const STORAGE_KEY_PREFS  = "robinos_onboarding_prefs";
+const STORAGE_KEY_DONE   = "robinos_onboarding_done";
+const STORAGE_KEY_PERM   = "robinos_onboarding_done_permanent";
+
+// ── Step data ──────────────────────────────────────────────
+const GOALS = [
+  { id: "trends",      icon: TrendingUp, label: "Find viral trends",       sub: "Before competitors do" },
+  { id: "scripts",     icon: PenTool,    label: "Generate scripts faster",  sub: "10× your output speed" },
+  { id: "hashtags",    icon: Hash,       label: "Grow with hashtags",       sub: "Platform-optimised picks" },
+  { id: "voice",       icon: Mic,        label: "Create voice overs",       sub: "ElevenLabs quality" },
+  { id: "consistency", icon: Layers,     label: "Post consistently",        sub: "Never run out of ideas" },
+  { id: "audience",    icon: Users,      label: "Build an audience",        sub: "Creator OS approach" },
 ];
 
+const PLATFORMS = [
+  { id: "TikTok",     emoji: "📱", label: "TikTok",     sub: "Short-form virality"   },
+  { id: "Instagram",  emoji: "📸", label: "Instagram",  sub: "Reels & Stories"       },
+  { id: "YouTube",    emoji: "▶️",  label: "YouTube",    sub: "Shorts & long-form"   },
+  { id: "Facebook",   emoji: "📘", label: "Facebook",   sub: "Community & reach"     },
+];
+
+const STYLES = [
+  { id: "Educational",   label: "Educational",    sub: "Teach & inform" },
+  { id: "Storytelling",  label: "Storytelling",   sub: "Narrative hooks" },
+  { id: "AI/Tech",       label: "AI / Tech",      sub: "Futuristic niche" },
+  { id: "Motivation",    label: "Motivation",     sub: "Inspire action" },
+  { id: "Lifestyle",     label: "Lifestyle",      sub: "Aesthetic content" },
+  { id: "Business",      label: "Business",       sub: "Growth & strategy" },
+];
+
+const TOTAL_STEPS = 5;
+
+// ── Selectable card ────────────────────────────────────────
+function SelectCard({
+  selected, onClick, children,
+}: { selected: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <motion.button
+      onClick={onClick}
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.97 }}
+      className="text-left rounded-xl px-3.5 py-3 transition-all duration-200 w-full"
+      style={selected ? {
+        background: "hsl(217 91% 60% / 0.1)",
+        border:     "1px solid hsl(217 91% 60% / 0.35)",
+        boxShadow:  "0 0 16px hsl(217 91% 60% / 0.08)",
+      } : {
+        background: "hsl(222 28% 7%)",
+        border:     "1px solid hsl(217 28% 13%)",
+      }}
+    >
+      {children}
+    </motion.button>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────
 export const OnboardingPopup = ({ onComplete }: OnboardingPopupProps) => {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [dontShowAgain, setDontShowAgain] = useState(false);
-  const [typedText, setTypedText] = useState("");
-  const demoInput = "How to grow on Instagram";
+  const navigate  = useNavigate();
+  const [step,    setStep]    = useState(0);
+  const [prefs,   setPrefs]   = useState<OnboardingPrefs>({ goals: [], platform: null, style: null });
+  const [leaving, setLeaving] = useState(false);
 
-  // Typing animation for step 1
-  useEffect(() => {
-    if (currentStep !== 0) return;
-    setTypedText("");
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < demoInput.length) {
-        setTypedText(demoInput.slice(0, i + 1));
-        i++;
-      } else {
-        clearInterval(interval);
-      }
-    }, 50);
-    return () => clearInterval(interval);
-  }, [currentStep]);
-
-  const handleClose = () => {
-    if (dontShowAgain) {
-      localStorage.setItem("robinos_onboarding_done_permanent", "true");
-    }
-    localStorage.setItem("robinos_onboarding_done", "true");
+  const persistAndClose = useCallback((permanent = false) => {
+    try { localStorage.setItem(STORAGE_KEY_PREFS, JSON.stringify(prefs)); } catch { /**/ }
+    localStorage.setItem(STORAGE_KEY_DONE, "true");
+    if (permanent) localStorage.setItem(STORAGE_KEY_PERM, "true");
     onComplete();
+  }, [prefs, onComplete]);
+
+  const next = () => {
+    if (step < TOTAL_STEPS - 1) setStep((s) => s + 1);
   };
 
-  const handleNext = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep((prev) => prev + 1);
-    } else {
-      handleClose();
-    }
+  const dismiss = () => persistAndClose(false);
+
+  const toggleGoal = (id: string) => {
+    setPrefs((p) => ({
+      ...p,
+      goals: p.goals.includes(id) ? p.goals.filter((g) => g !== id) : [...p.goals, id],
+    }));
   };
 
-  const renderStepContent = () => {
-    switch (currentStep) {
+  // Progress % — shows continuously filling bar
+  const progressPct = ((step) / (TOTAL_STEPS - 1)) * 100;
+
+  // ── Step renders ────────────────────────────────────────
+  const renderStep = () => {
+    switch (step) {
+
+      /* ── STEP 0: Welcome ──────────────────────────────── */
       case 0:
         return (
-          <div className="space-y-4">
-            <div className="rounded-xl bg-secondary/50 border border-border/40 p-4">
-              <p className="text-[10px] font-mono text-muted-foreground/60 mb-2">YOUR TOPIC</p>
-              <div className="flex items-center gap-2">
-                <span className="text-foreground text-sm">{typedText}</span>
-                <span className="w-0.5 h-4 bg-primary animate-pulse" />
-              </div>
-            </div>
-            <div className="flex justify-center">
-              <div className="w-px h-6 bg-gradient-to-b from-primary/60 to-transparent" />
-            </div>
-            <div className="rounded-xl bg-primary/5 border border-primary/20 p-4">
-              <p className="text-[10px] font-mono text-primary mb-2">🎬 VIRAL SCRIPT</p>
-              <p className="text-foreground/90 text-sm font-medium">"Stop posting randomly on Instagram..."</p>
-              <p className="text-foreground/70 text-sm mt-1">"You're killing your reach and don't even know it."</p>
-            </div>
-          </div>
-        );
-
-      case 1:
-        return (
-          <div className="space-y-4">
-            {[
-              { icon: "✍️", title: "Enter your topic", desc: "Type what your video is about" },
-              { icon: "⚡", title: "Click Generate", desc: "AI creates your script instantly" },
-              { icon: "🎬", title: "Copy & Record", desc: "Start recording immediately" },
-            ].map((step, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.15 }}
-                className="flex items-start gap-4 rounded-xl bg-secondary/30 border border-border/30 p-4"
-              >
-                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-lg shrink-0">
-                  {step.icon}
-                </div>
-                <div>
-                  <p className="text-foreground text-sm font-medium">{step.title}</p>
-                  <p className="text-muted-foreground text-xs mt-0.5">{step.desc}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        );
-
-      case 2:
-        return (
-          <div className="space-y-3">
-            <div className="rounded-xl bg-secondary/40 border border-border/30 p-3">
-              <p className="text-[10px] font-mono text-muted-foreground/60 mb-1">INPUT</p>
-              <p className="text-foreground text-sm">"How to grow on Instagram"</p>
-            </div>
-            <div className="flex justify-center">
-              <motion.div
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-                className="w-8 h-8 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center"
-              >
-                <Sparkles className="w-4 h-4 text-primary" />
-              </motion.div>
-            </div>
-            <div className="rounded-xl bg-primary/5 border border-primary/25 p-4 space-y-2">
-              <p className="text-[10px] font-mono text-primary">🎬 READY TO RECORD:</p>
-              <p className="text-foreground text-sm font-medium">"Stop posting randomly…"</p>
-              <p className="text-foreground/80 text-sm">"You're killing your reach…"</p>
-              <p className="text-foreground/70 text-sm">"Do this instead…"</p>
-              <div className="flex items-center gap-3 pt-2 mt-2 border-t border-border/20">
-                <span className="text-[10px] text-muted-foreground/50 font-mono">🎥 Front Camera</span>
-                <span className="text-[10px] text-muted-foreground/50 font-mono">🗣 Bold Tone</span>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 3:
-        return (
-          <div className="space-y-4 flex flex-col items-center">
+          <div className="flex flex-col items-center text-center gap-5">
+            {/* Animated logo glow */}
             <motion.div
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="w-16 h-16 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center mb-2"
+              className="relative w-16 h-16 rounded-2xl flex items-center justify-center"
+              style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.2)" }}
+              animate={{ boxShadow: [
+                "0 0 0 hsl(217 91% 60% / 0)",
+                "0 0 32px hsl(217 91% 60% / 0.2)",
+                "0 0 0 hsl(217 91% 60% / 0)",
+              ]}}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
             >
-              <Sparkles className="w-8 h-8 text-primary" />
+              <BrandMark size={28} withWordmark={false}
+                className="drop-shadow-[0_0_14px_hsl(217_91%_60%/0.5)]" />
             </motion.div>
-            <p className="text-muted-foreground text-sm text-center max-w-xs">
-              Your first creator workflow is one click away.
-            </p>
+
+            <div>
+              <p className="text-[9.5px] font-mono uppercase tracking-[0.25em] text-primary/55 mb-2">
+                AI Creator Operating System
+              </p>
+              <h2 className="text-xl font-semibold text-chrome leading-snug mb-3">
+                Your intelligent creator<br />workspace is ready.
+              </h2>
+              <p className="text-[12px] text-muted-foreground/60 leading-relaxed max-w-[280px] mx-auto">
+                RobinOS helps you find viral trends, generate scripts, and create content — faster than ever.
+              </p>
+            </div>
+
+            {/* Feature chips */}
+            <div className="flex flex-wrap justify-center gap-2">
+              {[
+                { icon: TrendingUp, label: "Trend Scanner" },
+                { icon: PenTool,    label: "Script Engine" },
+                { icon: Hash,       label: "Audio & Hashtags" },
+                { icon: Mic,        label: "Voice Studio" },
+              ].map(({ icon: Icon, label }) => (
+                <span key={label}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono"
+                  style={{ background: "hsl(217 28% 9%)", border: "1px solid hsl(217 28% 14%)", color: "hsl(215 16% 45%)" }}>
+                  <Icon className="w-3 h-3" strokeWidth={1.5} />{label}
+                </span>
+              ))}
+            </div>
+
             <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={handleClose}
-              className="btn-primary shimmer-btn w-full !py-3.5 text-base font-semibold"
-            >
-              Start Creating →
+              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+              onClick={next}
+              className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 glow-blue"
+              style={{ background: "hsl(217 91% 55%)", color: "#fff",
+                boxShadow: "0 4px 20px hsl(217 91% 60% / 0.25), inset 0 1px 0 hsl(0 0% 100% / 0.12)" }}>
+              Set up my workspace <ArrowRight className="w-4 h-4" />
             </motion.button>
-            <button
-              onClick={handleClose}
-              className="text-muted-foreground/50 text-xs hover:text-muted-foreground transition-colors"
-            >
-              Skip for now
+
+            <button onClick={dismiss}
+              className="text-[10.5px] text-muted-foreground/35 hover:text-muted-foreground/60 transition-colors">
+              Skip setup — go to dashboard
             </button>
           </div>
         );
 
-      default:
-        return null;
+      /* ── STEP 1: Creator goals ─────────────────────────── */
+      case 1:
+        return (
+          <div className="space-y-4">
+            <div>
+              <p className="text-[9.5px] font-mono uppercase tracking-[0.22em] text-primary/50 mb-1.5">
+                Step 1 of 3
+              </p>
+              <h2 className="text-lg font-semibold text-chrome mb-1">What are your creator goals?</h2>
+              <p className="text-[11.5px] text-muted-foreground/50">Select all that apply — we'll personalise RobinOS for you.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {GOALS.map(({ id, icon: Icon, label, sub }) => {
+                const sel = prefs.goals.includes(id);
+                return (
+                  <SelectCard key={id} selected={sel} onClick={() => toggleGoal(id)}>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <Icon className="w-3.5 h-3.5 shrink-0"
+                        style={{ color: sel ? "hsl(217 91% 68%)" : "hsl(215 16% 40%)" }}
+                        strokeWidth={1.6} />
+                      <p className="text-[11.5px] font-medium leading-tight"
+                        style={{ color: sel ? "hsl(217 91% 68%)" : "hsl(var(--foreground) / 0.8)" }}>
+                        {label}
+                      </p>
+                    </div>
+                    <p className="text-[9.5px] text-muted-foreground/38 pl-5.5">{sub}</p>
+                    {sel && (
+                      <div className="absolute top-2.5 right-2.5">
+                        <CheckCircle2 className="w-3 h-3 text-primary" />
+                      </div>
+                    )}
+                  </SelectCard>
+                );
+              })}
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
+              onClick={next} disabled={prefs.goals.length === 0}
+              className="w-full py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
+              style={{ background: "hsl(217 91% 55%)", color: "#fff" }}>
+              Continue <ArrowRight className="w-3.5 h-3.5" />
+            </motion.button>
+          </div>
+        );
+
+      /* ── STEP 2: Platform ──────────────────────────────── */
+      case 2:
+        return (
+          <div className="space-y-4">
+            <div>
+              <p className="text-[9.5px] font-mono uppercase tracking-[0.22em] text-primary/50 mb-1.5">
+                Step 2 of 3
+              </p>
+              <h2 className="text-lg font-semibold text-chrome mb-1">Where do you create content?</h2>
+              <p className="text-[11.5px] text-muted-foreground/50">RobinOS will optimise AI outputs for your platform.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {PLATFORMS.map(({ id, emoji, label, sub }) => {
+                const sel = prefs.platform === id;
+                return (
+                  <SelectCard key={id} selected={sel}
+                    onClick={() => setPrefs((p) => ({ ...p, platform: id }))}>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-base shrink-0">{emoji}</span>
+                      <p className="text-[11.5px] font-medium leading-tight"
+                        style={{ color: sel ? "hsl(217 91% 68%)" : "hsl(var(--foreground) / 0.8)" }}>
+                        {label}
+                      </p>
+                    </div>
+                    <p className="text-[9.5px] text-muted-foreground/38 pl-6">{sub}</p>
+                  </SelectCard>
+                );
+              })}
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
+              onClick={next} disabled={!prefs.platform}
+              className="w-full py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
+              style={{ background: "hsl(217 91% 55%)", color: "#fff" }}>
+              Continue <ArrowRight className="w-3.5 h-3.5" />
+            </motion.button>
+          </div>
+        );
+
+      /* ── STEP 3: Creator style ─────────────────────────── */
+      case 3:
+        return (
+          <div className="space-y-4">
+            <div>
+              <p className="text-[9.5px] font-mono uppercase tracking-[0.22em] text-primary/50 mb-1.5">
+                Step 3 of 3
+              </p>
+              <h2 className="text-lg font-semibold text-chrome mb-1">What's your content style?</h2>
+              <p className="text-[11.5px] text-muted-foreground/50">Helps RobinOS tailor your scripts and trend picks.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {STYLES.map(({ id, label, sub }) => {
+                const sel = prefs.style === id;
+                return (
+                  <SelectCard key={id} selected={sel}
+                    onClick={() => setPrefs((p) => ({ ...p, style: id }))}>
+                    <p className="text-[11.5px] font-medium leading-tight mb-0.5"
+                      style={{ color: sel ? "hsl(217 91% 68%)" : "hsl(var(--foreground) / 0.8)" }}>
+                      {label}
+                    </p>
+                    <p className="text-[9.5px] text-muted-foreground/38">{sub}</p>
+                  </SelectCard>
+                );
+              })}
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
+              onClick={next} disabled={!prefs.style}
+              className="w-full py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
+              style={{ background: "hsl(217 91% 55%)", color: "#fff" }}>
+              Activate workspace <ArrowRight className="w-3.5 h-3.5" />
+            </motion.button>
+          </div>
+        );
+
+      /* ── STEP 4: Activation / launch ───────────────────── */
+      case 4:
+        return (
+          <div className="flex flex-col items-center text-center gap-5">
+            {/* Animated success glow */}
+            <div className="relative flex items-center justify-center">
+              {[0, 1].map((i) => (
+                <motion.div key={i}
+                  className="absolute rounded-full"
+                  style={{ width: 64 + i * 36, height: 64 + i * 36, border: "1px solid hsl(142 65% 52% / 0.2)" }}
+                  animate={{ scale: [1, 1.5, 1.5], opacity: [0.5, 0, 0] }}
+                  transition={{ duration: 2.5, repeat: Infinity, delay: i * 0.5, ease: "easeOut" }} />
+              ))}
+              <motion.div
+                className="relative w-16 h-16 rounded-2xl flex items-center justify-center"
+                style={{ background: "hsl(142 65% 50% / 0.1)", border: "1px solid hsl(142 65% 50% / 0.25)" }}
+                initial={{ scale: 0.6, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}>
+                <CheckCircle2 className="w-7 h-7 text-emerald-400" strokeWidth={1.5} />
+              </motion.div>
+            </div>
+
+            <div>
+              <p className="text-[9.5px] font-mono uppercase tracking-[0.22em] text-emerald-400/60 mb-2">
+                Workspace Activated
+              </p>
+              <h2 className="text-xl font-semibold text-chrome mb-2 leading-snug">
+                RobinOS is personalised<br />for your workflow.
+              </h2>
+              <p className="text-[11.5px] text-muted-foreground/55 leading-relaxed max-w-[270px] mx-auto">
+                {prefs.platform
+                  ? `Optimised for ${prefs.platform} · ${prefs.style ?? "your"} content style`
+                  : "Your creator intelligence system is ready."}
+              </p>
+            </div>
+
+            {/* First action suggestion */}
+            <div className="w-full space-y-2">
+              <p className="text-[9.5px] font-mono text-muted-foreground/35 uppercase tracking-wider mb-1">
+                Where do you want to start?
+              </p>
+              {[
+                {
+                  icon: TrendingUp,
+                  label: "Discover trending topics",
+                  sub:   "Find viral content ideas now",
+                  path:  "/dashboard/trend-scanner",
+                  color: "hsl(217 91% 60%)",
+                },
+                {
+                  icon: PenTool,
+                  label: "Generate your first script",
+                  sub:   "Ready-to-record in seconds",
+                  path:  "/dashboard/studio",
+                  color: "hsl(280 65% 62%)",
+                },
+                {
+                  icon: Hash,
+                  label: "Find trending audio & hashtags",
+                  sub:   `Top signals for ${prefs.platform ?? "your platform"}`,
+                  path:  "/dashboard/audio-hashtag",
+                  color: "hsl(142 65% 52%)",
+                },
+              ].map(({ icon: Icon, label, sub, path, color }) => (
+                <motion.button key={path}
+                  whileHover={{ x: 3 }} whileTap={{ scale: 0.98 }}
+                  onClick={() => { persistAndClose(true); navigate(path); }}
+                  className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-left transition-all"
+                  style={{ background: "hsl(222 28% 7%)", border: "1px solid hsl(217 28% 12%)" }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ background: color.replace(")", " / 0.1)"), border: `1px solid ${color.replace(")", " / 0.22)")}` }}>
+                    <Icon className="w-4 h-4" style={{ color }} strokeWidth={1.5} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11.5px] font-medium text-foreground/85 leading-tight">{label}</p>
+                    <p className="text-[9.5px] text-muted-foreground/38 mt-0.5">{sub}</p>
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/25 shrink-0" />
+                </motion.button>
+              ))}
+            </div>
+
+            <button onClick={() => persistAndClose(true)}
+              className="text-[10.5px] text-muted-foreground/30 hover:text-muted-foreground/55 transition-colors">
+              Go to dashboard →
+            </button>
+          </div>
+        );
+
+      default: return null;
     }
   };
 
@@ -196,89 +394,59 @@ export const OnboardingPopup = ({ onComplete }: OnboardingPopupProps) => {
         className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       >
         {/* Backdrop */}
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-md" onClick={handleClose} />
-
-        {/* Popup */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.92, y: 20 }}
+          className="absolute inset-0"
+          style={{ background: "hsl(222 28% 4% / 0.82)", backdropFilter: "blur(12px)" }}
+          onClick={step === 0 ? dismiss : undefined}
+        />
+
+        {/* Panel */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.94, y: 24 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.92, y: 20 }}
-          transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="relative w-full max-w-md rounded-2xl border border-border/60 bg-card/95 backdrop-blur-xl shadow-[0_0_80px_hsl(217_91%_60%/0.08),0_20px_60px_hsl(0_0%_0%/0.5)] overflow-hidden"
+          exit={{ opacity: 0, scale: 0.94, y: 24 }}
+          transition={{ duration: 0.38, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="relative w-full max-w-md rounded-2xl overflow-hidden"
+          style={{
+            background: "linear-gradient(160deg, hsl(222 28% 8%) 0%, hsl(222 26% 6%) 100%)",
+            border:     "1px solid hsl(217 28% 14%)",
+            boxShadow:  "0 0 80px hsl(217 91% 60% / 0.08), 0 24px 64px hsl(0 0% 0% / 0.5), inset 0 1px 0 hsl(0 0% 100% / 0.04)",
+          }}
         >
-          {/* Top glow */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 bg-primary/10 blur-[60px] pointer-events-none" />
+          {/* Top ambient glow */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-24 pointer-events-none"
+            style={{ background: "radial-gradient(ellipse, hsl(217 91% 60% / 0.1) 0%, transparent 70%)" }} />
+
+          {/* Progress bar */}
+          <div className="relative h-[2px] w-full" style={{ background: "hsl(217 28% 11%)" }}>
+            <motion.div
+              className="absolute inset-y-0 left-0 rounded-full"
+              style={{ background: "linear-gradient(90deg, hsl(217 91% 52%), hsl(217 91% 68%))" }}
+              animate={{ width: `${progressPct}%` }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            />
+          </div>
 
           {/* Close button */}
-          <button
-            onClick={handleClose}
-            className="absolute top-4 right-4 z-10 w-7 h-7 rounded-lg bg-secondary/50 border border-border/30 flex items-center justify-center text-muted-foreground/50 hover:text-foreground transition-colors"
-          >
+          <button onClick={dismiss}
+            className="absolute top-4 right-4 z-10 w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+            style={{ background: "hsl(217 28% 9%)", border: "1px solid hsl(217 28% 14%)", color: "hsl(215 16% 40%)" }}>
             <X className="w-3.5 h-3.5" />
           </button>
 
-          <div className="relative p-6 pt-8">
-            <div className="flex justify-center mb-4">
-              <BrandMark size={24} withWordmark={false} className="drop-shadow-[0_0_20px_hsl(217_91%_60%/0.3)]" />
-            </div>
-            {/* Progress indicator */}
-            <div className="flex items-center gap-1.5 mb-6">
-              {steps.map((_, i) => (
-                <div
-                  key={i}
-                  className={`h-1 rounded-full transition-all duration-300 ${
-                    i <= currentStep
-                      ? "bg-primary flex-[2]"
-                      : "bg-border flex-1"
-                  }`}
-                />
-              ))}
-            </div>
-
-            {/* Step title */}
+          {/* Content */}
+          <div className="relative p-6 pt-5">
             <AnimatePresence mode="wait">
               <motion.div
-                key={currentStep}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.25 }}
+                key={step}
+                initial={{ opacity: 0, x: 16, filter: "blur(4px)" }}
+                animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                exit={{ opacity: 0, x: -16, filter: "blur(4px)" }}
+                transition={{ duration: 0.28, ease: "easeOut" }}
               >
-                <h2 className="text-chrome text-xl font-semibold mb-1">
-                  {steps[currentStep].title}
-                </h2>
-                <p className="text-muted-foreground text-sm mb-6">
-                  {steps[currentStep].subtitle}
-                </p>
-
-                {renderStepContent()}
+                {renderStep()}
               </motion.div>
             </AnimatePresence>
-
-            {/* Footer */}
-            {currentStep < 3 && (
-              <div className="mt-6 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="dont-show"
-                    checked={dontShowAgain}
-                    onCheckedChange={(v) => setDontShowAgain(!!v)}
-                    className="w-3.5 h-3.5"
-                  />
-                  <label htmlFor="dont-show" className="text-[11px] text-muted-foreground/50 cursor-pointer">
-                    Don't show again
-                  </label>
-                </div>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={handleNext}
-                  className="btn-primary !py-2.5 !px-6 flex items-center gap-2 text-sm"
-                >
-                  Next <ArrowRight className="w-3.5 h-3.5" />
-                </motion.button>
-              </div>
-            )}
           </div>
         </motion.div>
       </motion.div>
