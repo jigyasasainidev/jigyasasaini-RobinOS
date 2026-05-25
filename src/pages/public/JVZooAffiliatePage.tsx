@@ -206,7 +206,8 @@ function FaqItem({ q, a, delay }: { q: string; a: string; delay: number }) {
   );
 }
 
-// ── Sticky floating CTA ───────────────────────────────────
+// ── Sticky floating CTA ─────────────────────────────────
+// NOTE: Uses ctaUrl prop — do NOT reference outer scope affiliateCtaUrl here
 function StickyJoinCTA({ ctaUrl, btnText }: { ctaUrl: string; btnText: string }) {
   const [visible, setVisible] = useState(false);
 
