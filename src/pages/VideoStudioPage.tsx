@@ -20,13 +20,11 @@ const GEN_ENDPOINT   = `${SUPABASE_URL}/functions/v1/generate-video`;
 const POLL_ENDPOINT  = `${SUPABASE_URL}/functions/v1/poll-video`;
 const POLL_INTERVAL  = 6000; // ms
 
-// ── Aspect ratios ──────────────────────────────────────────
+// ── Aspect ratios — only what Kling supports via AI/ML API ───
 const ASPECT_RATIOS = [
-  { value: "9:16",  label: "9:16",  sub: "Reels · Shorts",   icon: "▯" },
-  { value: "16:9",  label: "16:9",  sub: "YouTube",          icon: "▬" },
-  { value: "1:1",   label: "1:1",   sub: "Square",           icon: "■" },
-  { value: "4:5",   label: "4:5",   sub: "Instagram",        icon: "▯" },
-  { value: "21:9",  label: "21:9",  sub: "Cinematic",        icon: "▬" },
+  { value: "16:9", label: "16:9", sub: "YouTube · Landscape", icon: "▬" },
+  { value: "9:16", label: "9:16", sub: "Reels · Shorts",      icon: "▯" },
+  { value: "1:1",  label: "1:1",  sub: "Square · Feed",       icon: "■" },
 ] as const;
 
 // ── Styles ─────────────────────────────────────────────────
@@ -633,7 +631,7 @@ const VideoStudioPage = () => {
                       </motion.div>
                       <p className="text-muted-foreground/28 text-xs font-mono">No video generated yet</p>
                       <p className="text-[10px] text-muted-foreground/18 font-mono">
-                        Powered by AI/ML API · Kling 2.1
+                        Powered by AI/ML API · Kling 2.5 Turbo
                       </p>
                     </motion.div>
                   )}

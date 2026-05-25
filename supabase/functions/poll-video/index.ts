@@ -6,7 +6,9 @@ import {
 } from "../_shared/entitlement.ts";
 import { trackFeatureUsage } from "../_shared/feature-usage.ts";
 
-const AIML_BASE = "https://api.aimlapi.com";
+// ── AI/ML API — universal video endpoint (same URL, GET for polling) ──
+// Docs: https://docs.aimlapi.com/api-references/video-models/kling-ai/v2.5-turbo-pro-text-to-video
+const AIML_VIDEO_URL = "https://api.aimlapi.com/v2/video/generations";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -41,7 +43,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── Parse body ─────────────────────────────────────────────
+    // ── Parse request ──────────────────────────────────────────
     const { generation_id } = await req.json();
     if (!generation_id) {
       return new Response(
@@ -51,33 +53,43 @@ Deno.serve(async (req) => {
     }
 
     // ── Poll AI/ML API ─────────────────────────────────────────
-    const pollRes = await fetch(
-      `${AIML_BASE}/v2/generate/video/kling-video/generation?generation_id=${encodeURIComponent(generation_id)}`,
-      {
-        method:  "GET",
-        headers: { "Authorization": `Bearer ${profile.video_api_key}` },
-      }
-    );
+    // GET /v2/video/generations?generation_id=<id>
+    const pollUrl = `${AIML_VIDEO_URL}?generation_id=${encodeURIComponent(generation_id)}`;
+    console.log("[poll-video] polling:", pollUrl.slice(-60));
+
+    const pollRes = await fetch(pollUrl, {
+      method:  "GET",
+      headers: {
+        "Authorization": `Bearer ${profile.video_api_key}`,
+        "Content-Type":  "application/json",
+      },
+    });
+
+    const pollText = await pollRes.text();
+    console.log("[poll-video] status:", pollRes.status, pollText.slice(0, 300));
 
     if (!pollRes.ok) {
-      const errText = await pollRes.text();
-      console.error("[poll-video] AI/ML API poll error:", pollRes.status, errText);
       return new Response(
-        JSON.stringify({ error: "Failed to check video status. Try again." }),
-        { status: 502, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+        JSON.stringify({ status: "processing", error: "Poll request failed. Will retry." }),
+        { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
       );
     }
 
-    const result = await pollRes.json();
-    console.log("[poll-video] status:", result?.status, "generation_id:", generation_id);
+    let result: Record<string, unknown>;
+    try {
+      result = JSON.parse(pollText);
+    } catch {
+      return new Response(
+        JSON.stringify({ status: "processing" }),
+        { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
+    }
 
-    // AI/ML API status values: "processing", "queued", "completed", "failed", "error"
-    const status    = result?.status ?? "processing";
-    const videoData = result?.video;
-    const videoUrl  = videoData?.url ?? null;
+    // AI/ML API status values: "queued" | "generating" | "completed" | "error"
+    const status   = String(result?.status ?? "queued");
+    const videoUrl = (result?.video as any)?.url ?? null;
 
     if (status === "completed" && videoUrl) {
-      // Fire analytics silently on completion
       trackFeatureUsage({ supabase, userId, feature: FEATURES.VIDEO_GENERATION });
       return new Response(
         JSON.stringify({ status: "succeeded", video_url: videoUrl }),
@@ -85,15 +97,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (status === "failed" || status === "error") {
-      const errMsg = result?.error ?? result?.message ?? "Video generation failed on the AI provider side.";
+    if (status === "error") {
+      const errMsg =
+        (result?.error as any)?.message ??
+        String(result?.error ?? "Video generation failed. Try again.");
       return new Response(
-        JSON.stringify({ status: "failed", error: errMsg, video_url: null }),
+        JSON.stringify({ status: "failed", error: errMsg }),
         { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
       );
     }
 
-    // Still processing / queued
+    // Still queued or generating
     return new Response(
       JSON.stringify({ status: "processing", video_url: null }),
       { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
@@ -102,8 +116,8 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error("[poll-video] unexpected error:", err);
     return new Response(
-      JSON.stringify({ error: "Internal server error." }),
-      { status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      JSON.stringify({ status: "processing", error: "Internal error. Will retry." }),
+      { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
     );
   }
 });
