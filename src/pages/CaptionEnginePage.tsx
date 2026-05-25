@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Loader2, Sparkles, Copy, Check, Bookmark, BookmarkCheck, Type,
-  Music, Search, ChevronDown, ChevronUp, Zap, ArrowRight,
+  Loader2, Sparkles, Copy, Check, Bookmark, BookmarkCheck, Type, ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,11 +17,11 @@ import { getCaptionLimitText } from "@/lib/pricing";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import {
   getTrendingAudio,
-  scanNicheTrends,
+  getTrendingHashtags,
   isEntitlementError,
   type Platform as IdeaPlatform,
   type TrendAudio,
-  type TrendTopic,
+  type TrendHashtag,
 } from "@/services/ideaStream";
 
 // ── Caption Engine types ───────────────────────────────────
@@ -83,15 +82,13 @@ const CaptionEnginePage = () => {
   const canGenerate = prompt.trim().length >= 3 && !generating && (usage ? usage.allowed : true);
   const limitHint   = useMemo(() => getCaptionLimitText(tier), [tier]);
 
-  // ── Trend discovery state (new) ───────────────────────────
-  const [trendOpen,     setTrendOpen]     = useState(true);
-  const [trendTab,      setTrendTab]      = useState<"audio" | "topics">("audio");
-  const [trendPlatform, setTrendPlatform] = useState<IdeaPlatform>("Instagram");
-  const [trendNiche,    setTrendNiche]    = useState("");
-  const [trendLoading,  setTrendLoading]  = useState(false);
-  const [trendAudios,   setTrendAudios]   = useState<TrendAudio[]>([]);
-  const [trendTopics,   setTrendTopics]   = useState<TrendTopic[]>([]);
-  const [trendScanned,  setTrendScanned]  = useState(false);
+  // ── Content Discovery state ───────────────────────────────
+  const [discoveryMode,     setDiscoveryMode]     = useState<"songs" | "hashtags">("songs");
+  const [discoveryPlatform, setDiscoveryPlatform] = useState<IdeaPlatform>("Instagram");
+  const [discoveryLoading,  setDiscoveryLoading]  = useState(false);
+  const [discoverySongs,    setDiscoverySongs]    = useState<TrendAudio[]>([]);
+  const [discoveryHashtags, setDiscoveryHashtags] = useState<TrendHashtag[]>([]);
+  const [discoveryScanned,  setDiscoveryScanned]  = useState(false);
   // The selected trend context — pre-fills the caption prompt
   const [selectedTrend, setSelectedTrend] = useState<{ label: string; sublabel: string } | null>(null);
 
@@ -127,42 +124,32 @@ const CaptionEnginePage = () => {
     void loadUsage();
   }, [user?.id]);
 
-  // ── Trend discovery scan ───────────────────────────────────
-  const scanTrends = async () => {
-    if (trendTab === "topics" && !trendNiche.trim()) {
-      toast.error("Enter a niche to discover topics.");
-      return;
-    }
-    setTrendLoading(true);
-    setTrendScanned(true);
+  // ── Content Discovery handler ─────────────────────────────
+  const handleDiscover = async () => {
+    setDiscoveryLoading(true);
+    setDiscoveryScanned(true);
 
-    if (trendTab === "audio") {
-      const result = await getTrendingAudio(trendPlatform);
-      if (!result.ok) {
-        if (isEntitlementError(result)) {
-          toast.error(result.message);
-          setShowUpgrade(true);
-        } else {
-          toast.error("Could not load trends. Try again.");
-        }
+    if (discoveryMode === "songs") {
+      const res = await getTrendingAudio(discoveryPlatform);
+      if (!res.ok) {
+        if (isEntitlementError(res)) { toast.error(res.message); setShowUpgrade(true); }
+        else toast.error("Could not load viral songs. Try again.");
       } else {
-        setTrendAudios(result.audios);
+        setDiscoverySongs(res.audios);
+        setDiscoveryHashtags([]);
       }
     } else {
-      const result = await scanNicheTrends(trendNiche);
-      if (!result.ok) {
-        if (isEntitlementError(result)) {
-          toast.error(result.message);
-          setShowUpgrade(true);
-        } else {
-          toast.error("Could not scan topics. Try again.");
-        }
+      const res = await getTrendingHashtags(discoveryPlatform);
+      if (!res.ok) {
+        if (isEntitlementError(res)) { toast.error(res.message); setShowUpgrade(true); }
+        else toast.error("Could not load viral hashtags. Try again.");
       } else {
-        setTrendTopics(result.topics);
+        setDiscoveryHashtags(res.hashtags);
+        setDiscoverySongs([]);
       }
     }
 
-    setTrendLoading(false);
+    setDiscoveryLoading(false);
   };
 
   // Pick a trend → pre-fill caption prompt and show context bar
@@ -294,222 +281,159 @@ const CaptionEnginePage = () => {
         <p className="text-muted-foreground text-sm">Discover trends → write captions → publish.</p>
       </div>
 
-      {/* ── STEP 1: Trend Discovery ───────────────────────── */}
-      <div className="glass-card mb-4 overflow-hidden">
-        {/* Section header — collapsible */}
-        <button
-          onClick={() => setTrendOpen((v) => !v)}
-          className="w-full flex items-center justify-between px-5 py-4 hover:bg-sidebar-accent/30 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 rounded-md bg-primary/10 border border-primary/25 flex items-center justify-center shrink-0">
-              <span className="text-[10px] font-mono font-semibold text-primary">01</span>
-            </div>
-            <div className="text-left">
-              <p className="text-sm font-medium text-foreground leading-tight">Discover Trends</p>
-              <p className="text-[11px] text-muted-foreground">Find viral signals to inspire your caption</p>
-            </div>
+      {/* ── STEP 1: Content Discovery ─────────────────────── */}
+      <div className="glass-card p-5 mb-4 space-y-4">
+        {/* Section label */}
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-md bg-primary/10 border border-primary/25 flex items-center justify-center shrink-0">
+            <span className="text-[10px] font-mono font-semibold text-primary">01</span>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Badge variant="outline" className="text-[9px] font-mono border-primary/25 text-primary/80 hidden sm:flex">
-              Start Here
-            </Badge>
-            {trendOpen
-              ? <ChevronUp className="w-4 h-4 text-muted-foreground/50" />
-              : <ChevronDown className="w-4 h-4 text-muted-foreground/50" />
-            }
+          <div>
+            <p className="text-sm font-medium text-foreground leading-tight">Content Discovery</p>
+            <p className="text-[11px] text-muted-foreground">Find viral signals to inspire your caption</p>
           </div>
-        </button>
+        </div>
 
-        <AnimatePresence initial={false}>
-          {trendOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="overflow-hidden"
+        {/* Mode toggles */}
+        <div className="flex gap-2">
+          {(["songs", "hashtags"] as const).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => { setDiscoveryMode(mode); setDiscoveryScanned(false); }}
+              className={`px-4 py-2 rounded-lg text-xs font-medium border transition-all ${
+                discoveryMode === mode
+                  ? "bg-primary/10 text-primary border-primary/30"
+                  : "text-muted-foreground border-border/50 hover:text-foreground hover:bg-sidebar-accent/60"
+              }`}
             >
-              <div className="px-5 pb-5 space-y-4 border-t border-border/40">
+              {mode === "songs" ? "Find Viral Songs" : "Find Viral Hashtags"}
+            </button>
+          ))}
+        </div>
 
-                {/* Tab: Audio Signals / Topic Scan */}
-                <div className="flex gap-2 pt-4">
-                  {(["audio", "topics"] as const).map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => { setTrendTab(t); setTrendScanned(false); }}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                        trendTab === t
-                          ? "bg-primary/10 text-primary border-primary/25"
-                          : "text-muted-foreground border-border/50 hover:text-foreground hover:bg-sidebar-accent/60"
-                      }`}
-                    >
-                      {t === "audio"
-                        ? <><Music className="w-3 h-3" /> Audio Signals</>
-                        : <><Zap   className="w-3 h-3" /> Topic Scan</>
-                      }
-                    </button>
-                  ))}
-                </div>
+        {/* Platform pills + Find Now button */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex gap-1.5 flex-wrap">
+            {TREND_PLATFORMS.map((p) => (
+              <button
+                key={p}
+                onClick={() => setDiscoveryPlatform(p)}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-all ${
+                  discoveryPlatform === p
+                    ? "bg-primary/10 text-primary border-primary/30"
+                    : "text-muted-foreground border-border/50 hover:text-foreground hover:bg-sidebar-accent/60"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+            onClick={handleDiscover}
+            disabled={discoveryLoading}
+            className="btn-primary !py-2 !px-5 text-xs flex items-center gap-1.5 disabled:opacity-50 ml-auto"
+          >
+            {discoveryLoading
+              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finding...</>
+              : <><Sparkles className="w-3.5 h-3.5" /> Find Now</>
+            }
+          </motion.button>
+        </div>
 
-                {/* Controls row */}
-                {trendTab === "audio" ? (
-                  <div className="flex flex-wrap gap-2 items-center">
-                    <div className="flex gap-1.5 flex-wrap">
-                      {TREND_PLATFORMS.map((p) => (
-                        <button
-                          key={p}
-                          onClick={() => setTrendPlatform(p)}
-                          className={`px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-all ${
-                            trendPlatform === p
-                              ? "bg-primary/10 text-primary border-primary/25"
-                              : "text-muted-foreground border-border/50 hover:text-foreground hover:bg-sidebar-accent/60"
-                          }`}
-                        >
-                          {p}
-                        </button>
-                      ))}
-                    </div>
-                    <motion.button
-                      whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                      onClick={scanTrends}
-                      disabled={trendLoading}
-                      className="btn-primary !py-2 !px-4 text-xs flex items-center gap-1.5 disabled:opacity-50 ml-auto"
-                    >
-                      {trendLoading
-                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Scanning...</>
-                        : <><Search className="w-3.5 h-3.5" /> Scan Signals</>
-                      }
-                    </motion.button>
-                  </div>
-                ) : (
-                  <div className="flex gap-3">
-                    <Input
-                      value={trendNiche}
-                      onChange={(e) => setTrendNiche(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && scanTrends()}
-                      placeholder="Enter your niche — e.g. Fitness, Finance, AI Tools..."
-                      className="input-glass h-10 text-sm rounded-xl flex-1"
-                      disabled={trendLoading}
-                    />
-                    <motion.button
-                      whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                      onClick={scanTrends}
-                      disabled={trendLoading || !trendNiche.trim()}
-                      className="btn-primary !py-2 !px-4 text-xs flex items-center gap-1.5 disabled:opacity-50 shrink-0"
-                    >
-                      {trendLoading
-                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Scanning...</>
-                        : <><Sparkles className="w-3.5 h-3.5" /> Discover</>
-                      }
-                    </motion.button>
-                  </div>
-                )}
-
-                {/* Results */}
-                <AnimatePresence mode="wait">
-                  {trendLoading && (
-                    <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                      className="flex items-center gap-2 py-2">
-                      <Loader2 className="w-4 h-4 text-primary animate-spin" />
-                      <span className="text-xs text-muted-foreground font-mono">
-                        {trendTab === "audio" ? `Scanning ${trendPlatform}...` : `Scanning "${trendNiche}"...`}
-                      </span>
-                    </motion.div>
-                  )}
-
-                  {!trendLoading && trendScanned && trendTab === "audio" && trendAudios.length > 0 && (
-                    <motion.div key="audio-results" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                      className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
-                      <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-[0.15em] pb-1">
-                        {trendAudios.length} signals — click to use as caption context
-                      </p>
-                      {trendAudios.map((audio, i) => (
-                        <motion.button
-                          key={i}
-                          initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.02 }}
-                          onClick={() => selectTrend(audio.title, `${audio.artist} · ${audio.category}`)}
-                          className={`w-full text-left flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border transition-all group ${
-                            selectedTrend?.label === audio.title
-                              ? "border-primary/30 bg-primary/8 text-primary"
-                              : "border-border/40 bg-card/30 hover:border-primary/20 hover:bg-card/50"
-                          }`}
-                        >
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-medium truncate">{audio.title}</p>
-                            <p className="text-[10px] text-muted-foreground/60 truncate">{audio.artist}</p>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            {audio.velocity && (
-                              <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
-                                audio.velocity === "exploding" ? "border-red-500/25 text-red-400/80" :
-                                audio.velocity === "hot"       ? "border-amber-500/25 text-amber-400/80" :
-                                audio.velocity === "rising"    ? "border-emerald-500/25 text-emerald-400/80" :
-                                "border-border/30 text-muted-foreground/40"
-                              }`}>{audio.velocity}</span>
-                            )}
-                            <ArrowRight className="w-3 h-3 text-muted-foreground/30 group-hover:text-primary/50 transition-colors" />
-                          </div>
-                        </motion.button>
-                      ))}
-                    </motion.div>
-                  )}
-
-                  {!trendLoading && trendScanned && trendTab === "topics" && trendTopics.length > 0 && (
-                    <motion.div key="topic-results" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                      className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
-                      <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-[0.15em] pb-1">
-                        {trendTopics.length} topics — click to use as caption context
-                      </p>
-                      {trendTopics.map((topic, i) => (
-                        <motion.button
-                          key={i}
-                          initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.04 }}
-                          onClick={() => selectTrend(topic.title, topic.description)}
-                          className={`w-full text-left flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border transition-all group ${
-                            selectedTrend?.label === topic.title
-                              ? "border-primary/30 bg-primary/8 text-primary"
-                              : "border-border/40 bg-card/30 hover:border-primary/20 hover:bg-card/50"
-                          }`}
-                        >
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-medium truncate">{topic.title}</p>
-                            <p className="text-[10px] text-muted-foreground/60 line-clamp-1">{topic.description}</p>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-[9px] font-mono border rounded border-primary/20 text-primary/60 px-1.5 py-0.5">
-                              Heat {topic.heat}
-                            </span>
-                            <ArrowRight className="w-3 h-3 text-muted-foreground/30 group-hover:text-primary/50 transition-colors" />
-                          </div>
-                        </motion.button>
-                      ))}
-                    </motion.div>
-                  )}
-
-                  {!trendLoading && trendScanned &&
-                    ((trendTab === "audio" && trendAudios.length === 0) ||
-                     (trendTab === "topics" && trendTopics.length === 0)) && (
-                    <motion.p key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                      className="text-xs text-muted-foreground/50 font-mono py-1">
-                      No results found. Try again.
-                    </motion.p>
-                  )}
-
-                  {!trendScanned && !trendLoading && (
-                    <motion.p key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                      className="text-[11px] text-muted-foreground/45 font-mono">
-                      {trendTab === "audio"
-                        ? "Scan to see trending audio signals for your platform."
-                        : "Enter your niche and discover what's going viral right now."}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
-
-              </div>
+        {/* Results */}
+        <AnimatePresence mode="wait">
+          {discoveryLoading && (
+            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="flex items-center gap-2 py-1">
+              <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
+              <span className="text-xs text-muted-foreground font-mono">Scanning {discoveryPlatform}...</span>
             </motion.div>
+          )}
+
+          {!discoveryLoading && discoveryScanned && discoveryMode === "songs" && discoverySongs.length > 0 && (
+            <motion.div key="song-results" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+              className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+              <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-[0.15em] pb-1">
+                {discoverySongs.length} songs — click to use as caption context
+              </p>
+              {discoverySongs.map((audio, i) => (
+                <motion.button
+                  key={i}
+                  initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.02 }}
+                  onClick={() => selectTrend(audio.title, `${audio.artist} · ${audio.category}`)}
+                  className={`w-full text-left flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border transition-all group ${
+                    selectedTrend?.label === audio.title
+                      ? "border-primary/30 bg-primary/8 text-primary"
+                      : "border-border/40 bg-card/30 hover:border-primary/20 hover:bg-card/50"
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium truncate">{audio.title}</p>
+                    <p className="text-[10px] text-muted-foreground/60 truncate">{audio.artist}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {audio.velocity && (
+                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
+                        audio.velocity === "exploding" ? "border-red-500/25 text-red-400/80" :
+                        audio.velocity === "hot"       ? "border-amber-500/25 text-amber-400/80" :
+                        audio.velocity === "rising"    ? "border-emerald-500/25 text-emerald-400/80" :
+                        "border-border/30 text-muted-foreground/40"
+                      }`}>{audio.velocity}</span>
+                    )}
+                    <ArrowRight className="w-3 h-3 text-muted-foreground/30 group-hover:text-primary/50 transition-colors" />
+                  </div>
+                </motion.button>
+              ))}
+            </motion.div>
+          )}
+
+          {!discoveryLoading && discoveryScanned && discoveryMode === "hashtags" && discoveryHashtags.length > 0 && (
+            <motion.div key="hashtag-results" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+              className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+              <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-[0.15em] pb-1">
+                {discoveryHashtags.length} hashtags — click to use as caption context
+              </p>
+              {discoveryHashtags.map((tag, i) => (
+                <motion.button
+                  key={i}
+                  initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.02 }}
+                  onClick={() => selectTrend(tag.tag, `${tag.category} · ${tag.posts}`)}
+                  className={`w-full text-left flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border transition-all group ${
+                    selectedTrend?.label === tag.tag
+                      ? "border-primary/30 bg-primary/8 text-primary"
+                      : "border-border/40 bg-card/30 hover:border-primary/20 hover:bg-card/50"
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium truncate">{tag.tag}</p>
+                    <p className="text-[10px] text-muted-foreground/60 truncate">{tag.category} · {tag.posts}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {tag.velocity && (
+                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
+                        tag.velocity === "exploding" ? "border-red-500/25 text-red-400/80" :
+                        tag.velocity === "hot"       ? "border-amber-500/25 text-amber-400/80" :
+                        tag.velocity === "rising"    ? "border-emerald-500/25 text-emerald-400/80" :
+                        "border-border/30 text-muted-foreground/40"
+                      }`}>{tag.velocity}</span>
+                    )}
+                    <ArrowRight className="w-3 h-3 text-muted-foreground/30 group-hover:text-primary/50 transition-colors" />
+                  </div>
+                </motion.button>
+              ))}
+            </motion.div>
+          )}
+
+          {!discoveryLoading && discoveryScanned &&
+            ((discoveryMode === "songs" && discoverySongs.length === 0) ||
+             (discoveryMode === "hashtags" && discoveryHashtags.length === 0)) && (
+            <motion.p key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="text-xs text-muted-foreground/50 font-mono py-1">
+              No results found. Try again.
+            </motion.p>
           )}
         </AnimatePresence>
       </div>
@@ -522,7 +446,7 @@ const CaptionEnginePage = () => {
             className="mb-4 flex items-center gap-3 px-4 py-3 rounded-xl border border-primary/25 bg-primary/6"
           >
             <div className="w-5 h-5 rounded-md bg-primary/12 border border-primary/25 flex items-center justify-center shrink-0">
-              <Zap className="w-3 h-3 text-primary" />
+              <Sparkles className="w-3 h-3 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-primary truncate">{selectedTrend.label}</p>
