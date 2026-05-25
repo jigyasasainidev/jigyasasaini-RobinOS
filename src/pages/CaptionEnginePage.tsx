@@ -328,8 +328,15 @@ const CaptionEnginePage = () => {
               </div>
             </div>
           ) : (
-            <div className="h-full min-h-[220px] flex items-center justify-center">
-              <p className="text-muted-foreground/45 text-sm font-mono">Your generated caption will appear here...</p>
+            <div className="h-full min-h-[220px] flex flex-col items-center justify-center gap-3 px-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ background: "hsl(217 91% 60% / 0.06)", border: "1px solid hsl(217 91% 60% / 0.15)" }}>
+                <Type className="w-5 h-5 text-primary/30" strokeWidth={1.5} />
+              </div>
+              <p className="text-xs font-medium text-foreground/50">Ready to generate</p>
+              <p className="text-[10px] text-muted-foreground/35 text-center max-w-[200px] font-mono leading-relaxed">
+                Choose a platform and tone, then describe your content above.
+              </p>
             </div>
           )}
         </div>
@@ -338,7 +345,10 @@ const CaptionEnginePage = () => {
           <p className="text-xs font-mono uppercase tracking-[0.2em] text-muted-foreground mb-3">Generation History</p>
           <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
             {history.length === 0 ? (
-              <p className="text-xs text-muted-foreground/50">No generations yet.</p>
+              <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
+                <p className="text-[11px] text-muted-foreground/35 font-mono">No captions yet.</p>
+                <p className="text-[10px] text-muted-foreground/22 leading-relaxed">Generate your first caption above — it will be saved here automatically.</p>
+              </div>
             ) : (
               history.map((item) => (
                 <button

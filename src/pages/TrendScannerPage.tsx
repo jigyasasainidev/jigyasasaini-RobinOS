@@ -292,20 +292,55 @@ const TrendScannerPage = () => {
         )}
 
         {!loading && scanned && topics.length === 0 && (
-          <motion.p key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="text-center py-12 text-sm text-muted-foreground">
-            No trends found. Try a broader niche.
-          </motion.p>
+          <motion.div key="empty" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl flex flex-col items-center justify-center text-center px-6 py-14"
+            style={{ background: "linear-gradient(160deg, hsl(222 28% 7%) 0%, hsl(222 26% 5.5%) 100%)", border: "1px solid hsl(217 28% 12%)" }}>
+            <motion.div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
+              style={{ background: "hsl(38 90% 55% / 0.08)", border: "1px solid hsl(38 90% 55% / 0.2)" }}
+              animate={{ boxShadow: ["0 0 0 hsl(38 90% 55% / 0)", "0 0 20px hsl(38 90% 55% / 0.1)", "0 0 0 hsl(38 90% 55% / 0)"] }}
+              transition={{ duration: 3.5, repeat: Infinity }}>
+              <TrendingUp className="w-5 h-5 text-amber-400/70" strokeWidth={1.5} />
+            </motion.div>
+            <p className="text-[9.5px] font-mono uppercase tracking-[0.2em] text-amber-400/50 mb-2">No Signals Detected</p>
+            <p className="text-sm font-medium text-foreground/80 mb-2">Nothing trending for this niche yet</p>
+            <p className="text-[11px] text-muted-foreground/45 leading-relaxed max-w-xs mb-5">
+              Try a broader niche or different keywords. Creator niches like <span className="text-primary/60 font-mono">Fitness</span>, <span className="text-primary/60 font-mono">AI Tools</span>, or <span className="text-primary/60 font-mono">Personal Finance</span> scan best.
+            </p>
+            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+              onClick={() => { setNiche(""); document.querySelector<HTMLInputElement>("input")?.focus(); }}
+              className="px-4 py-2 rounded-xl text-xs font-medium"
+              style={{ background: "hsl(217 91% 60% / 0.1)", border: "1px solid hsl(217 91% 60% / 0.25)", color: "hsl(217 91% 68%)" }}>
+              Try a Different Niche
+            </motion.button>
+          </motion.div>
         )}
 
         {!loading && !scanned && (
-          <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="text-center py-16">
-            <TrendingUp className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground mb-1">Enter your niche and hit Scan Now</p>
-            <p className="text-[10px] text-muted-foreground/50 font-mono">
-              AI scans creator signals · viral patterns · audience demand
+          <motion.div key="idle" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl flex flex-col items-center justify-center text-center px-6 py-16"
+            style={{ background: "linear-gradient(160deg, hsl(222 28% 7%) 0%, hsl(222 26% 5.5%) 100%)", border: "1px dashed hsl(217 28% 13%)" }}>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-32 rounded-full pointer-events-none"
+              style={{ background: "radial-gradient(ellipse, hsl(217 91% 60% / 0.05) 0%, transparent 70%)" }} aria-hidden />
+            <motion.div className="relative w-14 h-14 rounded-2xl flex items-center justify-center mb-5"
+              style={{ background: "hsl(217 91% 60% / 0.07)", border: "1px solid hsl(217 91% 60% / 0.18)" }}
+              animate={{ boxShadow: ["0 0 0 hsl(217 91% 60% / 0)", "0 0 24px hsl(217 91% 60% / 0.1)", "0 0 0 hsl(217 91% 60% / 0)"] }}
+              transition={{ duration: 4, repeat: Infinity }}>
+              <TrendingUp className="w-6 h-6 text-primary/50" strokeWidth={1.5} />
+            </motion.div>
+            <p className="text-[9.5px] font-mono uppercase tracking-[0.22em] text-primary/45 mb-2">AI Trend Intelligence</p>
+            <p className="text-sm font-semibold text-foreground/80 mb-2">Discover what's about to go viral</p>
+            <p className="text-[11px] text-muted-foreground/45 leading-relaxed max-w-[300px]">
+              Enter your creator niche above and RobinOS will scan live creator signals, viral patterns, and audience demand — then surface the topics worth building content around.
             </p>
+            <div className="flex flex-wrap justify-center gap-2 mt-6">
+              {["Fitness", "AI Tools", "Finance", "Mindset"].map((s) => (
+                <button key={s} onClick={() => { setNiche(s); }}
+                  className="px-3 py-1.5 rounded-lg text-[10px] font-mono transition-all"
+                  style={{ background: "hsl(217 28% 9%)", border: "1px solid hsl(217 28% 15%)", color: "hsl(215 16% 42%)" }}>
+                  {s}
+                </button>
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

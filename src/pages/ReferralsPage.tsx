@@ -353,8 +353,10 @@ const ReferralsPage = () => {
             <p className="text-sm text-foreground font-medium mb-3">Withdrawal History</p>
 
             {withdrawals.length === 0 ? (
-              <div className="rounded-md border border-dashed border-border/60 px-4 py-8 text-center text-sm text-muted-foreground">
-                No withdrawal requests yet.
+              <div className="flex flex-col items-center justify-center py-10 gap-2 text-center rounded-xl"
+                style={{ background: "hsl(222 28% 6%)", border: "1px dashed hsl(217 28% 13%)" }}>
+                <p className="text-xs text-muted-foreground/40 font-mono">No withdrawal requests yet</p>
+                <p className="text-[10px] text-muted-foreground/25 leading-relaxed">Once you request a payout it will appear here with live status tracking.</p>
               </div>
             ) : (
               <div className="space-y-2">

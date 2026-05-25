@@ -4,7 +4,6 @@ import { Clock, TrendingUp, PenTool, Flame, Copy, Check } from "lucide-react";
 import { useHistory, type ScanRecord, type ScriptRecord } from "@/hooks/useHistory";
 import { toast } from "sonner";
 import { SkeletonRow } from "@/components/ui/skeleton";
-
 type TabType = "scans" | "scripts";
 
 const HistoryPage = () => {
@@ -71,7 +70,23 @@ const HistoryPage = () => {
       ) : tab === "scans" ? (
         <div className="space-y-3">
           {scans.length === 0 ? (
-            <p className="text-center text-muted-foreground text-sm py-20">No scans yet. Go to Creator Intel and run Trend Radar.</p>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col items-center justify-center text-center px-6 py-14 rounded-2xl"
+              style={{ background: "linear-gradient(160deg, hsl(222 28% 7%) 0%, hsl(222 26% 5.5%) 100%)", border: "1px dashed hsl(217 28% 13%)" }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
+                style={{ background: "hsl(217 91% 60% / 0.07)", border: "1px solid hsl(217 91% 60% / 0.18)" }}>
+                <TrendingUp className="w-5 h-5 text-primary/40" strokeWidth={1.5} />
+              </div>
+              <p className="text-xs font-medium text-foreground/70 mb-1.5">No trend scans yet</p>
+              <p className="text-[11px] text-muted-foreground/40 leading-relaxed max-w-xs mb-5">
+                Run your first scan in Trend Scanner and RobinOS will archive your results here automatically.
+              </p>
+              <a href="/dashboard/trend-scanner"
+                className="px-4 py-2 rounded-lg text-xs font-medium transition-all"
+                style={{ background: "hsl(217 91% 60% / 0.1)", border: "1px solid hsl(217 91% 60% / 0.25)", color: "hsl(217 91% 68%)" }}>
+                Go to Trend Scanner →
+              </a>
+            </motion.div>
           ) : (
             scans.map((scan, i) => (
               <motion.div key={scan.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="rounded-xl border-glass bg-card p-4 cursor-pointer hover:border-primary/20 transition-all" onClick={() => setExpandedId(expandedId === scan.id ? null : scan.id)}>
@@ -119,7 +134,23 @@ const HistoryPage = () => {
       ) : (
         <div className="space-y-3">
           {scripts.length === 0 ? (
-            <p className="text-center text-muted-foreground text-sm py-20">No scripts yet. Go to Script Engine and generate one.</p>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col items-center justify-center text-center px-6 py-14 rounded-2xl"
+              style={{ background: "linear-gradient(160deg, hsl(222 28% 7%) 0%, hsl(222 26% 5.5%) 100%)", border: "1px dashed hsl(217 28% 13%)" }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
+                style={{ background: "hsl(217 91% 60% / 0.07)", border: "1px solid hsl(217 91% 60% / 0.18)" }}>
+                <PenTool className="w-5 h-5 text-primary/40" strokeWidth={1.5} />
+              </div>
+              <p className="text-xs font-medium text-foreground/70 mb-1.5">No scripts generated yet</p>
+              <p className="text-[11px] text-muted-foreground/40 leading-relaxed max-w-xs mb-5">
+                Generate your first script in Script Engine. Every script is saved here so you can revisit and copy anytime.
+              </p>
+              <a href="/dashboard/studio"
+                className="px-4 py-2 rounded-lg text-xs font-medium transition-all"
+                style={{ background: "hsl(217 91% 60% / 0.1)", border: "1px solid hsl(217 91% 60% / 0.25)", color: "hsl(217 91% 68%)" }}>
+                Go to Script Engine →
+              </a>
+            </motion.div>
           ) : (
             scripts.map((script, i) => (
               <motion.div key={script.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="rounded-xl border-glass bg-card p-4 cursor-pointer hover:border-primary/20 transition-all" onClick={() => setExpandedId(expandedId === script.id ? null : script.id)}>
