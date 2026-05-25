@@ -1,5 +1,6 @@
 import { Suspense, useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { useFreeTrialStatus, useProfile, useSubscriptionExpiry } from "@/hooks/useProfile";
@@ -215,6 +216,10 @@ const DashboardLayout = () => {
 
   return (
     <div className="min-h-screen flex bg-background grain select-none-all">
+      {/* Dashboard pages are private — never index them */}
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <div className="ambient-glow" />
       <DashboardSidebar />
 
