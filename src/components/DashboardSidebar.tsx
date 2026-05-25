@@ -3,9 +3,9 @@ import { motion } from "framer-motion";
 import { Zap, PenTool, Settings, LogOut, Clock, Link2, Crown, Mic, Film, BarChart3, Type, Flag, TrendingUp, Music, Hash } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlanKey, useIsProOrAbove, useIsAgency } from "@/hooks/useEntitlements";
-import { Badge } from "@/components/ui/badge";
 import { BrandMark } from "@/components/BrandMark";
 import { prefetchRoute } from "@/lib/routePrefetch";
+import { PlanBadge, LiveDot } from "@/components/ui/status-badge";
 
 // ── Sidebar workflow structure ─────────────────────────────
 // ORDER: Trend Discovery → Script → Voice → Video → Captions
@@ -57,11 +57,6 @@ export function DashboardSidebar() {
   const plan = usePlanKey();
   const isAgency = useIsAgency();
   const isProOrAbove = useIsProOrAbove();
-  const showBadge = isProOrAbove;
-  const badgeLabel = isAgency ? "AGENCY" : plan === "pro_creator" ? "PRO" : "";
-  const badgeClass = isAgency
-    ? "text-[8px] font-mono border-amber-500/40 text-amber-400 py-0 px-1.5"
-    : "text-[8px] font-mono border-primary/30 text-primary py-0 px-1.5";
 
   return (
     <>
@@ -100,11 +95,10 @@ export function DashboardSidebar() {
           <motion.div animate={{ opacity: [0.75, 1, 0.75] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}>
             <BrandMark size={22} withWordmark />
           </motion.div>
-          {showBadge && (
-            <Badge variant="outline" className={`${badgeClass} flex items-center gap-1`}>
-              <Crown className="w-2.5 h-2.5" /> {badgeLabel}
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            <LiveDot color={plan === "free" ? "amber" : "green"} size="sm" />
+            <PlanBadge plan={plan} />
+          </div>
         </div>
 
         <nav className="flex-1 p-3 space-y-3 overflow-y-auto">

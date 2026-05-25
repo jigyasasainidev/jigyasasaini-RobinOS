@@ -8,6 +8,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { AIStatusBadge, StatusBadge } from "@/components/ui/status-badge";
 
 interface TrendTopic {
   title:       string;
@@ -115,9 +116,16 @@ const TrendScannerPage = () => {
         <h1 className="text-chrome text-2xl md:text-3xl font-semibold mb-1">
           Discover What's Trending
         </h1>
-        <p className="text-muted-foreground text-sm">
-          Enter your niche → AI scans for viral creator opportunities → pick a trend → generate your script.
-        </p>
+        <div className="flex items-center gap-3 flex-wrap">
+          <p className="text-muted-foreground text-sm">
+            Enter your niche → AI scans for viral creator opportunities → pick a trend → generate your script.
+          </p>
+          <AnimatePresence>
+            {loading && (
+              <AIStatusBadge phase={SCANNER_MESSAGES[msgIdx]} active={loading} />
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Search */}
@@ -218,6 +226,8 @@ const TrendScannerPage = () => {
               <Flame className="w-3.5 h-3.5 text-primary/70" />
               <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground/60">
                 {topics.length} signals detected for "{niche}"
+              </span>
+              <StatusBadge status="completed" label="AI Complete" />
               </span>
             </div>
 

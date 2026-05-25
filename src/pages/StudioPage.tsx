@@ -18,6 +18,7 @@ import { ScriptModeSelector, type ScriptMode } from "@/components/ScriptModeSele
 import { ScriptOutput } from "@/components/ScriptOutput";
 import { scanTrendTopic } from "@/services/trendRadarClient";
 import type { TrendIntelligence } from "@/types/trendRadar";
+import { AIStatusBadge } from "@/components/ui/status-badge";
 
 // ── Trend topic shape from scan-trends edge function ──────
 const tones = ["Casual", "Bold", "Storytelling", "Educational", "Provocative"];
@@ -320,9 +321,8 @@ const StudioPage = () => {
       <AnimatePresence>
         {generating && scanPhase && !output && (
           <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-            className="mb-4 flex items-center gap-2.5 px-4 py-2.5 rounded-lg border border-primary/20 bg-primary/5">
-            <Loader2 className="w-3.5 h-3.5 text-primary animate-spin shrink-0" />
-            <span className="text-xs font-mono text-primary/80">{scanPhase}</span>
+            className="mb-4 flex items-center gap-2.5">
+            <AIStatusBadge phase={scanPhase} active={generating && !output} />
           </motion.div>
         )}
       </AnimatePresence>
