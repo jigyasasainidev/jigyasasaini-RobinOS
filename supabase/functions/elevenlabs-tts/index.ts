@@ -7,16 +7,30 @@ import {
 } from "../_shared/entitlement.ts";
 import { trackFeatureUsage } from "../_shared/feature-usage.ts";
 
-// Per-voice tuned settings for distinct sound
+// Per-voice tuned settings — covers all 20 voices in RobinOS voice library
 const voiceSettings: Record<string, { stability: number; similarity_boost: number; style: number; use_speaker_boost: boolean }> = {
-  "EXAVITQu4vr4xnSDxMaL": { stability: 0.65, similarity_boost: 0.80, style: 0.35, use_speaker_boost: true },  // Sarah - Warm
-  "JBFqnCBsd6RMkjVDRZzb": { stability: 0.75, similarity_boost: 0.85, style: 0.20, use_speaker_boost: true },  // George - Authoritative  
-  "FGY2WhTYpPnrIDTdsKH5": { stability: 0.80, similarity_boost: 0.70, style: 0.15, use_speaker_boost: false }, // Laura - Soft
-  "TX3LPaxmHKxFdv7VOQHJ": { stability: 0.40, similarity_boost: 0.90, style: 0.70, use_speaker_boost: true },  // Liam - Energetic
-  "onwK4e9ZLuTAKqWW03F9": { stability: 0.85, similarity_boost: 0.65, style: 0.10, use_speaker_boost: false }, // Daniel - Deep & Calm
-  "pFZP5JQG7iQjIQuC4Bku": { stability: 0.55, similarity_boost: 0.75, style: 0.55, use_speaker_boost: true },  // Lily - Friendly
-  "CwhRBWXzGAHq8TQ4Fs17": { stability: 0.70, similarity_boost: 0.80, style: 0.25, use_speaker_boost: true },  // Roger - Professional
-  "cgSgspJ2msm6clMCkdW9": { stability: 0.50, similarity_boost: 0.85, style: 0.60, use_speaker_boost: true },  // Jessica - Conversational
+  // ── Male ──────────────────────────────────────────────────────────────────
+  "pNInz6obpgDQGcFmaJgB": { stability: 0.88, similarity_boost: 0.70, style: 0.08, use_speaker_boost: false }, // Ethan - Deep Cinematic
+  "JBFqnCBsd6RMkjVDRZzb": { stability: 0.75, similarity_boost: 0.85, style: 0.20, use_speaker_boost: true  }, // James - Confident Corporate
+  "ErXwobaYiN019PkySvjV": { stability: 0.55, similarity_boost: 0.80, style: 0.45, use_speaker_boost: true  }, // Alex - Friendly Creator
+  "TX3LPaxmHKxFdv7VOQHJ": { stability: 0.38, similarity_boost: 0.92, style: 0.72, use_speaker_boost: true  }, // Ryan - Energetic Viral
+  "onwK4e9ZLuTAKqWW03F9": { stability: 0.85, similarity_boost: 0.65, style: 0.10, use_speaker_boost: false }, // David - Documentary Calm
+  "TxGEqnHWrfWFTfGW9XjX": { stability: 0.82, similarity_boost: 0.72, style: 0.15, use_speaker_boost: false }, // Michael - Luxury Smooth
+  "SOYHLrjzK2X1ezoPC6cr": { stability: 0.42, similarity_boost: 0.88, style: 0.65, use_speaker_boost: true  }, // Liam - Youthful Fast
+  "VR6AewLTigWG4xSOukaG": { stability: 0.60, similarity_boost: 0.82, style: 0.50, use_speaker_boost: true  }, // Daniel - Motivational
+  "yoZ06aMxZJJ28mfd3POQ": { stability: 0.52, similarity_boost: 0.80, style: 0.38, use_speaker_boost: true  }, // Noah - Conversational
+  "CwhRBWXzGAHq8TQ4Fs17": { stability: 0.78, similarity_boost: 0.82, style: 0.22, use_speaker_boost: true  }, // Marcus - Strong Authority
+  // ── Female ────────────────────────────────────────────────────────────────
+  "EXAVITQu4vr4xnSDxMaL": { stability: 0.65, similarity_boost: 0.80, style: 0.35, use_speaker_boost: true  }, // Emma - Warm & Natural
+  "FGY2WhTYpPnrIDTdsKH5": { stability: 0.82, similarity_boost: 0.70, style: 0.12, use_speaker_boost: false }, // Sophia - Luxury Elegant
+  "pFZP5JQG7iQjIQuC4Bku": { stability: 0.55, similarity_boost: 0.78, style: 0.52, use_speaker_boost: true  }, // Olivia - Friendly Creator
+  "21m00Tcm4TlvDq8ikWAM": { stability: 0.78, similarity_boost: 0.68, style: 0.18, use_speaker_boost: false }, // Ava - Soft & Calm
+  "LcfcDJNUP1GQjkzn1xUU": { stability: 0.40, similarity_boost: 0.90, style: 0.70, use_speaker_boost: true  }, // Isabella - Expressive Viral
+  "cgSgspJ2msm6clMCkdW9": { stability: 0.50, similarity_boost: 0.85, style: 0.60, use_speaker_boost: true  }, // Mia - Conversational
+  "ThT5KcBeYPX3keUQqHPh": { stability: 0.80, similarity_boost: 0.72, style: 0.14, use_speaker_boost: false }, // Charlotte - Documentary
+  "AZnzlk1XvdvUeBnXmlld": { stability: 0.62, similarity_boost: 0.78, style: 0.48, use_speaker_boost: true  }, // Amelia - Emotional Cinematic
+  "XB0fDUnXU5powFXDhCwa": { stability: 0.36, similarity_boost: 0.90, style: 0.75, use_speaker_boost: true  }, // Harper - Gen-Z Fast Energy
+  "oWAxZDx7w5VEj9dCyTzz": { stability: 0.76, similarity_boost: 0.78, style: 0.20, use_speaker_boost: true  }, // Grace - Premium Corporate
 };
 
 Deno.serve(async (req) => {
