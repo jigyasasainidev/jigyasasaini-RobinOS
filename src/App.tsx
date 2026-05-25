@@ -191,6 +191,7 @@ const App = () => (
               <Route path="/report-abuse" element={<ReportAbusePage />} />
               <Route path="/creator-os" element={<CreatorOSPage />} />
               <Route path="/jvzooaffiliate" element={<JVZooAffiliatePage />} />
+              <Route path="/launch-partners" element={<JVZooAffiliatePage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
