@@ -308,53 +308,181 @@ const SettingsPage = () => {
         </motion.div>
 
         {/* ── BYOK API Keys ── */}
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="rounded-lg border-glass bg-card p-5 relative max-w-2xl">
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="rounded-2xl relative max-w-2xl overflow-hidden"
+          style={{ background: "hsl(222 28% 6%)", border: "1px solid hsl(217 28% 12%)" }}>
+
+          {/* Locked overlay */}
           {!isByokEnabled && (
-            <div className="absolute inset-0 rounded-lg bg-background/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-2">
-              <Lock className="w-5 h-5 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground font-mono">BYOK — Pro Creator / Agency Only</p>
-              <p className="text-[10px] text-muted-foreground/60">Upgrade to Pro Creator or Agency to bring your own API keys</p>
+            <div className="absolute inset-0 rounded-2xl z-10 flex flex-col items-center justify-center gap-3"
+              style={{ background: "hsl(222 28% 4% / 0.85)", backdropFilter: "blur(8px)" }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ background: "hsl(217 91% 60% / 0.06)", border: "1px solid hsl(217 91% 60% / 0.15)" }}>
+                <Lock className="w-4 h-4 text-primary/40" />
+              </div>
+              <p className="text-xs font-mono text-muted-foreground/60">BYOK — Pro Creator / Agency Only</p>
+              <p className="text-[10px] text-muted-foreground/35">Upgrade your plan to bring your own API keys</p>
             </div>
           )}
-          <div className="flex items-center gap-2 mb-4">
-            <Key className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-medium text-foreground">API Keys (BYOK)</h2>
-          </div>
-          <div className="space-y-4">
+
+          {/* Section header */}
+          <div className="flex items-center gap-2.5 px-5 py-4"
+            style={{ borderBottom: "1px solid hsl(217 28% 10%)" }}>
+            <div className="w-7 h-7 rounded-md flex items-center justify-center"
+              style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.18)" }}>
+              <Key className="w-3.5 h-3.5 text-primary/70" />
+            </div>
             <div>
-              <label className="text-xs font-mono text-muted-foreground mb-1.5 block">ElevenLabs API Key</label>
+              <h2 className="text-sm font-medium text-foreground leading-tight">API Keys</h2>
+              <p className="text-[10px] font-mono text-muted-foreground/45 mt-0.5">BYOK · Your keys stay on your account, never shared</p>
+            </div>
+          </div>
+
+          <div className="p-5 space-y-6">
+
+            {/* ── ElevenLabs ────────────────────────────────── */}
+            <div className="space-y-3">
+              {/* Provider label row */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded flex items-center justify-center text-[9px] font-bold"
+                    style={{ background: "hsl(250 80% 55% / 0.15)", border: "1px solid hsl(250 80% 55% / 0.25)", color: "hsl(250 80% 70%)" }}>
+                    EL
+                  </div>
+                  <span className="text-xs font-medium text-foreground/80">ElevenLabs</span>
+                  <span className="text-[9px] font-mono text-muted-foreground/40">Voice Studio</span>
+                </div>
+                {/* Connection status */}
+                <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-mono border ${
+                  elevenLabsKey
+                    ? "border-emerald-500/25 bg-emerald-500/6 text-emerald-400/75"
+                    : "border-amber-500/20 bg-amber-500/5 text-amber-400/60"
+                }`}>
+                  <motion.div
+                    className={`w-1 h-1 rounded-full ${elevenLabsKey ? "bg-emerald-400" : "bg-amber-400"}`}
+                    animate={elevenLabsKey ? { opacity: [1, 0.35, 1] } : {}}
+                    transition={{ duration: 2.5, repeat: Infinity }}
+                  />
+                  {elevenLabsKey ? "Connected" : "Not connected"}
+                </div>
+              </div>
+
               <Input
                 type="password"
                 value={elevenLabsKey}
                 onChange={(e) => setElevenLabsKey(e.target.value)}
                 placeholder="xi-..."
-                className="bg-secondary border-border text-foreground placeholder:text-muted-foreground/40 h-11 font-mono text-xs"
+                className="h-10 font-mono text-xs rounded-xl placeholder:text-muted-foreground/28 focus:ring-1 focus:ring-primary/30"
+                style={{ background: "hsl(222 28% 5%)", border: "1px solid hsl(217 28% 14%)" }}
                 disabled={!isByokEnabled}
               />
-              <a href="https://try.elevenlabs.io/8ym6azaucekp" target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-[11px] font-mono text-primary hover:text-primary/80 underline underline-offset-2">
+
+              <a
+                href="https://try.elevenlabs.io/8ym6azaucekp"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-[11px] font-mono transition-colors"
+                style={{ color: "hsl(250 80% 65% / 0.6)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "hsl(250 80% 70%)")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "hsl(250 80% 65% / 0.6)")}
+              >
+                <CheckCircle2 className="w-3 h-3" />
                 Get your ElevenLabs API key
               </a>
             </div>
-            <div>
-              <label className="text-xs font-mono text-muted-foreground mb-1.5 block">Replicate API Key (Video)</label>
+
+            {/* Divider */}
+            <div style={{ height: 1, background: "hsl(217 28% 10%)" }} />
+
+            {/* ── AI/ML API ─────────────────────────────────── */}
+            <div className="space-y-3">
+              {/* Provider label row */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded flex items-center justify-center text-[9px] font-bold"
+                    style={{ background: "hsl(217 91% 60% / 0.12)", border: "1px solid hsl(217 91% 60% / 0.25)", color: "hsl(217 91% 68%)" }}>
+                    AI
+                  </div>
+                  <span className="text-xs font-medium text-foreground/80">AI/ML API</span>
+                  <span className="text-[9px] font-mono text-muted-foreground/40">Video Studio</span>
+                </div>
+                {/* Connection status */}
+                <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-mono border ${
+                  videoApiKey
+                    ? "border-emerald-500/25 bg-emerald-500/6 text-emerald-400/75"
+                    : "border-amber-500/20 bg-amber-500/5 text-amber-400/60"
+                }`}>
+                  <motion.div
+                    className={`w-1 h-1 rounded-full ${videoApiKey ? "bg-emerald-400" : "bg-amber-400"}`}
+                    animate={videoApiKey ? { opacity: [1, 0.35, 1] } : {}}
+                    transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
+                  />
+                  {videoApiKey ? "Connected · AI/ML API" : "Not connected"}
+                </div>
+              </div>
+
               <Input
                 type="password"
                 value={videoApiKey}
                 onChange={(e) => setVideoApiKey(e.target.value)}
-                placeholder="r8_..."
-                className="bg-secondary border-border text-foreground placeholder:text-muted-foreground/40 h-11 font-mono text-xs"
+                placeholder="AI/ML API key..."
+                className="h-10 font-mono text-xs rounded-xl placeholder:text-muted-foreground/28 focus:ring-1 focus:ring-primary/30"
+                style={{ background: "hsl(222 28% 5%)", border: "1px solid hsl(217 28% 14%)" }}
                 disabled={!isByokEnabled}
               />
+
+              {/* CTA — affiliate link */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <a
+                  href="https://aimlapi.com/?via=mohammad-ashad"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all"
+                  style={{
+                    background: "hsl(217 91% 60% / 0.07)",
+                    border: "1px solid hsl(217 91% 60% / 0.20)",
+                    color: "hsl(217 91% 65% / 0.75)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "hsl(217 91% 60% / 0.12)";
+                    e.currentTarget.style.borderColor = "hsl(217 91% 60% / 0.32)";
+                    e.currentTarget.style.color = "hsl(217 91% 68%)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "hsl(217 91% 60% / 0.07)";
+                    e.currentTarget.style.borderColor = "hsl(217 91% 60% / 0.20)";
+                    e.currentTarget.style.color = "hsl(217 91% 65% / 0.75)";
+                  }}
+                >
+                  <Zap className="w-3 h-3" />
+                  Get Your AI/ML API Key
+                </a>
+                <p className="text-[10px] font-mono text-muted-foreground/30">
+                  AI-powered video generation infrastructure
+                </p>
+              </div>
             </div>
-            <motion.button
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              onClick={handleSaveKeys}
-              disabled={saving || !isByokEnabled}
-              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium glow-blue disabled:opacity-50 transition-all"
-            >
-              {saving ? "Saving..." : "Save Keys"}
-            </motion.button>
+
+            {/* Divider */}
+            <div style={{ height: 1, background: "hsl(217 28% 10%)" }} />
+
+            {/* Save button */}
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-mono text-muted-foreground/28">
+                Keys are encrypted and stored securely on your account
+              </p>
+              <motion.button
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                onClick={handleSaveKeys}
+                disabled={saving || !isByokEnabled}
+                className="px-5 py-2 rounded-xl text-xs font-medium glow-blue disabled:opacity-40 flex items-center gap-2 transition-all"
+                style={{ background: "hsl(217 91% 55%)", color: "#fff" }}
+              >
+                {saving
+                  ? <><RefreshCw className="w-3 h-3 animate-spin" /> Saving...</>
+                  : <><CheckCircle2 className="w-3 h-3" /> Save Keys</>
+                }
+              </motion.button>
+            </div>
           </div>
         </motion.div>
 
