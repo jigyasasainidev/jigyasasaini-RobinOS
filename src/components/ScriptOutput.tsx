@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Copy, Check, RefreshCw, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import type { ScriptMode } from "./ScriptModeSelector";
+import { GenerationState, SCRIPT_STAGES } from "@/components/ai/generation-state";
 
 interface Props {
   output: string;
@@ -29,14 +30,9 @@ export function ScriptOutput({ output, generating, mode, onRegenerate, onTryDiff
 
   if (generating && !output) {
     return (
-      <div className="min-h-[300px] flex flex-col items-center justify-center gap-4 rounded-2xl glass-card p-8">
-        <div className="relative w-12 h-12">
-          <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-ping" />
-          <div className="absolute inset-2 rounded-full bg-primary/20 gen-pulse" />
-          <div className="absolute inset-3 rounded-full bg-primary glow-blue" />
-        </div>
-        <p className="text-sm text-muted-foreground font-mono gen-pulse">Analyzing viral patterns...</p>
-      </div>
+      <AnimatePresence>
+        <GenerationState active={generating} stages={SCRIPT_STAGES} showStream />
+      </AnimatePresence>
     );
   }
 

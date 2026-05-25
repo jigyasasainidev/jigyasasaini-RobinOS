@@ -20,6 +20,7 @@ import { scanTrendTopic } from "@/services/trendRadarClient";
 import type { TrendIntelligence } from "@/types/trendRadar";
 import { AIStatusBadge } from "@/components/ui/status-badge";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
+import { GenerationState, SCRIPT_STAGES } from "@/components/ai/generation-state";
 
 // ── Trend topic shape from scan-trends edge function ──────
 const tones = ["Casual", "Bold", "Storytelling", "Educational", "Provocative"];
@@ -323,7 +324,7 @@ const StudioPage = () => {
         {generating && scanPhase && !output && (
           <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
             className="mb-4 flex items-center gap-2.5">
-            <AIStatusBadge phase={scanPhase} active={generating && !output} />
+            <GenerationState active={generating && !output} stages={SCRIPT_STAGES} compact />
           </motion.div>
         )}
       </AnimatePresence>
