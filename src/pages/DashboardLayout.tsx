@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
@@ -12,6 +12,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import robinosLogo from "@/assets/robinos-logo.png";
 import { AlertTriangle, ShieldX, X } from "lucide-react";
 import { subscribePostgresChanges } from "@/lib/realtime/channelManager";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 
 const DashboardLayout = () => {
   const { user, loading, signOut } = useAuth();
@@ -243,7 +244,9 @@ const DashboardLayout = () => {
               </motion.div>
             ) : null}
           </AnimatePresence>
-          <Outlet />
+          <Suspense fallback={<PageSkeleton />}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
 

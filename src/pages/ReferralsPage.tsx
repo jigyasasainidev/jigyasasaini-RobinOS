@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { db } from "@/lib/cloudDb";
 import { useReferralData } from "@/hooks/useReferralData";
+import { SkeletonCard } from "@/components/ui/skeleton";
 
 const REFERRAL_DOMAIN = "https://tryrobin.xyz";
 const WITHDRAWAL_FEE = 0;
@@ -204,9 +205,9 @@ const ReferralsPage = () => {
       </motion.div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, idx) => (
-            <div key={idx} className="h-28 rounded-lg border border-border/50 bg-card/40 animate-pulse" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4" aria-busy="true" aria-label="Loading affiliate stats">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SkeletonCard key={i} />
           ))}
         </div>
       ) : (

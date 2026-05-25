@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Clock, TrendingUp, PenTool, Flame, Copy, Check } from "lucide-react";
 import { useHistory, type ScanRecord, type ScriptRecord } from "@/hooks/useHistory";
 import { toast } from "sonner";
+import { SkeletonRow } from "@/components/ui/skeleton";
 
 type TabType = "scans" | "scripts";
 
@@ -62,9 +63,10 @@ const HistoryPage = () => {
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 py-20 justify-center text-muted-foreground">
-          <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-          <span className="text-xs font-mono">Loading history...</span>
+        <div className="space-y-3" aria-busy="true" aria-label="Loading history">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <SkeletonRow key={i} />
+          ))}
         </div>
       ) : tab === "scans" ? (
         <div className="space-y-3">
