@@ -1,11 +1,25 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   checkAndIncrementUsage,
+  verifyAuth,
   CORS_HEADERS,
   FEATURES,
   createServiceClient,
 } from "../_shared/entitlement.ts";
 import { trackFeatureUsage } from "../_shared/feature-usage.ts";
+
+// ── AI/ML API config ───────────────────────────────────────
+// Primary model: Kling 2.1 Standard text-to-video via AI/ML API
+const AIML_BASE = "https://api.aimlapi.com";
+
+// Aspect ratio → AI/ML API format
+const ASPECT_MAP: Record<string, string> = {
+  "9:16":  "9:16",
+  "16:9":  "16:9",
+  "1:1":   "1:1",
+  "4:5":   "4:5",
+  "21:9":  "21:9",
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -15,16 +29,13 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
     }
 
-    // ============================================================
-    // SERVER-SIDE ENTITLEMENT CHECK + ATOMIC INCREMENT
-    // Video generation is a premium feature — enforce entitlement
-    // ============================================================
+    // ── Entitlement check + increment ─────────────────────────
     const { result: entitlement, error: entitlementError } = await checkAndIncrementUsage(
       authHeader,
       FEATURES.VIDEO_GENERATION,
@@ -38,13 +49,8 @@ Deno.serve(async (req) => {
             error: entitlement.code === "FEATURE_DISABLED"
               ? "Video Studio requires Pro Creator or Agency plan"
               : entitlement.message || "Video generation limit reached",
-            code: entitlement.code,
-            feature: entitlement.feature,
-            plan: entitlement.plan,
-            limit: entitlement.limit,
-            used: entitlement.used,
+            code:      entitlement.code,
             remaining: entitlement.remaining,
-            reset_at: entitlement.reset_at,
           }),
           { status: 403, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
         );
@@ -52,117 +58,113 @@ Deno.serve(async (req) => {
       return entitlementError;
     }
 
-    // ============================================================
-    // AUTH + PROFILE CHECK
-    // ============================================================
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // ── Auth + profile ─────────────────────────────────────────
+    const { userId, error: authErr } = await verifyAuth(authHeader);
+    if (authErr) return authErr;
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      });
-    }
-
-    // Get user's video API key
+    const supabase = createServiceClient();
     const { data: profile } = await supabase
       .from("profiles")
       .select("video_api_key, subscription_tier")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .single();
 
     if (!profile?.video_api_key) {
       return new Response(
-        JSON.stringify({ error: "Video API key not configured. Add it in Settings → API Keys." }),
+        JSON.stringify({ error: "AI/ML API key not configured. Add it in Settings → API Keys." }),
         { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
       );
     }
 
-    const { prompt, aspect_ratio } = await req.json();
-    if (!prompt) {
-      return new Response(JSON.stringify({ error: "Prompt is required" }), {
-        status: 400,
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      });
+    // ── Parse request ──────────────────────────────────────────
+    const { prompt, aspect_ratio, style, duration } = await req.json();
+    if (!prompt?.trim()) {
+      return new Response(
+        JSON.stringify({ error: "Prompt is required" }),
+        { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
     }
 
-    // Map aspect ratio to width/height
-    const dimensions: Record<string, { width: number; height: number }> = {
-      "9:16": { width: 576, height: 1024 },
-      "16:9": { width: 1024, height: 576 },
-      "1:1": { width: 768, height: 768 },
-    };
-    const dim = dimensions[aspect_ratio] || dimensions["9:16"];
+    const ar       = ASPECT_MAP[aspect_ratio] ?? "16:9";
+    const dur      = Number(duration) || 5;
+    const fullPrompt = `${style ? style + " style, " : ""}${prompt.slice(0, 500)}`;
 
-    // Create prediction on Replicate using Stable Video Diffusion
-    const createResponse = await fetch("https://api.replicate.com/v1/predictions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${profile.video_api_key}`,
-        "Content-Type": "application/json",
-        Prefer: "wait",
-      },
-      body: JSON.stringify({
-        version: "dc59e70a0f5aa2c69c1602aeeaebe4b74cd0ce7d6d16b63f03fa83f85c969a83",
-        input: {
-          prompt: prompt.slice(0, 500),
-          width: dim.width,
-          height: dim.height,
-          num_frames: 25,
-          num_inference_steps: 30,
-          fps: 8,
+    console.log("[generate-video] AI/ML API request:", { ar, dur, style, promptLen: fullPrompt.length });
+
+    // ── Submit to AI/ML API (Kling 2.1 Standard) ──────────────
+    const submitRes = await fetch(
+      `${AIML_BASE}/v2/generate/video/kling-video/generation`,
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${profile.video_api_key}`,
+          "Content-Type":  "application/json",
         },
-      }),
-    });
-
-    if (!createResponse.ok) {
-      const errText = await createResponse.text();
-      console.error("Replicate create error:", createResponse.status, errText);
-      if (createResponse.status === 401 || createResponse.status === 403) {
-        return new Response(
-          JSON.stringify({ error: "Invalid Replicate API key. Check your key in Settings." }),
-          { status: 401, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
-        );
+        body: JSON.stringify({
+          prompt:       fullPrompt,
+          duration:     String(dur),
+          aspect_ratio: ar,
+        }),
       }
+    );
+
+    if (!submitRes.ok) {
+      const errText = await submitRes.text();
+      console.error("[generate-video] AI/ML API error:", submitRes.status, errText);
+
+      let userMsg = `AI/ML API error (${submitRes.status})`;
+      try {
+        const parsed = JSON.parse(errText);
+        if (parsed?.error?.message) userMsg = parsed.error.message;
+        else if (parsed?.message)   userMsg = parsed.message;
+        else if (parsed?.error)     userMsg = String(parsed.error);
+        if (submitRes.status === 401) userMsg = "Invalid AI/ML API key. Check your key in Settings.";
+        if (submitRes.status === 429) userMsg = "AI/ML API rate limit reached. Wait a moment and try again.";
+        if (submitRes.status === 402) userMsg = "Insufficient AI/ML API credits. Top up at aimlapi.com.";
+      } catch { /* keep default */ }
+
       return new Response(
-        JSON.stringify({ error: "Failed to start video generation. Try again." }),
+        JSON.stringify({ error: userMsg }),
         { status: 502, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
       );
     }
 
-    const prediction = await createResponse.json();
+    const submission = await submitRes.json();
+    console.log("[generate-video] submission response:", JSON.stringify(submission).slice(0, 300));
 
-    // If prediction completed (Prefer: wait header)
-    if (prediction.status === "succeeded" && prediction.output) {
-      const videoUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output;
-      // Analytics — silent, never blocks response
-      trackFeatureUsage({ supabase, userId: user.id, feature: FEATURES.VIDEO_GENERATION });
+    // AI/ML API returns generation_id or id
+    const generationId = submission?.id ?? submission?.generation_id ?? submission?.generationId;
+
+    if (!generationId) {
+      // Check if it came back immediately completed
+      if (submission?.status === "completed" && submission?.video?.url) {
+        trackFeatureUsage({ supabase, userId, feature: FEATURES.VIDEO_GENERATION });
+        return new Response(
+          JSON.stringify({ status: "succeeded", video_url: submission.video.url }),
+          { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+        );
+      }
+      console.error("[generate-video] no generation ID in response:", submission);
       return new Response(
-        JSON.stringify({ status: "succeeded", video_url: videoUrl, usage: entitlement }),
-        { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Video generation failed to start. Try again." }),
+        { status: 502, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
       );
     }
 
-    // Return prediction ID for polling
+    // Return generation ID for frontend polling
     return new Response(
       JSON.stringify({
-        status: prediction.status || "starting",
-        prediction_id: prediction.id,
-        video_url: null,
-        usage: entitlement,
+        status:        submission.status ?? "processing",
+        generation_id: generationId,
+        video_url:     null,
       }),
       { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
     );
+
   } catch (err) {
-    console.error("generate-video error:", err);
+    console.error("[generate-video] unexpected error:", err);
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
+      JSON.stringify({ error: "Internal server error. Try again." }),
       { status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
     );
   }

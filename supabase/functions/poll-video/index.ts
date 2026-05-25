@@ -1,92 +1,109 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  verifyAuth,
+  CORS_HEADERS,
+  createServiceClient,
+  FEATURES,
+} from "../_shared/entitlement.ts";
+import { trackFeatureUsage } from "../_shared/feature-usage.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const AIML_BASE = "https://api.aimlapi.com";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: CORS_HEADERS });
   }
 
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // ── Auth ───────────────────────────────────────────────────
+    const { userId, error: authErr } = await verifyAuth(authHeader);
+    if (authErr) return authErr;
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
+    // ── Profile ────────────────────────────────────────────────
+    const supabase = createServiceClient();
     const { data: profile } = await supabase
       .from("profiles")
       .select("video_api_key")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .single();
 
     if (!profile?.video_api_key) {
-      return new Response(JSON.stringify({ error: "No API key" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "No AI/ML API key found." }),
+        { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
     }
 
-    const { prediction_id } = await req.json();
-    if (!prediction_id) {
-      return new Response(JSON.stringify({ error: "prediction_id required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // ── Parse body ─────────────────────────────────────────────
+    const { generation_id } = await req.json();
+    if (!generation_id) {
+      return new Response(
+        JSON.stringify({ error: "generation_id is required" }),
+        { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
     }
 
-    const response = await fetch(`https://api.replicate.com/v1/predictions/${prediction_id}`, {
-      headers: { Authorization: `Bearer ${profile.video_api_key}` },
-    });
-
-    if (!response.ok) {
-      return new Response(JSON.stringify({ error: "Failed to poll prediction" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const prediction = await response.json();
-    const videoUrl = prediction.output
-      ? Array.isArray(prediction.output)
-        ? prediction.output[0]
-        : prediction.output
-      : null;
-
-    return new Response(
-      JSON.stringify({
-        status: prediction.status,
-        video_url: videoUrl,
-        error: prediction.error || null,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    // ── Poll AI/ML API ─────────────────────────────────────────
+    const pollRes = await fetch(
+      `${AIML_BASE}/v2/generate/video/kling-video/generation?generation_id=${encodeURIComponent(generation_id)}`,
+      {
+        method:  "GET",
+        headers: { "Authorization": `Bearer ${profile.video_api_key}` },
+      }
     );
+
+    if (!pollRes.ok) {
+      const errText = await pollRes.text();
+      console.error("[poll-video] AI/ML API poll error:", pollRes.status, errText);
+      return new Response(
+        JSON.stringify({ error: "Failed to check video status. Try again." }),
+        { status: 502, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
+    }
+
+    const result = await pollRes.json();
+    console.log("[poll-video] status:", result?.status, "generation_id:", generation_id);
+
+    // AI/ML API status values: "processing", "queued", "completed", "failed", "error"
+    const status    = result?.status ?? "processing";
+    const videoData = result?.video;
+    const videoUrl  = videoData?.url ?? null;
+
+    if (status === "completed" && videoUrl) {
+      // Fire analytics silently on completion
+      trackFeatureUsage({ supabase, userId, feature: FEATURES.VIDEO_GENERATION });
+      return new Response(
+        JSON.stringify({ status: "succeeded", video_url: videoUrl }),
+        { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (status === "failed" || status === "error") {
+      const errMsg = result?.error ?? result?.message ?? "Video generation failed on the AI provider side.";
+      return new Response(
+        JSON.stringify({ status: "failed", error: errMsg, video_url: null }),
+        { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Still processing / queued
+    return new Response(
+      JSON.stringify({ status: "processing", video_url: null }),
+      { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+    );
+
   } catch (err) {
-    console.error("poll-video error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("[poll-video] unexpected error:", err);
+    return new Response(
+      JSON.stringify({ error: "Internal server error." }),
+      { status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+    );
   }
 });
