@@ -61,7 +61,7 @@ export function AdminRouteGuard({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { data: adminAccess, isLoading: adminLoading } = useAdminAccess();
-  const { isVerified, clearVerified } = useAdmin2FA();
+  const { isVerified, clearVerified, getExpiresInMs } = useAdmin2FA();
 
   const [twoFAStatus,  setTwoFAStatus]  = useState<TwoFAStatus>("loading");
   const [twoFAChecked, setTwoFAChecked] = useState(false);
@@ -136,6 +136,42 @@ export function AdminRouteGuard({ children }: { children: ReactNode }) {
     // Increment renderKey to force this component to re-evaluate
     setRenderKey((k) => k + 1);
   }, []);
+
+  // ── Auto-logout: 1-hour 2FA session expiry ─────────────────
+  // Fires a precise timer based on the remaining session TTL.
+  // Also checks every 60s in case the tab was backgrounded/suspended.
+  useEffect(() => {
+    // Only run when admin is fully verified
+    if (!isVerified()) return;
+
+    const doLogout = async () => {
+      console.debug("[AdminRouteGuard] 1-hour session expired → auto-logout");
+      clearVerified();
+      await supabase.auth.signOut();
+      navigate("/adminsh/auth?expired=1", { replace: true });
+    };
+
+    const remaining = getExpiresInMs();
+    if (remaining <= 0) {
+      void doLogout();
+      return;
+    }
+
+    // Precise timer for exact expiry moment
+    const exactTimer = setTimeout(() => void doLogout(), remaining);
+
+    // Fallback poll every 60s (handles tab sleep/resume)
+    const pollTimer = setInterval(() => {
+      if (!isVerified()) void doLogout();
+    }, 60_000);
+
+    return () => {
+      clearTimeout(exactTimer);
+      clearInterval(pollTimer);
+    };
+  // Re-run whenever renderKey changes (i.e. after each 2FA verification)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [renderKey]);
 
   // ── Loading ────────────────────────────────────────────────
   const stillLoading = authLoading || adminLoading || (isAdminConfirmed && !twoFAChecked);

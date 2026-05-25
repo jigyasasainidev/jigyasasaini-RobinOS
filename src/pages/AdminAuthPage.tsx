@@ -13,6 +13,7 @@ const AdminAuthPage = () => {
   const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const unauthorized = searchParams.get("unauthorized") === "1";
+  const expired      = searchParams.get("expired") === "1";
 
   useEffect(() => {
     let mounted = true;
@@ -97,6 +98,7 @@ const AdminAuthPage = () => {
           <h1 className="text-chrome text-2xl font-semibold">RobinOS Admin Access</h1>
           <p className="text-muted-foreground text-xs mt-1 font-mono">Restricted Area — Role Verified</p>
           {unauthorized ? <p className="text-destructive text-xs mt-2 font-mono">Unauthorized Access</p> : null}
+          {expired      ? <p className="text-amber-400/80 text-xs mt-2 font-mono">Session expired — please sign in again</p> : null}
         </div>
 
         <div className="glass-strong rounded-xl p-6 sm:p-8 border border-border/50">
