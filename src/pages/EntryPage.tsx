@@ -304,27 +304,47 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
         title={seoTitle}
         description={seoDescription}
         canonicalPath={seoPath}
-        keywords="ai content operating system, ai script generator, creator workflow automation, trending audio discovery, trending hashtag tool"
+        keywords="ai content operating system, ai script generator, creator workflow automation, trending audio discovery, trending hashtag tool, viral script generator, TikTok script AI, Instagram Reels script"
         structuredData={[
           {
             "@context": "https://schema.org",
             "@type": "SoftwareApplication",
-            name: "RobinOS",
-            applicationCategory: "BusinessApplication",
-            operatingSystem: "Web",
-            url: seoPath,
-            description: seoDescription,
+            "name": "RobinOS",
+            "applicationCategory": "BusinessApplication",
+            "applicationSubCategory": "AI Content Creation Tool",
+            "operatingSystem": "Web",
+            "url": "https://tryrobin.xyz/",
+            "description": seoDescription,
+            "offers": {
+              "@type": "AggregateOffer",
+              "lowPrice": "0",
+              "highPrice": "99",
+              "priceCurrency": "USD",
+            },
           },
           {
             "@context": "https://schema.org",
-            "@type": "WebSite",
-            name: "RobinOS",
-            url: "/",
-            potentialAction: {
-              "@type": "SearchAction",
-              target: "/docs",
-              "query-input": "required name=search_term_string",
-            },
+            "@type": "FAQPage",
+            "mainEntity": faqItems.map((item) => ({
+              "@type": "Question",
+              "name": item.q,
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": item.a,
+              },
+            })),
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://tryrobin.xyz/",
+              },
+            ],
           },
         ]}
       />

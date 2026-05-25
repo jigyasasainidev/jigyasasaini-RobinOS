@@ -27,5 +27,37 @@ export default defineConfig(({ mode }) => {
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    // Improve chunk caching — vendor libs change less often than app code
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // React core — most stable, longest cache lifetime
+          "vendor-react": ["react", "react-dom"],
+          // Router — stable
+          "vendor-router": ["react-router-dom"],
+          // Animation — large but stable
+          "vendor-motion": ["framer-motion"],
+          // Query — stable
+          "vendor-query": ["@tanstack/react-query"],
+          // Supabase — stable
+          "vendor-supabase": ["@supabase/supabase-js"],
+          // Charts — large, rarely changes
+          "vendor-charts": ["recharts"],
+          // UI primitives — stable
+          "vendor-radix": [
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-tabs",
+            "@radix-ui/react-accordion",
+            "@radix-ui/react-tooltip",
+            "@radix-ui/react-dropdown-menu",
+            "@radix-ui/react-select",
+          ],
+        },
+      },
+    },
+    // Increase warning threshold slightly — we know about the admin bundle
+    chunkSizeWarningLimit: 600,
+  },
   };
 });
