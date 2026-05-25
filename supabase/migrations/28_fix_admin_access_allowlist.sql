@@ -61,11 +61,14 @@ $$;
 -- ── 2. Seed user_roles for primary admin ──────────────────
 -- Ensures the primary admin has an explicit role row so both
 -- the old and new logic work correctly.
+-- Uses WHERE NOT EXISTS since user_roles has no unique constraint on user_id.
 insert into public.user_roles (user_id, role)
 select u.id, 'super_admin'
 from auth.users u
 where lower(u.email) = 'ashadbuilds@gmail.com'
-on conflict (user_id) do update set role = 'super_admin';
+  and not exists (
+    select 1 from public.user_roles r where r.user_id = u.id
+  );
 
 comment on function public.get_admin_access() is
   'Returns admin access info for the current user. is_admin=true if user
