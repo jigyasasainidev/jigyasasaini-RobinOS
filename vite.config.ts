@@ -27,6 +27,11 @@ export default defineConfig(({ mode }) => {
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Strip all console.* and debugger statements in production builds.
+  // This runs at the esbuild transform stage — zero console output in prod.
+  esbuild: {
+    drop: mode === "production" ? ["console", "debugger"] : [],
+  },
   build: {
     // Improve chunk caching — vendor libs change less often than app code
     rollupOptions: {
