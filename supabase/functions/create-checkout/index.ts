@@ -19,11 +19,15 @@ const DODO_API_KEY = Deno.env.get("DODO_SECRET_KEY")!;
 const DODO_ENV     = (Deno.env.get("DODO_ENVIRONMENT") ?? "test_mode") as "test_mode" | "live_mode";
 const APP_URL      = Deno.env.get("APP_URL") ?? "https://tryrobin.xyz";
 
-// ── Monthly product IDs only ───────────────────────────────
-const PRODUCT_IDS: Record<string, string> = {
-  creator:     Deno.env.get("DODO_PRODUCT_CREATOR_MONTHLY")     ?? "pdt_0NfejXCQQGgUhUxn4vxXR",
-  pro_creator: Deno.env.get("DODO_PRODUCT_PRO_CREATOR_MONTHLY") ?? "pdt_0NfejbrygMzipMel5iWbm",
-  agency:      Deno.env.get("DODO_PRODUCT_AGENCY_MONTHLY")      ?? "pdt_0Nfejh9OBLawQ8o36msZV",
+// ── Monthly product IDs — read from Supabase secrets only ─
+// Set these in Supabase Dashboard → Edge Functions → Secrets:
+//   DODO_PRODUCT_CREATOR_MONTHLY
+//   DODO_PRODUCT_PRO_CREATOR_MONTHLY
+//   DODO_PRODUCT_AGENCY_MONTHLY
+const PRODUCT_IDS: Record<string, string | undefined> = {
+  creator:     Deno.env.get("DODO_PRODUCT_CREATOR_MONTHLY"),
+  pro_creator: Deno.env.get("DODO_PRODUCT_PRO_CREATOR_MONTHLY"),
+  agency:      Deno.env.get("DODO_PRODUCT_AGENCY_MONTHLY"),
 };
 
 const VALID_PLANS = ["creator", "pro_creator", "agency"] as const;
@@ -87,7 +91,7 @@ Deno.serve(async (req) => {
     // ── Resolve product ID ────────────────────────────────
     const productId = PRODUCT_IDS[planKey];
     if (!productId) {
-      console.error(`[create-checkout] Missing product ID for plan: ${planKey}`);
+      console.error(`[create-checkout] Missing product ID for plan: ${planKey}. Set DODO_PRODUCT_${planKey.toUpperCase()}_MONTHLY in Supabase secrets.`);
       return new Response(JSON.stringify({
         error: "This plan is not available for purchase. Please contact support.",
         code:  "PRODUCT_NOT_CONFIGURED",
@@ -95,6 +99,9 @@ Deno.serve(async (req) => {
         status: 503, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
+
+    // Log which product ID is being used (helps debug)
+    console.log(`[create-checkout] Using product_id=${productId} for plan=${planKey}`);
 
     // ── Create Dodo checkout session ──────────────────────
     const dodo = new DodoPayments({ bearerToken: DODO_API_KEY, environment: DODO_ENV });

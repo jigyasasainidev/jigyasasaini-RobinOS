@@ -24,12 +24,25 @@ const SERVICE_KEY    = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const WEBHOOK_SECRET = Deno.env.get("DODO_WEBHOOK_SECRET")!;
 
 // ── Product ID → plan key map (monthly only) ───────────────
-// Hardcoded IDs + env var fallback for flexibility
-const PRODUCT_MAP: Record<string, string> = {
-  [Deno.env.get("DODO_PRODUCT_CREATOR_MONTHLY")     ?? "pdt_0NfejXCQQGgUhUxn4vxXR"]: "creator",
-  [Deno.env.get("DODO_PRODUCT_PRO_CREATOR_MONTHLY") ?? "pdt_0NfejbrygMzipMel5iWbm"]: "pro_creator",
-  [Deno.env.get("DODO_PRODUCT_AGENCY_MONTHLY")      ?? "pdt_0Nfejh9OBLawQ8o36msZV"]: "agency",
-};
+// Read exclusively from Supabase secrets — no hardcoded fallbacks
+function buildProductMap(): Record<string, string> {
+  const map: Record<string, string> = {};
+  const entries: [string, string][] = [
+    ["DODO_PRODUCT_CREATOR_MONTHLY",     "creator"],
+    ["DODO_PRODUCT_PRO_CREATOR_MONTHLY", "pro_creator"],
+    ["DODO_PRODUCT_AGENCY_MONTHLY",      "agency"],
+  ];
+  for (const [envKey, plan] of entries) {
+    const id = Deno.env.get(envKey);
+    if (id) {
+      map[id] = plan;
+      console.log(`[dodo-webhook] Mapped product ${id} → ${plan}`);
+    } else {
+      console.warn(`[dodo-webhook] Secret ${envKey} not set`);
+    }
+  }
+  return map;
+}
 
 // ── Plan amounts (monthly) ─────────────────────────────────
 const PLAN_AMOUNTS: Record<string, number> = {
@@ -149,10 +162,6 @@ function extractSubscriptionId(data: Record<string, unknown>): string {
   return String(data.subscription_id ?? "");
 }
 
-function resolvePlanFromProduct(productId: string, metadata: Record<string, string>): string {
-  return PRODUCT_MAP[productId] ?? metadata.plan_key ?? "creator";
-}
-
 // Fallback: look up user by provider_subscription_id
 async function resolveUserBySubscriptionId(
   supabase: ReturnType<typeof createClient>,
@@ -185,7 +194,8 @@ async function handleSubscriptionActive(
     return;
   }
 
-  const planKey = resolvePlanFromProduct(productId, metadata);
+  const productMap = buildProductMap();
+  const planKey = productMap[productId] ?? metadata.plan_key ?? "creator";
   const amount  = PLAN_AMOUNTS[planKey] ?? 0;
 
   console.log(`[dodo-webhook] Activating plan=${planKey} user=${userId} sub=${subscriptionId}`);
