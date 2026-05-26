@@ -173,8 +173,15 @@ delete from public.profiles
 -- Zero out usage counters on the admin profile itself.
 
 update public.profiles
-   set total_scripts_generated = 0,
-       total_trend_scans       = 0,
+   set scripts_used_this_month = 0,
+       free_scans_used         = 0,
+       free_scripts_used       = 0,
+       trending_scans_used     = 0,
+       hashtag_scans_used      = 0,
+       affiliate_balance       = 0,
+       total_earnings          = 0,
+       pending_balance         = 0,
+       paid_balance            = 0,
        updated_at              = now()
  where user_id = (select id from auth.users where lower(email) = 'ashadbuilds@gmail.com' limit 1);
 
