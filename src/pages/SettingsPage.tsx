@@ -97,7 +97,11 @@ const SettingsPage = () => {
         profile?.display_name ?? undefined
       );
     } catch (err: any) {
-      toast.error(err?.message ?? "Failed to start checkout. Please try again.");
+      if (err?.message?.includes("ALREADY_ON_PLAN") || err?.message?.includes("already on the")) {
+        toast.info("You're already on this plan. Use Manage Billing to make changes.");
+      } else {
+        toast.error(err?.message ?? "Failed to start checkout. Please try again.");
+      }
     } finally {
       setCheckoutLoading(null);
     }

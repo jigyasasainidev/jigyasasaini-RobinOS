@@ -62,7 +62,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── Prevent duplicate active subscriptions ────────────
+    // ── Prevent duplicate: same plan already active ──────
+    // Allow upgrades/downgrades — only block if buying the exact same plan
     const { data: existingSub } = await supabase
       .from("user_subscriptions")
       .select("plan, status, provider")
@@ -72,11 +73,12 @@ Deno.serve(async (req) => {
     if (
       existingSub &&
       ["active", "trialing", "expiring"].includes(existingSub.status ?? "") &&
-      existingSub.plan !== "free"
+      existingSub.plan === planKey &&
+      existingSub.provider === "dodo"
     ) {
       return new Response(JSON.stringify({
-        error: "You already have an active subscription. Manage it from your settings.",
-        code:  "ALREADY_SUBSCRIBED",
+        error: `You're already on the ${planKey.replace("_", " ")} plan. Manage your subscription from settings.`,
+        code:  "ALREADY_ON_PLAN",
       }), {
         status: 409, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
