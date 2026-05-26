@@ -129,23 +129,37 @@ const ScrollManager = () => {
 
 // ── Referral capture — runs on every page load ─────────────
 // Checks ?ref= param on ANY page (homepage, pricing, landing, etc.)
-// and persists it to sessionStorage + localStorage + cookie.
-// This must run at the router level so it fires before auth flow.
+// and persists to sessionStorage + localStorage + cookie.
+// Runs at router level so it fires before auth flow starts.
+//
+// Guards:
+//   - Empty / "null" / "undefined" strings → ignored
+//   - Min 4 chars (coordinator validates)
+//   - First-touch: coordinator blocks overwrite if valid code exists
+//   - Duplicate: same code already stored → skip silently
+//   - Self-referral: enforced server-side in initialize_user_account()
 const ReferralCapture = () => {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    const ref = searchParams.get("ref")?.trim();
-    if (!ref) return;
+    const raw = searchParams.get("ref")?.trim() ?? "";
 
-    const captured = referralCoordinator.captureFromUrl(ref);
-    if (captured) {
-      const { overwriteBlocked } = referralCoordinator.persist(captured);
-      if (!overwriteBlocked) {
-        console.info(`[ReferralCapture] Saved referral code: ${captured.code}`);
-      }
+    // Reject empty, literal "null"/"undefined", or too-short codes
+    if (!raw || raw === "null" || raw === "undefined" || raw.length < 4) return;
+
+    // Skip if same code already stored (no-op, no spam)
+    const existing = referralCoordinator.peek();
+    if (existing.code && existing.code.toUpperCase() === raw.toUpperCase()) return;
+
+    const captured = referralCoordinator.captureFromUrl(raw);
+    if (!captured) return;
+
+    const { overwriteBlocked } = referralCoordinator.persist(captured);
+
+    if (import.meta.env.DEV && !overwriteBlocked) {
+      console.info(`[ReferralCapture] Saved: ${captured.code}`);
     }
-  // Only run when ?ref= param changes — not on every navigation
+  // Depend on the raw string value — fires only when ?ref= actually changes
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams.get("ref")]);
 
