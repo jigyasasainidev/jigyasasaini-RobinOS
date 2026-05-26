@@ -67,6 +67,9 @@ const ReferralsPage = () => {
   const totalEarned  = Number(dashboard?.total_earned      ?? 0);
   const paidOut      = Number(dashboard?.paid_out          ?? 0);
   const lockedBalance = Number((dashboard as any)?.locked_balance ?? 0);
+
+  // Format to 2 decimal places for currency display
+  const fmt = (n: number) => n.toFixed(2);
   const totalReferrals = Number(dashboard?.total_referrals ?? 0);
   const paidConversions = Number(dashboard?.conversion_count ?? 0);
   const clicks = Number(dashboard?.referral_clicks ?? 0);
@@ -167,13 +170,13 @@ const ReferralsPage = () => {
   };
 
   const stats = [
-    { icon: Users,           label: "Total Referrals",    value: totalReferrals,  prefix: "" },
-    { icon: TrendingUp,      label: "Paid Conversions",   value: paidConversions, prefix: "" },
-    { icon: CircleDollarSign,label: "Total Earned",       value: totalEarned,     prefix: "$" },
-    { icon: Wallet,          label: "Available Balance",  value: available,       prefix: "$" },
-    { icon: Clock3,          label: "In Cooldown (14d)",  value: lockedBalance,   prefix: "$" },
-    { icon: DollarSign,      label: "Paid Out",           value: paidOut,         prefix: "$" },
-    { icon: ArrowUpRight,    label: "Conversion Rate",    value: conversionRate,  suffix: "%" },
+    { icon: Users,           label: "Total Referrals",    value: totalReferrals,  prefix: "",  suffix: "" },
+    { icon: TrendingUp,      label: "Paid Conversions",   value: paidConversions, prefix: "",  suffix: "" },
+    { icon: CircleDollarSign,label: "Total Earned",       value: totalEarned,     prefix: "$", suffix: "", decimals: true },
+    { icon: Wallet,          label: "Available Balance",  value: available,       prefix: "$", suffix: "", decimals: true },
+    { icon: Clock3,          label: "In Cooldown (14d)",  value: lockedBalance,   prefix: "$", suffix: "", decimals: true },
+    { icon: DollarSign,      label: "Paid Out",           value: paidOut,         prefix: "$", suffix: "", decimals: true },
+    { icon: ArrowUpRight,    label: "Conversion Rate",    value: conversionRate,  prefix: "",  suffix: "%" },
   ];
 
   return (
@@ -206,7 +209,10 @@ const ReferralsPage = () => {
               >
                 <stat.icon className="w-4 h-4 text-primary mb-2" />
                 <p className="text-chrome text-xl font-semibold leading-none">
-                  <CountValue value={stat.value} prefix={stat.prefix} suffix={stat.suffix} />
+                  {(stat as any).decimals
+                    ? <span>{stat.prefix}{fmt(stat.value)}{stat.suffix}</span>
+                    : <CountValue value={stat.value} prefix={stat.prefix} suffix={stat.suffix} />
+                  }
                 </p>
                 <p className="text-[10px] text-muted-foreground font-mono mt-1.5">{stat.label}</p>
               </motion.div>
@@ -298,11 +304,11 @@ const ReferralsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
               <div className="rounded-md border border-border/50 bg-secondary/40 px-3 py-2">
                 <p className="text-[10px] text-muted-foreground font-mono">Available Balance</p>
-                <p className="text-lg text-chrome font-semibold">${available.toFixed(2)}</p>
+                <p className="text-lg text-chrome font-semibold">${fmt(available)}</p>
               </div>
               <div className="rounded-md border border-border/50 bg-secondary/40 px-3 py-2">
                 <p className="text-[10px] text-muted-foreground font-mono">Minimum Withdrawal</p>
-                <p className="text-lg text-chrome font-semibold">${minimumWithdrawal.toFixed(2)}</p>
+                <p className="text-lg text-chrome font-semibold">${fmt(minimumWithdrawal)}</p>
               </div>
             </div>
 

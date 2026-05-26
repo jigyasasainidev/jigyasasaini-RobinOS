@@ -81,6 +81,10 @@ export async function redirectToCheckout(
     referralCode,
   });
 
+  // Clean up referral storage after checkout is initiated
+  // (commission will be recorded by webhook — no need to keep code)
+  if (referralCode) referralCoordinator.cleanup(restored.traceId);
+
   window.location.href = checkoutUrl;
 }
 
