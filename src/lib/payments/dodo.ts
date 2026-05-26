@@ -10,7 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import type {
   CheckoutSessionRequest,
   CheckoutSessionResponse,
-  BillingCycle,
   PlanKey,
 } from "./types";
 
@@ -47,24 +46,20 @@ async function callEdgeFunction<T>(
 }
 
 // ── Create checkout session ────────────────────────────────
-// Calls the create-checkout edge function which uses the
-// Dodo SDK server-side (secret key never exposed to browser).
 export async function createCheckoutSession(
   req: CheckoutSessionRequest
 ): Promise<CheckoutSessionResponse> {
   return callEdgeFunction<CheckoutSessionResponse>("create-checkout", {
-    planKey:      req.planKey,
-    billingCycle: req.billingCycle,
-    userId:       req.userId,
-    userEmail:    req.userEmail,
-    userName:     req.userName ?? "",
+    planKey:   req.planKey,
+    userId:    req.userId,
+    userEmail: req.userEmail,
+    userName:  req.userName ?? "",
   });
 }
 
 // ── Redirect to Dodo hosted checkout ──────────────────────
 export async function redirectToCheckout(
   planKey: PlanKey,
-  billingCycle: BillingCycle,
   userEmail: string,
   userName?: string
 ): Promise<void> {
@@ -73,7 +68,6 @@ export async function redirectToCheckout(
 
   const { checkoutUrl } = await createCheckoutSession({
     planKey,
-    billingCycle,
     userId:    user.id,
     userEmail: userEmail || user.email || "",
     userName,

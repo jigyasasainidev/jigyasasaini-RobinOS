@@ -1,23 +1,17 @@
 // ============================================================
 // DODO-WEBHOOK — Dodo Payments webhook handler
 // ============================================================
-// Handles all Dodo Payments subscription and payment events.
-// Verifies HMAC SHA256 signature using standardwebhooks spec.
-// Calls safe_plan_switch() to update subscription state.
-//
-// Events handled:
+// Monthly billing only. Handles 5 events:
 //   subscription.active    → activate plan
-//   subscription.renewed   → extend subscription
+//   subscription.renewed   → extend subscription (same as active)
 //   subscription.cancelled → mark cancelled, preserve until period end
-//   subscription.on_hold   → mark payment_failed
-//   subscription.expired   → downgrade to free
-//   payment.succeeded      → confirm active (belt+suspenders)
+//   payment.succeeded      → stamp last_payment_at
 //   payment.failed         → mark payment_failed
 //
 // Security:
-//   - Signature verified before any DB write
-//   - Idempotent: uses subscription_webhook_events table
-//   - service_role only — no user JWT needed
+//   - HMAC SHA256 signature verified (standardwebhooks spec)
+//   - Idempotent via subscription_webhook_events table
+//   - service_role only — no user JWT
 //   - Raw body preserved for signature verification
 // ============================================================
 
@@ -25,58 +19,34 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Webhook } from "npm:standardwebhooks";
 import { CORS_HEADERS } from "../_shared/entitlement.ts";
 
-const SUPABASE_URL    = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_KEY     = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const WEBHOOK_SECRET  = Deno.env.get("DODO_WEBHOOK_SECRET")!;
+const SUPABASE_URL   = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_KEY    = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const WEBHOOK_SECRET = Deno.env.get("DODO_WEBHOOK_SECRET")!;
 
-// ── Plan key normalization ─────────────────────────────────
-// Maps Dodo product IDs back to RobinOS plan keys.
-// Populated from Supabase secrets.
-function buildProductMap(): Record<string, { plan: string; cycle: string }> {
-  const map: Record<string, { plan: string; cycle: string }> = {};
-  const entries = [
-    ["DODO_PRODUCT_CREATOR_MONTHLY",     "creator",     "monthly"],
-    ["DODO_PRODUCT_PRO_CREATOR_MONTHLY", "pro_creator", "monthly"],
-    ["DODO_PRODUCT_AGENCY_MONTHLY",      "agency",      "monthly"],
-    ["DODO_PRODUCT_CREATOR_YEARLY",      "creator",     "yearly"],
-    ["DODO_PRODUCT_PRO_CREATOR_YEARLY",  "pro_creator", "yearly"],
-    ["DODO_PRODUCT_AGENCY_YEARLY",       "agency",      "yearly"],
-  ] as const;
-
-  for (const [envKey, plan, cycle] of entries) {
-    const productId = Deno.env.get(envKey);
-    if (productId) map[productId] = { plan, cycle };
-  }
-  return map;
-}
-
-// ── Amount helpers ─────────────────────────────────────────
-const PLAN_AMOUNTS: Record<string, Record<string, number>> = {
-  creator:     { monthly: 19, yearly: 190 },
-  pro_creator: { monthly: 39, yearly: 390 },
-  agency:      { monthly: 99, yearly: 990 },
+// ── Product ID → plan key map (monthly only) ───────────────
+// Hardcoded IDs + env var fallback for flexibility
+const PRODUCT_MAP: Record<string, string> = {
+  [Deno.env.get("DODO_PRODUCT_CREATOR_MONTHLY")     ?? "pdt_0NfedFf5yWQuYuZUPsomx"]: "creator",
+  [Deno.env.get("DODO_PRODUCT_PRO_CREATOR_MONTHLY") ?? "pdt_0NfedaK1KKBVDs37xrAO5"]: "pro_creator",
+  [Deno.env.get("DODO_PRODUCT_AGENCY_MONTHLY")      ?? "pdt_0Nfedwj3D80bkMnHQWfoI"]: "agency",
 };
 
-function getPlanAmount(plan: string, cycle: string): number {
-  return PLAN_AMOUNTS[plan]?.[cycle] ?? 0;
-}
-
-// ── Billing cycle → days ───────────────────────────────────
-function cycleToDays(cycle: string): number {
-  return cycle === "yearly" ? 365 : 30;
-}
+// ── Plan amounts (monthly) ─────────────────────────────────
+const PLAN_AMOUNTS: Record<string, number> = {
+  creator:     19,
+  pro_creator: 39,
+  agency:      99,
+};
 
 // ── Main handler ───────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
-  if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
-  }
+  if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
-  // ── Read raw body (required for signature verification) ──
+  // Read raw body — required for signature verification
   const rawBody = await req.text();
 
-  // ── Verify signature ──────────────────────────────────────
+  // Verify signature
   if (!WEBHOOK_SECRET) {
     console.error("[dodo-webhook] DODO_WEBHOOK_SECRET not configured");
     return new Response("Webhook secret not configured", { status: 500 });
@@ -100,7 +70,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  // ── Parse payload ─────────────────────────────────────────
+  // Parse payload
   let payload: Record<string, unknown>;
   try {
     payload = JSON.parse(rawBody);
@@ -113,16 +83,13 @@ Deno.serve(async (req) => {
   const eventType = String(payload.type ?? "");
   const data      = (payload.data ?? {}) as Record<string, unknown>;
 
-  console.log(`[dodo-webhook] Event: ${eventType} | webhook-id: ${webhookId}`);
+  console.log(`[dodo-webhook] ${eventType} | id=${webhookId}`);
 
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
-  // ── Idempotency check ─────────────────────────────────────
-  // Uses subscription_webhook_events table from migration 31
-  const payloadHash = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(rawBody)
-  ).then((buf) => Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join(""));
+  // Idempotency — uses subscription_webhook_events table (migration 31)
+  const payloadHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawBody))
+    .then((buf) => Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join(""));
 
   const { data: idempotencyResult } = await supabase.rpc("record_webhook_event", {
     p_provider_event_id: webhookId,
@@ -132,46 +99,36 @@ Deno.serve(async (req) => {
   });
 
   if (idempotencyResult?.is_duplicate) {
-    console.log(`[dodo-webhook] Duplicate event skipped: ${webhookId}`);
+    console.log(`[dodo-webhook] Duplicate skipped: ${webhookId}`);
     return new Response(JSON.stringify({ received: true, duplicate: true }), {
       headers: { "Content-Type": "application/json" },
     });
   }
 
-  // ── Route event ───────────────────────────────────────────
+  // Route event
   try {
     switch (eventType) {
       case "subscription.active":
       case "subscription.renewed":
         await handleSubscriptionActive(supabase, data);
         break;
-
       case "subscription.cancelled":
         await handleSubscriptionCancelled(supabase, data);
         break;
-
-      case "subscription.on_hold":
-      case "payment.failed":
-        await handlePaymentFailed(supabase, data);
-        break;
-
-      case "subscription.expired":
-        await handleSubscriptionExpired(supabase, data);
-        break;
-
       case "payment.succeeded":
         await handlePaymentSucceeded(supabase, data);
         break;
-
+      case "payment.failed":
+        await handlePaymentFailed(supabase, data);
+        break;
       default:
-        console.log(`[dodo-webhook] Unhandled event type: ${eventType}`);
+        console.log(`[dodo-webhook] Unhandled event: ${eventType}`);
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[dodo-webhook] Handler error for ${eventType}:`, msg);
-    // Return 200 to prevent Dodo from retrying a handler error
-    // (signature was valid, event was received — processing error is our problem)
-    return new Response(JSON.stringify({ received: true, error: msg }), {
+    console.error(`[dodo-webhook] Handler error (${eventType}):`, msg);
+    // Return 200 — signature was valid, processing error is ours to fix
+    return new Response(JSON.stringify({ received: true, processing_error: msg }), {
       headers: { "Content-Type": "application/json" },
     });
   }
@@ -181,55 +138,69 @@ Deno.serve(async (req) => {
   });
 });
 
+// ── Helpers ────────────────────────────────────────────────
+
+function extractUserId(data: Record<string, unknown>): string | null {
+  const metadata = (data.metadata ?? {}) as Record<string, string>;
+  return metadata.user_id ?? null;
+}
+
+function extractSubscriptionId(data: Record<string, unknown>): string {
+  return String(data.subscription_id ?? "");
+}
+
+function resolvePlanFromProduct(productId: string, metadata: Record<string, string>): string {
+  return PRODUCT_MAP[productId] ?? metadata.plan_key ?? "creator";
+}
+
+// Fallback: look up user by provider_subscription_id
+async function resolveUserBySubscriptionId(
+  supabase: ReturnType<typeof createClient>,
+  subscriptionId: string
+): Promise<string | null> {
+  if (!subscriptionId) return null;
+  const { data } = await supabase
+    .from("user_subscriptions")
+    .select("user_id")
+    .eq("provider_subscription_id", subscriptionId)
+    .eq("provider", "dodo")
+    .maybeSingle();
+  return data?.user_id ?? null;
+}
+
 // ── Event handlers ─────────────────────────────────────────
 
 async function handleSubscriptionActive(
   supabase: ReturnType<typeof createClient>,
   data: Record<string, unknown>
 ) {
-  const subscriptionId = String(data.subscription_id ?? "");
-  const customer       = (data.customer ?? {}) as Record<string, unknown>;
-  const customerId     = String(customer.customer_id ?? "");
+  const subscriptionId = extractSubscriptionId(data);
   const productId      = String(data.product_id ?? "");
   const metadata       = (data.metadata ?? {}) as Record<string, string>;
 
-  // Resolve user_id from metadata (set during checkout creation)
-  const userId = metadata.user_id ?? await resolveUserIdFromCustomer(supabase, customerId);
+  // Resolve user_id — metadata is the primary source (set at checkout creation)
+  const userId = extractUserId(data) ?? await resolveUserBySubscriptionId(supabase, subscriptionId);
   if (!userId) {
-    console.error("[dodo-webhook] Cannot resolve user_id for subscription:", subscriptionId);
+    console.error(`[dodo-webhook] Cannot resolve user_id for subscription: ${subscriptionId}`);
     return;
   }
 
-  // Resolve plan from product ID
-  const productMap = buildProductMap();
-  const planInfo   = productId ? productMap[productId] : null;
-  const planKey    = planInfo?.plan ?? metadata.plan_key ?? "creator";
-  const cycle      = planInfo?.cycle ?? metadata.billing_cycle ?? "monthly";
-  const amount     = getPlanAmount(planKey, cycle);
+  const planKey = resolvePlanFromProduct(productId, metadata);
+  const amount  = PLAN_AMOUNTS[planKey] ?? 0;
 
-  console.log(`[dodo-webhook] Activating plan=${planKey} cycle=${cycle} user=${userId}`);
+  console.log(`[dodo-webhook] Activating plan=${planKey} user=${userId} sub=${subscriptionId}`);
 
   const { data: result, error } = await supabase.rpc("safe_plan_switch", {
-    p_user_id:        userId,
-    p_new_plan:       planKey,
-    p_billing_cycle:  cycle,
-    p_provider:       "dodo",
+    p_user_id:         userId,
+    p_new_plan:        planKey,
+    p_billing_cycle:   "monthly",
+    p_provider:        "dodo",
     p_provider_sub_id: subscriptionId,
-    p_amount:         amount,
-    p_triggered_by:   "webhook",
+    p_amount:          amount,
+    p_triggered_by:    "webhook",
   });
 
-  if (error) {
-    throw new Error(`safe_plan_switch failed: ${error.message}`);
-  }
-
-  // Store customer_id for portal access
-  if (customerId) {
-    await supabase
-      .from("user_subscriptions")
-      .update({ provider: "dodo" })
-      .eq("user_id", userId);
-  }
+  if (error) throw new Error(`safe_plan_switch failed: ${error.message}`);
 
   console.log(`[dodo-webhook] Plan activated: ${JSON.stringify(result)}`);
 }
@@ -238,31 +209,29 @@ async function handleSubscriptionCancelled(
   supabase: ReturnType<typeof createClient>,
   data: Record<string, unknown>
 ) {
-  const subscriptionId = String(data.subscription_id ?? "");
-  const customer       = (data.customer ?? {}) as Record<string, unknown>;
-  const customerId     = String(customer.customer_id ?? "");
+  const subscriptionId = extractSubscriptionId(data);
   const metadata       = (data.metadata ?? {}) as Record<string, string>;
 
-  const userId = metadata.user_id ?? await resolveUserIdFromCustomer(supabase, customerId);
+  const userId = extractUserId(data) ?? await resolveUserBySubscriptionId(supabase, subscriptionId);
   if (!userId) {
-    console.error("[dodo-webhook] Cannot resolve user_id for cancellation:", subscriptionId);
+    console.error(`[dodo-webhook] Cannot resolve user_id for cancellation: ${subscriptionId}`);
     return;
   }
 
-  // Mark cancelled but preserve access until period end
-  // (safe_plan_switch would reset expiry — instead update status directly)
+  // Mark cancelled — preserve access until current period ends (expires_at unchanged)
   const { error } = await supabase
     .from("user_subscriptions")
     .update({
-      status:              "cancelled",
-      auto_renew:          false,
-      canceled_at:         new Date().toISOString(),
-      updated_at:          new Date().toISOString(),
+      status:      "cancelled",
+      auto_renew:  false,
+      canceled_at: new Date().toISOString(),
+      updated_at:  new Date().toISOString(),
     })
     .eq("user_id", userId);
 
   if (error) throw new Error(`Cancellation update failed: ${error.message}`);
 
+  // Audit log
   await supabase.rpc("log_subscription_event", {
     p_user_id:      userId,
     p_event_type:   "subscription_cancelled",
@@ -272,19 +241,33 @@ async function handleSubscriptionCancelled(
     p_metadata:     { subscription_id: subscriptionId, provider: "dodo" },
   });
 
-  console.log(`[dodo-webhook] Subscription cancelled for user: ${userId}`);
+  console.log(`[dodo-webhook] Cancelled for user: ${userId}`);
+}
+
+async function handlePaymentSucceeded(
+  supabase: ReturnType<typeof createClient>,
+  data: Record<string, unknown>
+) {
+  const subscriptionId = extractSubscriptionId(data);
+  if (!subscriptionId) return; // one-time payment, not a subscription
+
+  const userId = extractUserId(data) ?? await resolveUserBySubscriptionId(supabase, subscriptionId);
+  if (!userId) return;
+
+  await supabase
+    .from("user_subscriptions")
+    .update({ last_payment_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .eq("user_id", userId);
+
+  console.log(`[dodo-webhook] Payment succeeded for user: ${userId}`);
 }
 
 async function handlePaymentFailed(
   supabase: ReturnType<typeof createClient>,
   data: Record<string, unknown>
 ) {
-  const subscriptionId = String(data.subscription_id ?? "");
-  const customer       = (data.customer ?? {}) as Record<string, unknown>;
-  const customerId     = String(customer.customer_id ?? "");
-  const metadata       = (data.metadata ?? {}) as Record<string, string>;
-
-  const userId = metadata.user_id ?? await resolveUserIdFromCustomer(supabase, customerId);
+  const subscriptionId = extractSubscriptionId(data);
+  const userId = extractUserId(data) ?? await resolveUserBySubscriptionId(supabase, subscriptionId);
   if (!userId) return;
 
   const { error } = await supabase
@@ -302,77 +285,4 @@ async function handlePaymentFailed(
   });
 
   console.log(`[dodo-webhook] Payment failed for user: ${userId}`);
-}
-
-async function handleSubscriptionExpired(
-  supabase: ReturnType<typeof createClient>,
-  data: Record<string, unknown>
-) {
-  const subscriptionId = String(data.subscription_id ?? "");
-  const customer       = (data.customer ?? {}) as Record<string, unknown>;
-  const customerId     = String(customer.customer_id ?? "");
-  const metadata       = (data.metadata ?? {}) as Record<string, string>;
-
-  const userId = metadata.user_id ?? await resolveUserIdFromCustomer(supabase, customerId);
-  if (!userId) return;
-
-  // Downgrade to free via safe_plan_switch
-  await supabase.rpc("safe_plan_switch", {
-    p_user_id:        userId,
-    p_new_plan:       "free",
-    p_billing_cycle:  "monthly",
-    p_provider:       "dodo",
-    p_provider_sub_id: subscriptionId,
-    p_amount:         0,
-    p_triggered_by:   "webhook",
-  });
-
-  console.log(`[dodo-webhook] Subscription expired, downgraded to free: ${userId}`);
-}
-
-async function handlePaymentSucceeded(
-  supabase: ReturnType<typeof createClient>,
-  data: Record<string, unknown>
-) {
-  // Belt-and-suspenders: if subscription.active didn't fire,
-  // payment.succeeded ensures the plan is activated.
-  const subscriptionId = String(data.subscription_id ?? "");
-  if (!subscriptionId) return; // one-time payment, not a subscription
-
-  const customer   = (data.customer ?? {}) as Record<string, unknown>;
-  const customerId = String(customer.customer_id ?? "");
-  const metadata   = (data.metadata ?? {}) as Record<string, string>;
-
-  const userId = metadata.user_id ?? await resolveUserIdFromCustomer(supabase, customerId);
-  if (!userId) return;
-
-  // Update last_payment_at
-  await supabase
-    .from("user_subscriptions")
-    .update({
-      last_payment_at: new Date().toISOString(),
-      updated_at:      new Date().toISOString(),
-    })
-    .eq("user_id", userId);
-
-  console.log(`[dodo-webhook] Payment succeeded for user: ${userId}`);
-}
-
-// ── Resolve user_id from Dodo customer_id ─────────────────
-// Fallback when metadata.user_id is not present.
-async function resolveUserIdFromCustomer(
-  supabase: ReturnType<typeof createClient>,
-  customerId: string
-): Promise<string | null> {
-  if (!customerId) return null;
-
-  // Look up by provider_subscription_id or customer email
-  const { data } = await supabase
-    .from("user_subscriptions")
-    .select("user_id")
-    .eq("provider", "dodo")
-    .limit(1)
-    .single();
-
-  return data?.user_id ?? null;
 }

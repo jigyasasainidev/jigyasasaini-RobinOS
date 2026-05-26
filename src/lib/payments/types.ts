@@ -3,13 +3,12 @@
 // Shared types for the Dodo Payments integration layer.
 // ============================================================
 
-export type BillingCycle = "monthly" | "yearly";
+export type BillingCycle = "monthly";  // monthly only — yearly not supported
 
 export type PlanKey = "creator" | "pro_creator" | "agency";
 
 export interface CheckoutSessionRequest {
   planKey: PlanKey;
-  billingCycle: BillingCycle;
   userId: string;
   userEmail: string;
   userName?: string;

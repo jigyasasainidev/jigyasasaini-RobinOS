@@ -20,7 +20,7 @@ import { BrandMark } from "@/components/BrandMark";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { redirectToCheckout, openCustomerPortal } from "@/lib/payments/dodo";
-import type { PlanKey, BillingCycle } from "@/lib/payments/types";
+import type { PlanKey } from "@/lib/payments/types";
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -68,7 +68,6 @@ const SettingsPage = () => {
   const [elevenLabsKey, setElevenLabsKey] = useState(profile?.elevenlabs_api_key || "");
   const [videoApiKey, setVideoApiKey] = useState((profile as any)?.video_api_key || "");
   const [saving, setSaving] = useState(false);
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
 
   const { currency } = useCurrency();
   const { data: platformSettings } = usePlatformSettings();
@@ -78,11 +77,6 @@ const SettingsPage = () => {
     agency_price: platformSettings?.agency_price,
   });
   const symbol = getCurrencySymbol(currency);
-
-  // Sync billing cycle pill with actual subscription cycle
-  useEffect(() => {
-    if (lifecycle?.billing_cycle === "yearly") setBillingCycle("yearly");
-  }, [lifecycle?.billing_cycle]);
 
   // Keep API key inputs in sync with profile (after initial load)
   useEffect(() => {
@@ -95,12 +89,10 @@ const SettingsPage = () => {
     const validPlans: PlanKey[] = ["creator", "pro_creator", "agency"];
     if (!validPlans.includes(planTier as PlanKey)) return;
 
-    const loadingKey = `${planTier}_${billingCycle}`;
-    setCheckoutLoading(loadingKey);
+    setCheckoutLoading(planTier);
     try {
       await redirectToCheckout(
         planTier as PlanKey,
-        billingCycle as BillingCycle,
         user.email,
         profile?.display_name ?? undefined
       );
@@ -593,7 +585,7 @@ const SettingsPage = () => {
 
           <div className="text-center mb-2 space-y-1">
             <p className="text-[10px] text-muted-foreground/50 font-mono">
-              Global USD pricing • Billing infrastructure is currently being finalized for global launch.
+              Global USD pricing · Monthly billing · Cancel anytime
             </p>
             {lifecycle?.cooldown_active && (
               <p className="text-[10px] text-blue-400/70 font-mono">
@@ -602,29 +594,11 @@ const SettingsPage = () => {
             )}
           </div>
 
-          <div className="flex justify-center mb-6">
-            <div className="inline-flex rounded-full border border-border bg-secondary p-1">
-              <button
-                onClick={() => setBillingCycle("monthly")}
-                className={`px-5 py-1.5 rounded-full text-xs font-medium transition-all ${billingCycle === "monthly" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                MONTHLY
-              </button>
-              <button
-                onClick={() => setBillingCycle("yearly")}
-                className={`px-5 py-1.5 rounded-full text-xs font-medium transition-all ${billingCycle === "yearly" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                YEARLY <span className="ml-1 text-[10px] opacity-70">-17%</span>
-              </button>
-            </div>
-          </div>
-
-          <div className={`grid gap-4 ${plans.length > 3 ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3"}`}>
+          <div className={`grid gap-4 mt-6 ${plans.length > 3 ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3"}`}>
             {plans.map((planConfig) => {
-              const isCurrent = normalizedCurrent === planConfig.tier;
-              const yearlyMonthly = Math.round(planConfig.yearlyPrice / 12);
-              const displayPrice = billingCycle === "yearly" ? yearlyMonthly : planConfig.monthlyPrice;
-              const period = billingCycle === "yearly" ? "/mo (billed yearly)" : "/mo";
+              const isCurrent    = normalizedCurrent === planConfig.tier;
+              const displayPrice = planConfig.monthlyPrice;
+              const period       = "/mo";
               const isAgencyCard = planConfig.isAgency;
 
               return (
@@ -652,12 +626,6 @@ const SettingsPage = () => {
                     <span className="text-xs text-muted-foreground">{period}</span>
                   </div>
 
-                  {billingCycle === "yearly" && (
-                    <p className="text-[10px] text-muted-foreground/60 font-mono mb-4 -mt-3">
-                      {symbol}{planConfig.yearlyPrice.toLocaleString()}/year
-                    </p>
-                  )}
-
                   <ul className="space-y-2 mb-5">
                     {planConfig.features.map((f) => (
                       <li key={f} className="text-xs text-muted-foreground flex items-center gap-1.5">
@@ -671,7 +639,7 @@ const SettingsPage = () => {
 
                   <button
                     onClick={() => !isCurrent && handleSubscribe(planConfig.tier)}
-                    disabled={isCurrent || checkoutLoading === `${planConfig.tier}_${billingCycle}`}
+                    disabled={isCurrent || checkoutLoading === planConfig.tier}
                     className={`w-full py-2.5 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2 ${
                       isCurrent
                         ? "bg-secondary text-muted-foreground cursor-default"
@@ -682,7 +650,7 @@ const SettingsPage = () => {
                             : "border border-border text-foreground hover:bg-secondary"
                     } disabled:opacity-60`}
                   >
-                    {checkoutLoading === `${planConfig.tier}_${billingCycle}`
+                    {checkoutLoading === planConfig.tier
                       ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Redirecting...</>
                       : isCurrent
                         ? "Current Plan"
@@ -696,7 +664,7 @@ const SettingsPage = () => {
           {/* ── Billing policy note ── */}
           <div className="mt-6 rounded-lg border border-border/40 bg-secondary/30 p-4 max-w-2xl text-xs text-muted-foreground space-y-1.5">
             <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground/50 mb-2">Billing Policy</p>
-            <p>• Subscriptions are billed {billingCycle === "yearly" ? "annually" : "monthly"} and expire after 30{billingCycle === "yearly" ? "–365" : ""} days unless renewed.</p>
+            <p>• Subscriptions are billed monthly and expire after 30 days unless renewed.</p>
             <p>• Access is reverted to the Free plan immediately upon expiry.</p>
             <p>• Plan changes are subject to a <strong className="text-foreground/70">14-day cooldown</strong> after each modification.</p>
             <p>• No refunds are issued on plan switches. Unused subscription time is not credited.</p>

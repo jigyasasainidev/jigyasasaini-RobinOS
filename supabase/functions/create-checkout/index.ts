@@ -1,40 +1,32 @@
 // ============================================================
 // CREATE-CHECKOUT — Dodo Payments checkout session
 // ============================================================
-// Creates a hosted checkout session for a subscription plan.
-// Called by the frontend dodo.ts service layer.
+// Monthly billing only. Three plans: creator, pro_creator, agency.
 //
-// Security:
-//   - Requires authenticated user (JWT verified)
-//   - DODO_SECRET_KEY never exposed to browser
-//   - Prevents duplicate active subscriptions
-//   - Attaches user_id as metadata for webhook attribution
+// Product IDs (set in Supabase Edge Function Secrets):
+//   DODO_PRODUCT_CREATOR_MONTHLY     = pdt_0NfedFf5yWQuYuZUPsomx
+//   DODO_PRODUCT_PRO_CREATOR_MONTHLY = pdt_0NfedaK1KKBVDs37xrAO5
+//   DODO_PRODUCT_AGENCY_MONTHLY      = pdt_0Nfedwj3D80bkMnHQWfoI
 // ============================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import DodoPayments from "npm:dodopayments";
 import { CORS_HEADERS } from "../_shared/entitlement.ts";
 
-const SUPABASE_URL  = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_KEY   = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const DODO_API_KEY  = Deno.env.get("DODO_SECRET_KEY")!;
-const DODO_ENV      = (Deno.env.get("DODO_ENVIRONMENT") ?? "test_mode") as "test_mode" | "live_mode";
-const APP_URL       = Deno.env.get("APP_URL") ?? "https://tryrobin.xyz";
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const DODO_API_KEY = Deno.env.get("DODO_SECRET_KEY")!;
+const DODO_ENV     = (Deno.env.get("DODO_ENVIRONMENT") ?? "live_mode") as "test_mode" | "live_mode";
+const APP_URL      = Deno.env.get("APP_URL") ?? "https://tryrobin.xyz";
 
-// ── Plan → Dodo Product ID map ─────────────────────────────
-// Populated from Supabase secrets. Set these in your Supabase
-// project: Settings → Edge Functions → Secrets
+// ── Monthly product IDs only ───────────────────────────────
 const PRODUCT_IDS: Record<string, string> = {
-  creator_monthly:     Deno.env.get("DODO_PRODUCT_CREATOR_MONTHLY")     ?? "",
-  pro_creator_monthly: Deno.env.get("DODO_PRODUCT_PRO_CREATOR_MONTHLY") ?? "",
-  agency_monthly:      Deno.env.get("DODO_PRODUCT_AGENCY_MONTHLY")      ?? "",
-  creator_yearly:      Deno.env.get("DODO_PRODUCT_CREATOR_YEARLY")      ?? "",
-  pro_creator_yearly:  Deno.env.get("DODO_PRODUCT_PRO_CREATOR_YEARLY")  ?? "",
-  agency_yearly:       Deno.env.get("DODO_PRODUCT_AGENCY_YEARLY")       ?? "",
+  creator:     Deno.env.get("DODO_PRODUCT_CREATOR_MONTHLY")     ?? "pdt_0NfedFf5yWQuYuZUPsomx",
+  pro_creator: Deno.env.get("DODO_PRODUCT_PRO_CREATOR_MONTHLY") ?? "pdt_0NfedaK1KKBVDs37xrAO5",
+  agency:      Deno.env.get("DODO_PRODUCT_AGENCY_MONTHLY")      ?? "pdt_0Nfedwj3D80bkMnHQWfoI",
 };
 
-const VALID_PLANS    = ["creator", "pro_creator", "agency"] as const;
-const VALID_CYCLES   = ["monthly", "yearly"] as const;
+const VALID_PLANS = ["creator", "pro_creator", "agency"] as const;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
@@ -59,20 +51,13 @@ Deno.serve(async (req) => {
     }
 
     // ── Parse body ────────────────────────────────────────
-    const body = await req.json();
-    const planKey:      string = String(body?.planKey      ?? "").toLowerCase();
-    const billingCycle: string = String(body?.billingCycle ?? "monthly").toLowerCase();
-    const userEmail:    string = String(body?.userEmail    ?? user.email ?? "");
-    const userName:     string = String(body?.userName     ?? "");
+    const body      = await req.json();
+    const planKey   = String(body?.planKey   ?? "").toLowerCase();
+    const userEmail = String(body?.userEmail ?? user.email ?? "");
+    const userName  = String(body?.userName  ?? "");
 
     if (!VALID_PLANS.includes(planKey as typeof VALID_PLANS[number])) {
       return new Response(JSON.stringify({ error: `Invalid plan: ${planKey}` }), {
-        status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      });
-    }
-
-    if (!VALID_CYCLES.includes(billingCycle as typeof VALID_CYCLES[number])) {
-      return new Response(JSON.stringify({ error: `Invalid billing cycle: ${billingCycle}` }), {
         status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
     }
@@ -98,13 +83,11 @@ Deno.serve(async (req) => {
     }
 
     // ── Resolve product ID ────────────────────────────────
-    const productKey = `${planKey}_${billingCycle}`;
-    const productId  = PRODUCT_IDS[productKey];
-
+    const productId = PRODUCT_IDS[planKey];
     if (!productId) {
-      console.error(`[create-checkout] Missing product ID for key: ${productKey}`);
+      console.error(`[create-checkout] Missing product ID for plan: ${planKey}`);
       return new Response(JSON.stringify({
-        error: "This plan is not yet available for purchase. Please contact support.",
+        error: "This plan is not available for purchase. Please contact support.",
         code:  "PRODUCT_NOT_CONFIGURED",
       }), {
         status: 503, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
@@ -112,10 +95,7 @@ Deno.serve(async (req) => {
     }
 
     // ── Create Dodo checkout session ──────────────────────
-    const dodo = new DodoPayments({
-      bearerToken: DODO_API_KEY,
-      environment: DODO_ENV,
-    });
+    const dodo = new DodoPayments({ bearerToken: DODO_API_KEY, environment: DODO_ENV });
 
     const session = await dodo.checkoutSessions.create({
       product_cart: [{ product_id: productId, quantity: 1 }],
@@ -127,12 +107,12 @@ Deno.serve(async (req) => {
       metadata: {
         user_id:       user.id,
         plan_key:      planKey,
-        billing_cycle: billingCycle,
+        billing_cycle: "monthly",
         source:        "robinos_web",
       },
     });
 
-    console.log(`[create-checkout] Session created for user ${user.id} plan=${planKey} cycle=${billingCycle}`);
+    console.log(`[create-checkout] Session created user=${user.id} plan=${planKey}`);
 
     return new Response(JSON.stringify({
       checkoutUrl: session.checkout_url,
