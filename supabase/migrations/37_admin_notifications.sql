@@ -17,7 +17,7 @@ create table if not exists public.admin_notifications (
   priority    text        not null default 'info',  -- info | success | warning | critical
   read        boolean     not null default false,
   metadata    jsonb       not null default '{}'::jsonb,
-  created_at  timestamptz not null default now() at time zone 'UTC'
+  created_at  timestamptz not null default now()
 );
 
 comment on table public.admin_notifications is
