@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Settings, Key, CreditCard, Shield, BarChart3, Lock, Zap,
-  Calendar, AlertTriangle, CheckCircle2, Clock3, RefreshCw,
+  Calendar, AlertTriangle, CheckCircle2, Clock3, RefreshCw, ExternalLink,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,6 +19,8 @@ import { getPlans, getCurrencySymbol, getTierDisplayName } from "@/lib/pricing";
 import { BrandMark } from "@/components/BrandMark";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
+import { redirectToCheckout, openCustomerPortal } from "@/lib/payments/dodo";
+import type { PlanKey, BillingCycle } from "@/lib/payments/types";
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -55,9 +57,10 @@ const SettingsPage = () => {
   const captionDailyLimit = useCaptionDailyLimit();
   const { data: lifecycle, isLoading: lifecycleLoading } = useSubscriptionLifecycle();
 
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [portalLoading,   setPortalLoading]   = useState(false);
   const isFree = plan === "free";
   const isAgency = plan === "agency" || plan === "scale_agency";
-  const isProOrAbove = plan === "pro_creator" || plan === "agency" || plan === "scale_agency";
 
   // For pricing card "Current Plan" detection — use entitlement plan, not profile cache
   const normalizedCurrent = plan;
@@ -87,9 +90,36 @@ const SettingsPage = () => {
     setVideoApiKey((profile as any)?.video_api_key || "");
   }, [profile?.elevenlabs_api_key, (profile as any)?.video_api_key]);
 
-  const handleSubscribe = (planTier: string) => {
-    const planLabel = planTier === "pro_creator" ? "Pro Creator" : planTier === "agency" ? "Agency" : "Creator";
-    toast.info(`${planLabel} subscriptions are coming soon. Billing will be enabled here directly.`);
+  const handleSubscribe = async (planTier: string) => {
+    if (!user?.email) { toast.error("Please sign in to subscribe."); return; }
+    const validPlans: PlanKey[] = ["creator", "pro_creator", "agency"];
+    if (!validPlans.includes(planTier as PlanKey)) return;
+
+    const loadingKey = `${planTier}_${billingCycle}`;
+    setCheckoutLoading(loadingKey);
+    try {
+      await redirectToCheckout(
+        planTier as PlanKey,
+        billingCycle as BillingCycle,
+        user.email,
+        profile?.display_name ?? undefined
+      );
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to start checkout. Please try again.");
+    } finally {
+      setCheckoutLoading(null);
+    }
+  };
+
+  const handleManageBilling = async () => {
+    setPortalLoading(true);
+    try {
+      await openCustomerPortal();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not open billing portal.");
+    } finally {
+      setPortalLoading(false);
+    }
   };
 
   const handleSaveKeys = async () => {
@@ -195,10 +225,25 @@ const SettingsPage = () => {
 
         {/* ── Subscription lifecycle panel ── */}
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border/60 bg-card p-5 max-w-2xl">
-          <div className="flex items-center gap-2 mb-5">
-            <CreditCard className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-medium text-foreground">Subscription Status</h2>
-            {lifecycleLoading && <RefreshCw className="w-3 h-3 text-muted-foreground animate-spin ml-1" />}
+          <div className="flex items-center justify-between gap-2 mb-5">
+            <div className="flex items-center gap-2">
+              <CreditCard className="w-4 h-4 text-primary" />
+              <h2 className="text-sm font-medium text-foreground">Subscription Status</h2>
+              {lifecycleLoading && <RefreshCw className="w-3 h-3 text-muted-foreground animate-spin ml-1" />}
+            </div>
+            {/* Manage Billing — only for active Dodo subscribers */}
+            {!isFree && lifecycle?.provider === "dodo" && lifecycle?.subscription_active && (
+              <button
+                onClick={handleManageBilling}
+                disabled={portalLoading}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10.5px] font-medium transition-all disabled:opacity-50"
+                style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.2)", color: "hsl(217 91% 65%)" }}
+              >
+                {portalLoading
+                  ? <><RefreshCw className="w-3 h-3 animate-spin" /> Loading...</>
+                  : <><ExternalLink className="w-3 h-3" /> Manage Billing</>}
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-xs">
@@ -626,7 +671,7 @@ const SettingsPage = () => {
 
                   <button
                     onClick={() => !isCurrent && handleSubscribe(planConfig.tier)}
-                    disabled={isCurrent}
+                    disabled={isCurrent || checkoutLoading === `${planConfig.tier}_${billingCycle}`}
                     className={`w-full py-2.5 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2 ${
                       isCurrent
                         ? "bg-secondary text-muted-foreground cursor-default"
@@ -635,15 +680,13 @@ const SettingsPage = () => {
                           : planConfig.popular
                             ? "bg-primary text-primary-foreground glow-blue hover:opacity-90"
                             : "border border-border text-foreground hover:bg-secondary"
-                    }`}
+                    } disabled:opacity-60`}
                   >
-                    {isCurrent
-                      ? "Current Plan"
-                      : planConfig.tier === "pro_creator"
-                        ? "Join Pro Creator Early Access"
-                        : planConfig.tier === "agency"
-                          ? "Join Agency Early Access"
-                          : "Join Creator Early Access"}
+                    {checkoutLoading === `${planConfig.tier}_${billingCycle}`
+                      ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Redirecting...</>
+                      : isCurrent
+                        ? "Current Plan"
+                        : `Upgrade to ${planConfig.name}`}
                   </button>
                 </div>
               );
