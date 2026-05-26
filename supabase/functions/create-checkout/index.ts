@@ -16,14 +16,14 @@ import { CORS_HEADERS } from "../_shared/entitlement.ts";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const DODO_API_KEY = Deno.env.get("DODO_SECRET_KEY")!;
-const DODO_ENV     = (Deno.env.get("DODO_ENVIRONMENT") ?? "live_mode") as "test_mode" | "live_mode";
+const DODO_ENV     = (Deno.env.get("DODO_ENVIRONMENT") ?? "test_mode") as "test_mode" | "live_mode";
 const APP_URL      = Deno.env.get("APP_URL") ?? "https://tryrobin.xyz";
 
 // ── Monthly product IDs only ───────────────────────────────
 const PRODUCT_IDS: Record<string, string> = {
-  creator:     Deno.env.get("DODO_PRODUCT_CREATOR_MONTHLY")     ?? "pdt_0NfedFf5yWQuYuZUPsomx",
-  pro_creator: Deno.env.get("DODO_PRODUCT_PRO_CREATOR_MONTHLY") ?? "pdt_0NfedaK1KKBVDs37xrAO5",
-  agency:      Deno.env.get("DODO_PRODUCT_AGENCY_MONTHLY")      ?? "pdt_0Nfedwj3D80bkMnHQWfoI",
+  creator:     Deno.env.get("DODO_PRODUCT_CREATOR_MONTHLY")     ?? "pdt_0NfejXCQQGgUhUxn4vxXR",
+  pro_creator: Deno.env.get("DODO_PRODUCT_PRO_CREATOR_MONTHLY") ?? "pdt_0NfejbrygMzipMel5iWbm",
+  agency:      Deno.env.get("DODO_PRODUCT_AGENCY_MONTHLY")      ?? "pdt_0Nfejh9OBLawQ8o36msZV",
 };
 
 const VALID_PLANS = ["creator", "pro_creator", "agency"] as const;

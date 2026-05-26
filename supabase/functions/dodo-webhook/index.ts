@@ -26,9 +26,9 @@ const WEBHOOK_SECRET = Deno.env.get("DODO_WEBHOOK_SECRET")!;
 // ── Product ID → plan key map (monthly only) ───────────────
 // Hardcoded IDs + env var fallback for flexibility
 const PRODUCT_MAP: Record<string, string> = {
-  [Deno.env.get("DODO_PRODUCT_CREATOR_MONTHLY")     ?? "pdt_0NfedFf5yWQuYuZUPsomx"]: "creator",
-  [Deno.env.get("DODO_PRODUCT_PRO_CREATOR_MONTHLY") ?? "pdt_0NfedaK1KKBVDs37xrAO5"]: "pro_creator",
-  [Deno.env.get("DODO_PRODUCT_AGENCY_MONTHLY")      ?? "pdt_0Nfedwj3D80bkMnHQWfoI"]: "agency",
+  [Deno.env.get("DODO_PRODUCT_CREATOR_MONTHLY")     ?? "pdt_0NfejXCQQGgUhUxn4vxXR"]: "creator",
+  [Deno.env.get("DODO_PRODUCT_PRO_CREATOR_MONTHLY") ?? "pdt_0NfejbrygMzipMel5iWbm"]: "pro_creator",
+  [Deno.env.get("DODO_PRODUCT_AGENCY_MONTHLY")      ?? "pdt_0Nfejh9OBLawQ8o36msZV"]: "agency",
 };
 
 // ── Plan amounts (monthly) ─────────────────────────────────
