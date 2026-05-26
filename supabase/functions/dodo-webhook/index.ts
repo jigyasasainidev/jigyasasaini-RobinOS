@@ -134,6 +134,9 @@ Deno.serve(async (req) => {
       case "payment.failed":
         await handlePaymentFailed(supabase, data);
         break;
+      case "payment.refunded":
+        await handlePaymentRefunded(supabase, data);
+        break;
       default:
         console.log(`[dodo-webhook] Unhandled event: ${eventType}`);
     }
@@ -350,6 +353,14 @@ async function handlePaymentFailed(
 
   if (error) throw new Error(`Payment failed update error: ${error.message}`);
 
+  // Reverse commission — failed payment = no revenue = no commission
+  if (subscriptionId) {
+    await supabase.rpc("reverse_commission", {
+      p_dodo_subscription_id: subscriptionId,
+      p_reason:               "payment_failed",
+    });
+  }
+
   await supabase.rpc("log_subscription_event", {
     p_user_id:      userId,
     p_event_type:   "payment_failed",
@@ -358,6 +369,34 @@ async function handlePaymentFailed(
   });
 
   console.log(`[dodo-webhook] Payment failed for user: ${userId}`);
+}
+
+async function handlePaymentRefunded(
+  supabase: ReturnType<typeof createClient>,
+  data: Record<string, unknown>
+) {
+  const subscriptionId = extractSubscriptionId(data);
+  const userId = extractUserId(data) ?? await resolveUserBySubscriptionId(supabase, subscriptionId);
+
+  // Reverse commission — refund = money returned = commission cancelled
+  if (subscriptionId) {
+    const { data: result } = await supabase.rpc("reverse_commission", {
+      p_dodo_subscription_id: subscriptionId,
+      p_reason:               "refund",
+    });
+    console.log(`[dodo-webhook] Commission reversed on refund: ${JSON.stringify(result)}`);
+  }
+
+  if (userId) {
+    await supabase.rpc("log_subscription_event", {
+      p_user_id:      userId,
+      p_event_type:   "payment_refunded",
+      p_triggered_by: "webhook",
+      p_metadata:     { subscription_id: subscriptionId, provider: "dodo" },
+    });
+  }
+
+  console.log(`[dodo-webhook] Payment refunded, commission reversed. sub=${subscriptionId}`);
 }
 
 // ── Affiliate commission recording ────────────────────────
@@ -408,14 +447,18 @@ async function recordAffiliateCommission(
     console.log(`[dodo-webhook] Commission: affiliate=${affiliateUserId} referred=${referredUserId} amount=$${paymentAmount} rate=${commissionPercent}% commission=$${commissionAmount}`);
 
     // 3. Insert commission record (idempotent via dodo_subscription_id)
+    // Status = 'pending' — NOT withdrawable until 14-day cooldown passes
+    const eligibleAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+
     const { error: commErr } = await supabase
       .from("affiliate_commissions")
       .insert({
-        affiliate_user_id:   affiliateUserId,
-        referred_user_id:    referredUserId,
+        affiliate_user_id:    affiliateUserId,
+        referred_user_id:     referredUserId,
         dodo_subscription_id: subscriptionId,
-        amount:              commissionAmount,
-        status:              "pending",
+        amount:               commissionAmount,
+        status:               "pending",
+        eligible_at:          eligibleAt,   // unlocks after 14 days
       })
       .select("id")
       .single();

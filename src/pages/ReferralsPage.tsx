@@ -62,10 +62,11 @@ const ReferralsPage = () => {
   const referralCode = dashboard?.referral_code ?? "";
   const referralLink = dashboard?.referral_link ?? (referralCode ? `${REFERRAL_DOMAIN}/?ref=${referralCode}` : "");
 
-  const available = Number(dashboard?.available_balance ?? 0);
-  const pending = Number(dashboard?.pending_earnings ?? 0);
-  const totalEarned = Number(dashboard?.total_earned ?? 0);
-  const paidOut = Number(dashboard?.paid_out ?? 0);
+  const available    = Number(dashboard?.available_balance ?? 0);
+  const pending      = Number(dashboard?.pending_earnings  ?? 0);
+  const totalEarned  = Number(dashboard?.total_earned      ?? 0);
+  const paidOut      = Number(dashboard?.paid_out          ?? 0);
+  const lockedBalance = Number((dashboard as any)?.locked_balance ?? 0);
   const totalReferrals = Number(dashboard?.total_referrals ?? 0);
   const paidConversions = Number(dashboard?.conversion_count ?? 0);
   const clicks = Number(dashboard?.referral_clicks ?? 0);
@@ -166,13 +167,13 @@ const ReferralsPage = () => {
   };
 
   const stats = [
-    { icon: Users, label: "Total Referrals", value: totalReferrals, prefix: "" },
-    { icon: TrendingUp, label: "Paid Conversions", value: paidConversions, prefix: "" },
-    { icon: CircleDollarSign, label: "Total Earned", value: totalEarned, prefix: "$" },
-    { icon: Wallet, label: "Available Balance", value: available, prefix: "$" },
-    { icon: Clock3, label: "Pending Earnings", value: pending, prefix: "$" },
-    { icon: DollarSign, label: "Paid Out", value: paidOut, prefix: "$" },
-    { icon: ArrowUpRight, label: "Conversion Rate", value: conversionRate, suffix: "%" },
+    { icon: Users,           label: "Total Referrals",    value: totalReferrals,  prefix: "" },
+    { icon: TrendingUp,      label: "Paid Conversions",   value: paidConversions, prefix: "" },
+    { icon: CircleDollarSign,label: "Total Earned",       value: totalEarned,     prefix: "$" },
+    { icon: Wallet,          label: "Available Balance",  value: available,       prefix: "$" },
+    { icon: Clock3,          label: "In Cooldown (14d)",  value: lockedBalance,   prefix: "$" },
+    { icon: DollarSign,      label: "Paid Out",           value: paidOut,         prefix: "$" },
+    { icon: ArrowUpRight,    label: "Conversion Rate",    value: conversionRate,  suffix: "%" },
   ];
 
   return (
@@ -328,6 +329,11 @@ const ReferralsPage = () => {
               <p>Estimated processing time: {Math.max(1, payoutDelayDays)} day(s)</p>
               <p>Current affiliate commission: {affiliateCommissionPercent}%</p>
               <p>Withdrawal fee: ${WITHDRAWAL_FEE.toFixed(2)}</p>
+              {lockedBalance > 0 && (
+                <p className="text-amber-400/70">
+                  ${lockedBalance.toFixed(2)} in 14-day cooldown — available after verification period.
+                </p>
+              )}
               {!hasPayoutMethod && <p className="text-destructive">Save your USDT TRC20 wallet address to enable withdrawals.</p>}
               {hasPendingWithdrawal && <p className="text-primary">You already have a pending payout request in review.</p>}
             </div>
