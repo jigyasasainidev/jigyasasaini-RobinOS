@@ -1490,50 +1490,197 @@ const AdminDashboard = () => {
         </SectionCard>
       </section>
 
-      <section className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+      {/* ── Operational sections — full-width stacked ── */}
+      <div className="space-y-5">
+
+        {/* Latest Users */}
         <SectionCard title="Latest Users" subtitle="Most recently registered accounts">
-          <DataTable headers={["email", "plan", "joined"]} colSpan={3} empty={!usersEnriched.length}>
-            {usersEnriched.slice(0, 8).map((u) => (
-              <tr key={u.user_id} className="border-t transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "hsl(217 91% 60% / 0.03)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ""; }}
-              >
-                <td className="px-5 py-3 text-[11px]" style={{ color: "hsl(var(--foreground) / 0.7)" }}>{u.email}</td>
-                <td className="px-5 py-3"><PlanChip plan={u.plan} /></td>
-                <td className="px-5 py-3 font-mono text-[9.5px]" style={{ color: "hsl(var(--muted-foreground) / 0.35)" }}>{new Date(u.created_at).toLocaleDateString()}</td>
-              </tr>
-            ))}
-          </DataTable>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead style={{ background: "hsl(222 28% 5%)", borderBottom: "1px solid hsl(217 28% 11%)" }}>
+                <tr>
+                  {["email", "plan", "joined"].map((h) => (
+                    <th key={h} className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.14em]" style={{ color: "hsl(var(--muted-foreground) / 0.3)" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {!usersEnriched.length ? (
+                  <tr><td colSpan={3} className="px-5 py-8 text-center text-[10px] font-mono" style={{ color: "hsl(var(--muted-foreground) / 0.25)" }}>No users yet</td></tr>
+                ) : usersEnriched.slice(0, 10).map((u) => (
+                  <tr key={u.user_id} className="border-t transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "hsl(217 91% 60% / 0.03)"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ""; }}
+                  >
+                    <td className="px-5 py-3 text-[11px]" style={{ color: "hsl(var(--foreground) / 0.7)" }}>{u.email}</td>
+                    <td className="px-5 py-3"><PlanChip plan={u.plan} /></td>
+                    <td className="px-5 py-3 font-mono text-[9.5px]" style={{ color: "hsl(var(--muted-foreground) / 0.35)" }}>{new Date(u.created_at).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </SectionCard>
+
+        {/* Recent Subscriptions */}
         <SectionCard title="Recent Subscriptions" subtitle="Latest billing events">
-          <DataTable headers={["customer", "amount", "status"]} colSpan={3} empty={!subscriptions.length}>
-            {subscriptions.slice(0, 8).map((s) => (
-              <tr key={s.id} className="border-t transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "hsl(217 91% 60% / 0.03)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ""; }}
-              >
-                <td className="px-5 py-3 text-[11px] truncate max-w-[160px]" style={{ color: "hsl(var(--foreground) / 0.7)" }}>{profileMap.get(s.user_id)?.email ?? s.user_id.slice(0, 8)}</td>
-                <td className="px-5 py-3 font-mono text-[11px] font-semibold" style={{ color: "hsl(var(--foreground) / 0.82)" }}>{formatCurrency(s.amount)}</td>
-                <td className="px-5 py-3"><StatusChip status={s.status} /></td>
-              </tr>
-            ))}
-          </DataTable>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead style={{ background: "hsl(222 28% 5%)", borderBottom: "1px solid hsl(217 28% 11%)" }}>
+                <tr>
+                  {["customer", "plan", "amount", "source", "status"].map((h) => (
+                    <th key={h} className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.14em]" style={{ color: "hsl(var(--muted-foreground) / 0.3)" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {!subscriptions.length ? (
+                  <tr><td colSpan={5} className="px-5 py-8 text-center text-[10px] font-mono" style={{ color: "hsl(var(--muted-foreground) / 0.25)" }}>No subscriptions yet</td></tr>
+                ) : subscriptions.slice(0, 10).map((s) => (
+                  <tr key={s.id} className="border-t transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "hsl(217 91% 60% / 0.03)"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ""; }}
+                  >
+                    <td className="px-5 py-3 text-[11px]" style={{ color: "hsl(var(--foreground) / 0.7)" }}>{profileMap.get(s.user_id)?.email ?? s.user_id.slice(0, 8)}</td>
+                    <td className="px-5 py-3"><PlanChip plan={s.plan} /></td>
+                    <td className="px-5 py-3 font-mono text-[11px] font-semibold" style={{ color: "hsl(var(--foreground) / 0.82)" }}>{formatCurrency(s.amount)}</td>
+                    <td className="px-5 py-3"><SourceBadge src={s.subscription_source} /></td>
+                    <td className="px-5 py-3"><StatusChip status={s.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </SectionCard>
-        <SectionCard title="Recent Withdrawals" subtitle="Pending payout requests">
-          <DataTable headers={["affiliate", "amount", "status"]} colSpan={3} empty={!withdrawals.length}>
-            {withdrawals.slice(0, 8).map((w) => (
-              <tr key={w.id} className="border-t transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "hsl(217 91% 60% / 0.03)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ""; }}
-              >
-                <td className="px-5 py-3 text-[11px] truncate max-w-[160px]" style={{ color: "hsl(var(--foreground) / 0.7)" }}>{profileMap.get(w.user_id)?.email ?? w.user_id.slice(0, 8)}</td>
-                <td className="px-5 py-3 font-mono text-[11px] font-semibold" style={{ color: "hsl(var(--foreground) / 0.82)" }}>{formatCurrency(w.amount)}</td>
-                <td className="px-5 py-3"><span className={`inline-flex rounded-full border px-2 py-0.5 text-[8.5px] font-mono uppercase tracking-wider ${statusClass[asWithdrawStatus(w.status)]}`}>{asWithdrawStatus(w.status)}</span></td>
-              </tr>
-            ))}
-          </DataTable>
+
+        {/* Recent Withdrawals — payout operator view */}
+        <SectionCard
+          title="Recent Withdrawals"
+          subtitle="Pending USDT payout requests — copy wallet address to process manually"
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead style={{ background: "hsl(222 28% 5%)", borderBottom: "1px solid hsl(217 28% 11%)" }}>
+                <tr>
+                  {["affiliate", "amount", "usdt wallet (trc20)", "status", "requested", "actions"].map((h) => (
+                    <th key={h} className="px-5 py-3 text-left text-[9px] font-mono uppercase tracking-[0.14em]" style={{ color: "hsl(var(--muted-foreground) / 0.3)" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {!withdrawals.length ? (
+                  <tr><td colSpan={6} className="px-5 py-8 text-center text-[10px] font-mono" style={{ color: "hsl(var(--muted-foreground) / 0.25)" }}>No withdrawal requests yet</td></tr>
+                ) : withdrawals.slice(0, 10).map((w) => {
+                  const wallet = w.payout_details?.trim() || null;
+                  const shortWallet = wallet
+                    ? `${wallet.slice(0, 6)}...${wallet.slice(-6)}`
+                    : null;
+
+                  return (
+                    <tr key={w.id} className="border-t transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "hsl(217 91% 60% / 0.03)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ""; }}
+                    >
+                      {/* Affiliate email */}
+                      <td className="px-5 py-3 text-[11px] max-w-[160px]" style={{ color: "hsl(var(--foreground) / 0.7)" }}>
+                        <span className="truncate block">{profileMap.get(w.user_id)?.email ?? w.user_id.slice(0, 8)}</span>
+                      </td>
+
+                      {/* Amount */}
+                      <td className="px-5 py-3 font-mono text-[11px] font-semibold whitespace-nowrap" style={{ color: "hsl(142 70% 55%)" }}>
+                        {formatCurrency(w.amount)}
+                      </td>
+
+                      {/* Wallet address */}
+                      <td className="px-5 py-3">
+                        {wallet ? (
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="min-w-0">
+                              {/* Full address on desktop, short on mobile */}
+                              <span className="hidden lg:block font-mono text-[10px] break-all" style={{ color: "hsl(var(--muted-foreground) / 0.6)" }}>
+                                {wallet}
+                              </span>
+                              <span className="lg:hidden font-mono text-[10px]" style={{ color: "hsl(var(--muted-foreground) / 0.6)" }}>
+                                {shortWallet}
+                              </span>
+                              <span className="text-[8px] font-mono mt-0.5 block" style={{ color: "hsl(38 92% 55% / 0.6)" }}>
+                                TRC20
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                void navigator.clipboard.writeText(wallet);
+                                toast.success("Wallet copied");
+                              }}
+                              className="shrink-0 inline-flex h-6 items-center gap-1 rounded px-1.5 text-[9px] font-mono transition-all"
+                              style={{ border: "1px solid hsl(217 28% 14%)", color: "hsl(var(--muted-foreground) / 0.4)" }}
+                              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "hsl(217 91% 65%)"; (e.currentTarget as HTMLElement).style.borderColor = "hsl(217 91% 60% / 0.3)"; }}
+                              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "hsl(var(--muted-foreground) / 0.4)"; (e.currentTarget as HTMLElement).style.borderColor = "hsl(217 28% 14%)"; }}
+                              title="Copy full wallet address"
+                            >
+                              <Copy className="h-2.5 w-2.5" /> copy
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] font-mono" style={{ color: "hsl(0 72% 55% / 0.6)" }}>
+                            Wallet not configured
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-5 py-3">
+                        <span className={`inline-flex rounded-full border px-2 py-0.5 text-[8.5px] font-mono uppercase tracking-wider ${statusClass[asWithdrawStatus(w.status)]}`}>
+                          {asWithdrawStatus(w.status)}
+                        </span>
+                      </td>
+
+                      {/* Requested at */}
+                      <td className="px-5 py-3 font-mono text-[9.5px] whitespace-nowrap" style={{ color: "hsl(var(--muted-foreground) / 0.35)" }}>
+                        {new Date(w.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        <span className="block text-[8.5px]" style={{ color: "hsl(var(--muted-foreground) / 0.22)" }}>
+                          {new Date(w.created_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-1.5">
+                          {asWithdrawStatus(w.status) === "pending" && (
+                            <button
+                              onClick={() => withdrawalMutation.mutate({ id: w.id, status: "paid" })}
+                              disabled={withdrawalMutation.isPending}
+                              className="h-6 rounded px-2 text-[9px] font-mono uppercase tracking-wider transition-all disabled:opacity-40"
+                              style={{ border: "1px solid hsl(142 70% 45% / 0.3)", color: "hsl(142 70% 55%)", background: "hsl(142 70% 45% / 0.06)" }}
+                              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "hsl(142 70% 45% / 0.12)"; }}
+                              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "hsl(142 70% 45% / 0.06)"; }}
+                            >
+                              paid
+                            </button>
+                          )}
+                          {asWithdrawStatus(w.status) === "pending" && (
+                            <button
+                              onClick={() => withdrawalMutation.mutate({ id: w.id, status: "rejected" })}
+                              disabled={withdrawalMutation.isPending}
+                              className="h-6 rounded px-2 text-[9px] font-mono uppercase tracking-wider transition-all disabled:opacity-40"
+                              style={{ border: "1px solid hsl(0 72% 55% / 0.2)", color: "hsl(0 72% 60%)", background: "hsl(0 72% 55% / 0.05)" }}
+                              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "hsl(0 72% 55% / 0.1)"; }}
+                              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "hsl(0 72% 55% / 0.05)"; }}
+                            >
+                              reject
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </SectionCard>
-      </section>
+
+      </div>
     </div>
   );
 
