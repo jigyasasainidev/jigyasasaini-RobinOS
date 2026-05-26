@@ -2378,7 +2378,7 @@ const AdminDashboard = () => {
                 {filtered.map((row) => {
                   const status = asWithdrawStatus(row.status);
                   const email = profileMap.get(row.user_id)?.email ?? row.user_id.slice(0, 8);
-                  const payoutMethodLabel = row.payout_method === "usdt_trc20" ? "USDT TRC20" : "PayPal";
+                  const payoutMethodLabel = row.payout_method === "usdt_trc20" ? "USDT TRC20" : "USDT TRC20";
                   return (
                     <tr key={row.id} className="border-t hover:bg-white/[0.018] transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}>
                       <td className="px-4 py-3 text-foreground/80 max-w-[140px] truncate">{email}</td>

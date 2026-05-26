@@ -23,7 +23,12 @@ import { SkeletonCard } from "@/components/ui/skeleton";
 const REFERRAL_DOMAIN = "https://tryrobin.xyz";
 const WITHDRAWAL_FEE = 0;
 
-type PayoutType = "paypal" | "usdt_trc20";
+const statusClasses: Record<string, string> = {
+  pending: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+  approved: "bg-blue-500/10 text-blue-300 border-blue-500/30",
+  paid: "bg-primary/10 text-primary border-primary/30",
+  rejected: "bg-destructive/10 text-destructive border-destructive/30",
+};
 
 const CountValue = ({ value, prefix = "", suffix = "" }: { value: number; prefix?: string; suffix?: string }) => {
   const [display, setDisplay] = useState(0);
@@ -39,19 +44,6 @@ const CountValue = ({ value, prefix = "", suffix = "" }: { value: number; prefix
   return <>{prefix}{Math.round(display * 100) / 100}{suffix}</>;
 };
 
-const statusClasses: Record<string, string> = {
-  pending: "bg-amber-500/10 text-amber-300 border-amber-500/30",
-  approved: "bg-blue-500/10 text-blue-300 border-blue-500/30",
-  paid: "bg-primary/10 text-primary border-primary/30",
-  rejected: "bg-destructive/10 text-destructive border-destructive/30",
-};
-
-const payoutLabel = (method: string | null) => {
-  if (method === "paypal") return "PayPal";
-  if (method === "usdt_trc20") return "USDT (TRC20)";
-  return "Not configured";
-};
-
 const ReferralsPage = () => {
   const queryClient = useQueryClient();
   const { dashboard, withdrawals, loading, minimumWithdrawal, payoutDelayDays, affiliateCommissionPercent } = useReferralData();
@@ -60,15 +52,13 @@ const ReferralsPage = () => {
   const [savingPayout, setSavingPayout] = useState(false);
   const [requesting, setRequesting] = useState(false);
 
-  const [payoutType, setPayoutType] = useState<PayoutType>((dashboard?.payout_method as PayoutType | null) ?? "paypal");
-  const [payoutInput, setPayoutInput] = useState(dashboard?.payout_details ?? "");
-  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [walletAddress, setWalletAddress] = useState(dashboard?.payout_details ?? "");
 
   useEffect(() => {
-    if (dashboard?.payout_method) setPayoutType(dashboard.payout_method as PayoutType);
-    if (dashboard?.payout_details) setPayoutInput(dashboard.payout_details);
-  }, [dashboard?.payout_method, dashboard?.payout_details]);
+    if (dashboard?.payout_details) setWalletAddress(dashboard.payout_details);
+  }, [dashboard?.payout_details]);
 
+  const [withdrawAmount, setWithdrawAmount] = useState("");
   const referralCode = dashboard?.referral_code ?? "";
   const referralLink = dashboard?.referral_link ?? (referralCode ? `${REFERRAL_DOMAIN}/?ref=${referralCode}` : "");
 
@@ -119,38 +109,29 @@ const ReferralsPage = () => {
   };
 
   const savePayoutMethod = async () => {
-    const value = payoutInput.trim();
+    const value = walletAddress.trim();
     if (!value) {
-      toast.error("Enter payout details");
+      toast.error("Enter your USDT TRC20 wallet address");
       return;
     }
 
-    if (payoutType === "paypal") {
-      const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-      if (!emailOk) {
-        toast.error("Enter a valid PayPal email");
-        return;
-      }
-    }
-
-    if (payoutType === "usdt_trc20") {
-      const walletOk = /^T[1-9A-HJ-NP-Za-km-z]{25,35}$/.test(value);
-      if (!walletOk) {
-        toast.error("Enter a valid TRC20 wallet address");
-        return;
-      }
+    // TRC20 address: starts with T, 34 chars, base58
+    const walletOk = /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(value);
+    if (!walletOk) {
+      toast.error("Invalid TRC20 address — must start with T and be 34 characters");
+      return;
     }
 
     setSavingPayout(true);
     const { error } = await db.rpc("save_payout_method", {
-      p_method: payoutType,
+      p_method: "usdt_trc20",
       p_details: value,
     });
 
     if (error) {
-      toast.error(error.message || "Failed to save payout method");
+      toast.error(error.message || "Failed to save wallet address");
     } else {
-      toast.success("Payout method saved");
+      toast.success("USDT wallet address saved");
       await queryClient.invalidateQueries({ queryKey: ["affiliate-dashboard"] });
     }
     setSavingPayout(false);
@@ -266,24 +247,23 @@ const ReferralsPage = () => {
           </section>
 
           <section className="rounded-lg border border-border/60 bg-card/45 backdrop-blur-md p-5">
-            <p className="text-sm text-foreground font-medium mb-3">Payout Method</p>
-            <div className="grid grid-cols-1 md:grid-cols-[200px_1fr_auto] gap-3">
-              <select
-                value={payoutType}
-                onChange={(e) => setPayoutType(e.target.value as PayoutType)}
-                className="h-10 rounded-md bg-secondary/70 border border-border px-3 text-sm text-foreground"
-              >
-                <option value="paypal">PayPal</option>
-                <option value="usdt_trc20">USDT (TRC20)</option>
-              </select>
-
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-sm text-foreground font-medium">Payout Method</p>
+              <span className="text-[9px] font-mono px-2 py-0.5 rounded-full"
+                style={{ background: "hsl(142 70% 45% / 0.08)", border: "1px solid hsl(142 70% 45% / 0.2)", color: "hsl(142 70% 58%)" }}>
+                USDT · TRC20
+              </span>
+            </div>
+            <p className="text-[11px] text-muted-foreground/50 mb-3">
+              Payouts are processed manually in USDT via the TRC20 network. Enter your wallet address below.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
               <Input
-                value={payoutInput}
-                onChange={(e) => setPayoutInput(e.target.value)}
-                placeholder={payoutType === "paypal" ? "your-paypal@email.com" : "TRC20 wallet address"}
-                className="bg-secondary/70 border-border"
+                value={walletAddress}
+                onChange={(e) => setWalletAddress(e.target.value)}
+                placeholder="TRC20 wallet address (starts with T)"
+                className="bg-secondary/70 border-border font-mono text-sm"
               />
-
               <button
                 onClick={savePayoutMethod}
                 disabled={savingPayout}
@@ -296,15 +276,19 @@ const ReferralsPage = () => {
             <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px]">
               <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border border-border/50 bg-secondary/40 text-muted-foreground">
                 <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-                Method: {payoutLabel(dashboard?.payout_method ?? null)}
+                {dashboard?.payout_details
+                  ? `Wallet: ${dashboard.payout_details.slice(0, 6)}...${dashboard.payout_details.slice(-4)}`
+                  : "No wallet address saved"}
               </span>
               <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border border-border/50 bg-secondary/40 text-muted-foreground">
                 <Check className="w-3.5 h-3.5 text-primary" />
-                {dashboard?.payout_verified ? "Verified" : "Pending verification"}
+                {dashboard?.payout_verified ? "Verified by admin" : "Pending admin verification"}
               </span>
-              <span className="text-muted-foreground">
-                Last updated: {dashboard?.payout_updated_at ? new Date(dashboard.payout_updated_at).toLocaleString() : "—"}
-              </span>
+              {dashboard?.payout_updated_at && (
+                <span className="text-muted-foreground">
+                  Last updated: {new Date(dashboard.payout_updated_at).toLocaleString()}
+                </span>
+              )}
             </div>
           </section>
 
@@ -340,11 +324,11 @@ const ReferralsPage = () => {
             </button>
 
             <div className="mt-3 text-[11px] text-muted-foreground space-y-1">
-              <p>Payout method: {payoutLabel(dashboard?.payout_method ?? null)}</p>
+              <p>Payout method: USDT (TRC20) — manual transfer by RobinOS</p>
               <p>Estimated processing time: {Math.max(1, payoutDelayDays)} day(s)</p>
               <p>Current affiliate commission: {affiliateCommissionPercent}%</p>
               <p>Withdrawal fee: ${WITHDRAWAL_FEE.toFixed(2)}</p>
-              {!hasPayoutMethod && <p className="text-destructive">Add payout method to enable withdrawals.</p>}
+              {!hasPayoutMethod && <p className="text-destructive">Save your USDT TRC20 wallet address to enable withdrawals.</p>}
               {hasPendingWithdrawal && <p className="text-primary">You already have a pending payout request in review.</p>}
             </div>
           </section>
@@ -380,7 +364,7 @@ const ReferralsPage = () => {
                       </div>
                       <div>
                         <p className="text-[10px] text-muted-foreground font-mono">Method</p>
-                        <p className="text-xs text-foreground">{payoutLabel(w.payout_method)}</p>
+                        <p className="text-xs text-foreground">USDT (TRC20)</p>
                       </div>
                       <div>
                         <p className="text-[10px] text-muted-foreground font-mono">Status</p>

@@ -9,7 +9,7 @@ type DashboardRow = {
   user_id: string;
   referral_code: string;
   referral_link: string | null;
-  payout_method: "paypal" | "usdt_trc20" | null;
+  payout_method: "usdt_trc20" | null;
   payout_details: string | null;
   payout_verified: boolean;
   payout_updated_at: string | null;
@@ -30,7 +30,7 @@ type WithdrawalRow = {
   amount: number;
   fee_amount: number;
   status: "pending" | "approved" | "paid" | "rejected";
-  payout_method: "paypal" | "usdt_trc20";
+  payout_method: "usdt_trc20";
   payout_details: string;
   created_at: string;
   approved_at: string | null;
