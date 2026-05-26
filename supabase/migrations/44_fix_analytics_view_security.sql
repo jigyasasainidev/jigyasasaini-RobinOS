@@ -1,42 +1,42 @@
 -- ============================================================
 -- MIGRATION 44 — Fix affiliate_analytics_view security
 -- ============================================================
--- Removes SECURITY DEFINER from the view by changing owner
--- from postgres (superuser) to the authenticated role.
+-- Removes SECURITY DEFINER behaviour by enabling security_invoker
+-- on the view. This is the correct Postgres/Supabase approach.
 --
 -- WHY THIS MATTERS:
---   When a view is owned by postgres it runs with superuser
---   privileges, bypassing RLS on all underlying tables.
---   This is flagged by Supabase's security linter.
+--   When a view is owned by postgres it runs with the owner's
+--   privileges by default (security definer), bypassing RLS on
+--   all underlying tables. Supabase's linter flags this.
 --
 -- CORRECT APPROACH:
---   The view itself should run as the querying user (invoker).
---   Access control is enforced by:
---     1. RLS policies on the underlying tables
---        (affiliate_profiles, affiliate_commissions, etc.)
---     2. The SECURITY DEFINER RPCs that query this view
---        (get_affiliate_dashboard, get_admin_affiliate_analytics)
---        — those functions already do their own auth checks.
+--   Set security_invoker = true so the view executes with the
+--   privileges of the querying user, not the view owner.
+--   RLS on underlying tables is then respected.
 --
--- RESULT:
---   - View owner = authenticated (invoker security)
---   - Direct SELECT on the view respects RLS of the caller
---   - RPCs that use the view still work correctly because they
---     are SECURITY DEFINER and do their own role checks
+--   The SECURITY DEFINER RPCs (get_affiliate_dashboard,
+--   get_admin_affiliate_analytics) are unaffected — they do
+--   their own auth checks and still work correctly.
+--
+-- NOTE: security_invoker requires Postgres 15+.
+--   Supabase projects run Postgres 15, so this is safe.
 -- ============================================================
 
--- Change view owner from postgres to authenticated
--- This removes the implicit SECURITY DEFINER behaviour
-alter view public.affiliate_analytics_view owner to authenticated;
+-- Enable invoker security on the view
+-- This makes the view respect RLS of the querying user
+-- instead of running as the view owner (postgres superuser)
+alter view public.affiliate_analytics_view
+  set (security_invoker = true);
 
--- Grant SELECT to authenticated so RPCs and direct queries work
+-- Ensure authenticated role can select from the view
 grant select on public.affiliate_analytics_view to authenticated;
 
--- Revoke from anon — this view contains PII (emails, earnings)
--- Access must go through the SECURITY DEFINER RPCs only
+-- Revoke from anon — contains PII (emails, earnings)
+-- All access must go through the SECURITY DEFINER RPCs
 revoke all on public.affiliate_analytics_view from anon;
 
 comment on view public.affiliate_analytics_view is
-  'Centralized affiliate analytics. Invoker security — RLS on underlying '
-  'tables is respected. Access via get_affiliate_dashboard() or '
-  'get_admin_affiliate_analytics() RPCs which enforce their own auth checks.';
+  'Centralized affiliate analytics. security_invoker = true — RLS on '
+  'underlying tables is respected for the querying user. '
+  'Access via get_affiliate_dashboard() or get_admin_affiliate_analytics() '
+  'RPCs which enforce their own auth checks.';
