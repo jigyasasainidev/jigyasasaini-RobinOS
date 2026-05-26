@@ -187,10 +187,18 @@ async function handleSubscriptionActive(
   const productId      = String(data.product_id ?? "");
   const metadata       = (data.metadata ?? {}) as Record<string, string>;
 
+  // Log full data for debugging
+  console.log(`[dodo-webhook] subscription.active data: ${JSON.stringify({
+    subscription_id: subscriptionId,
+    product_id: productId,
+    metadata,
+    customer: data.customer,
+  })}`);
+
   // Resolve user_id — metadata is the primary source (set at checkout creation)
   const userId = extractUserId(data) ?? await resolveUserBySubscriptionId(supabase, subscriptionId);
   if (!userId) {
-    console.error(`[dodo-webhook] Cannot resolve user_id for subscription: ${subscriptionId}`);
+    console.error(`[dodo-webhook] Cannot resolve user_id. sub=${subscriptionId} metadata=${JSON.stringify(metadata)}`);
     return;
   }
 
@@ -259,17 +267,45 @@ async function handlePaymentSucceeded(
   data: Record<string, unknown>
 ) {
   const subscriptionId = extractSubscriptionId(data);
-  if (!subscriptionId) return; // one-time payment, not a subscription
+  const metadata       = (data.metadata ?? {}) as Record<string, string>;
+  const productId      = String(data.product_id ?? "");
 
+  // payment.succeeded always carries metadata.user_id from checkout session
   const userId = extractUserId(data) ?? await resolveUserBySubscriptionId(supabase, subscriptionId);
-  if (!userId) return;
+  if (!userId) {
+    console.error(`[dodo-webhook] payment.succeeded: cannot resolve user_id. sub=${subscriptionId} metadata=${JSON.stringify(metadata)}`);
+    return;
+  }
 
+  // If this is a subscription payment, activate the plan
+  // (belt-and-suspenders in case subscription.active didn't fire or metadata was missing)
+  if (subscriptionId) {
+    const productMap = buildProductMap();
+    const planKey    = productMap[productId] ?? metadata.plan_key ?? null;
+    const amount     = planKey ? (PLAN_AMOUNTS[planKey] ?? 0) : 0;
+
+    if (planKey) {
+      console.log(`[dodo-webhook] payment.succeeded activating plan=${planKey} user=${userId}`);
+      const { error } = await supabase.rpc("safe_plan_switch", {
+        p_user_id:         userId,
+        p_new_plan:        planKey,
+        p_billing_cycle:   "monthly",
+        p_provider:        "dodo",
+        p_provider_sub_id: subscriptionId,
+        p_amount:          amount,
+        p_triggered_by:    "webhook",
+      });
+      if (error) throw new Error(`safe_plan_switch (payment.succeeded) failed: ${error.message}`);
+    }
+  }
+
+  // Stamp last_payment_at
   await supabase
     .from("user_subscriptions")
     .update({ last_payment_at: new Date().toISOString(), updated_at: new Date().toISOString() })
     .eq("user_id", userId);
 
-  console.log(`[dodo-webhook] Payment succeeded for user: ${userId}`);
+  console.log(`[dodo-webhook] Payment succeeded processed for user: ${userId}`);
 }
 
 async function handlePaymentFailed(
