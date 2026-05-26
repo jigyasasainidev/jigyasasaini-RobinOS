@@ -310,9 +310,11 @@ async function handlePaymentSucceeded(
       if (error) throw new Error(`safe_plan_switch (payment.succeeded) failed: ${error.message}`);
 
       // ── Affiliate commission attribution ──────────────────
-      // If this user was referred, calculate and record 30% commission
+      // Priority 1: referral_code from checkout metadata
+      // Priority 2: profiles.referred_by_code (set at signup)
       const referralCode = metadata.referral_code ?? null;
       if (referralCode && amount > 0) {
+        console.log(`[dodo-webhook] Attribution via metadata.referral_code=${referralCode}`);
         await recordAffiliateCommission(supabase, userId, referralCode, amount, subscriptionId);
       } else {
         // Fallback: check profiles.referred_by_code (set at signup)
@@ -323,7 +325,10 @@ async function handlePaymentSucceeded(
           .maybeSingle();
 
         if (profile?.referred_by_code && amount > 0) {
+          console.log(`[dodo-webhook] Attribution via profiles.referred_by_code=${profile.referred_by_code}`);
           await recordAffiliateCommission(supabase, userId, profile.referred_by_code, amount, subscriptionId);
+        } else {
+          console.log(`[dodo-webhook] No referral attribution for user=${userId} (no referral_code in metadata or profile)`);
         }
       }
     }

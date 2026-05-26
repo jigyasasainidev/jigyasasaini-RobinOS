@@ -61,6 +61,8 @@ Deno.serve(async (req) => {
     const userName  = String(body?.userName  ?? "");
     const referralCode = body?.referralCode ? String(body.referralCode).trim().toUpperCase() : null;
 
+    console.log(`[create-checkout] user=${user.id} plan=${planKey} referral=${referralCode ?? "none"}`);
+
     if (!VALID_PLANS.includes(planKey as typeof VALID_PLANS[number])) {
       return new Response(JSON.stringify({ error: `Invalid plan: ${planKey}` }), {
         status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" },

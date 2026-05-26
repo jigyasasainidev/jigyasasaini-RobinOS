@@ -67,10 +67,11 @@ export async function redirectToCheckout(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  // Restore referral code from storage (survives OAuth redirects)
-  // Import lazily to avoid circular deps
+  // Restore referral code from all storage layers (sessionStorage → localStorage → cookie)
+  // peek() only checks sessionStorage — restore() checks all layers
   const { referralCoordinator } = await import("@/services/affiliate/referralCoordinator");
-  const referralCode = referralCoordinator.peek().code ?? null;
+  const restored = referralCoordinator.restore();
+  const referralCode = restored.code ?? null;
 
   const { checkoutUrl } = await createCheckoutSession({
     planKey,

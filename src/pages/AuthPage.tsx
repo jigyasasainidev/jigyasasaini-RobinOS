@@ -23,7 +23,13 @@ const AuthPage = () => {
     initializedForUserRef.current = userId;
 
     setInitializing(true);
-    const init = await initializeUserAccount(ref || null);
+
+    // Restore referral from all storage layers (survives OAuth redirect)
+    // URL param `ref` may be empty after OAuth callback — use coordinator as source of truth
+    const restored = referralCoordinator.restore();
+    const effectiveRef = ref || restored.code || null;
+
+    const init = await initializeUserAccount(effectiveRef);
 
     if (!init.ok) {
       initializedForUserRef.current = null;
@@ -31,6 +37,9 @@ const AuthPage = () => {
       setInitializing(false);
       return;
     }
+
+    // Clean up referral storage after successful attribution
+    if (effectiveRef) referralCoordinator.cleanup(restored.traceId);
 
     navigate("/dashboard");
   };
