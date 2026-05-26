@@ -221,6 +221,15 @@ async function handleSubscriptionActive(
   if (error) throw new Error(`safe_plan_switch failed: ${error.message}`);
 
   console.log(`[dodo-webhook] Plan activated: ${JSON.stringify(result)}`);
+
+  // Emit admin notification
+  await supabase.rpc("push_admin_notification", {
+    p_type:     "payment",
+    p_title:    `💳 New ${planKey.replace("_", " ")} subscription`,
+    p_message:  `+$${amount}/mo · user ${userId.slice(0, 8)}`,
+    p_priority: "success",
+    p_metadata: { user_id: userId, plan: planKey, amount, subscription_id: subscriptionId },
+  });
 }
 
 async function handleSubscriptionCancelled(
@@ -427,6 +436,15 @@ async function recordAffiliateCommission(
     });
 
     console.log(`[dodo-webhook] Commission recorded: $${commissionAmount} for affiliate ${affiliateUserId}`);
+
+    // Emit admin notification
+    await supabase.rpc("push_admin_notification", {
+      p_type:     "affiliate",
+      p_title:    "🪙 Affiliate commission generated",
+      p_message:  `$${commissionAmount} (${commissionPercent}%) · ref ${referralCode}`,
+      p_priority: "info",
+      p_metadata: { affiliate_user_id: affiliateUserId, referred_user_id: referredUserId, amount: commissionAmount },
+    });
 
   } catch (err) {
     // Never let commission recording crash the payment flow

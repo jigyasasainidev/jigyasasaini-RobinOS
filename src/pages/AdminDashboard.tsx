@@ -50,6 +50,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { subscribeMultiTable } from "@/lib/realtime/channelManager";
 import { AdminPWAInstall } from "@/components/admin/AdminPWAInstall";
+import { AdminNotifications } from "@/components/admin/AdminNotifications";
 import {
   Sidebar,
   SidebarContent,
@@ -2621,6 +2622,7 @@ const AdminDashboard = () => {
               >
                 <RefreshCw className="h-3.5 w-3.5" />
               </button>
+              <AdminNotifications />
               <button
                 onClick={async () => {
                   if (user?.id) { try { await logAdminAction("admin_logout", user.id, { email: user.email ?? null }); } catch {} }
