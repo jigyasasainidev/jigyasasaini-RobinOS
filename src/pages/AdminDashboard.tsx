@@ -754,6 +754,25 @@ const AdminDashboard = () => {
     enabled: !!isAdmin,
   });
 
+  // ── Centralized affiliate analytics RPC ───────────────────
+  const affiliateAnalyticsQuery = useQuery({
+    queryKey: ["admin-affiliate-analytics-v1"],
+    queryFn: async (): Promise<{
+      leaderboard: Array<{ affiliate_user_id: string; email: string; referral_code: string; total_clicks: number; paid_conversions: number; total_earned: number; approved_commissions: number; pending_commissions: number; conversion_rate: number }>;
+      totals: { total_affiliates: number; active_affiliates: number; total_pending: number; total_approved: number; total_paid: number; total_earned: number; total_paid_conversions: number; total_clicks: number; conversion_revenue: number };
+      chart_data: Array<{ name: string; conversions: number; earned: number; clicks: number }>;
+    }> => {
+      const { data, error } = await (db as any).rpc("get_admin_affiliate_analytics");
+      if (error) {
+        console.warn("[AdminDashboard] affiliate analytics RPC failed:", error.message);
+        return { leaderboard: [], totals: { total_affiliates: 0, active_affiliates: 0, total_pending: 0, total_approved: 0, total_paid: 0, total_earned: 0, total_paid_conversions: 0, total_clicks: 0, conversion_revenue: 0 }, chart_data: [] };
+      }
+      return data;
+    },
+    enabled: !!isAdmin,
+    staleTime: 60 * 1000,
+  });
+
   const aiGenerationsQuery = useQuery({
     queryKey: ["admin-ai-generations-v2"],
     queryFn: async (): Promise<AIGenerationRow[]> => {
@@ -981,6 +1000,7 @@ const AdminDashboard = () => {
     featureUsageQuery.isLoading,
     platformSettingsQuery.isLoading,
     adminMetricsQuery.isLoading,
+    affiliateAnalyticsQuery.isLoading,
   ].some(Boolean);
 
   const queryErrors = [
@@ -1360,6 +1380,7 @@ const AdminDashboard = () => {
       "admin-feature-usage-v2",
       "admin-platform-settings-v2",
       "admin-dashboard-metrics-v1",
+      "admin-affiliate-analytics-v1",
     ].forEach((key) => queryClient.invalidateQueries({ queryKey: [key] }));
   };
 
@@ -2184,10 +2205,20 @@ const AdminDashboard = () => {
   );
 
   const affiliateUsers = useMemo(() => usersEnriched.filter((u) => u.is_affiliate), [usersEnriched]);
-  const pendingAffiliateCommissions = useMemo(() => affiliateCommissions.filter((c) => c.status === "pending").reduce((s, c) => s + Number(c.amount || 0), 0), [affiliateCommissions]);
-  const paidAffiliateCommissions = useMemo(() => affiliateCommissions.filter((c) => c.status === "paid").reduce((s, c) => s + Number(c.amount || 0), 0), [affiliateCommissions]);
+  const pendingAffiliateCommissions = useMemo(() => affiliateAnalyticsQuery.data?.totals?.total_pending ?? affiliateCommissions.filter((c) => c.status === "pending").reduce((s, c) => s + Number(c.amount || 0), 0), [affiliateAnalyticsQuery.data, affiliateCommissions]);
+  const paidAffiliateCommissions = useMemo(() => affiliateAnalyticsQuery.data?.totals?.total_paid ?? affiliateCommissions.filter((c) => c.status === "paid").reduce((s, c) => s + Number(c.amount || 0), 0), [affiliateAnalyticsQuery.data, affiliateCommissions]);
 
-  const renderAffiliatesPage = () => (
+  const renderAffiliatesPage = () => {
+    const analytics   = affiliateAnalyticsQuery.data;
+    const leaderboard = analytics?.leaderboard ?? [];
+    const totals      = analytics?.totals;
+    const chartData   = analytics?.chart_data ?? [];
+    const isLoading   = affiliateAnalyticsQuery.isLoading;
+
+    // Pending commission queue from raw commissions table
+    const pendingQueue = affiliateCommissions.filter((c) => c.status === "pending").slice(0, 10);
+
+    return (
     <div className="space-y-6">
       {/* ── Hero ── */}
       <motion.div
@@ -2222,25 +2253,24 @@ const AdminDashboard = () => {
       </motion.div>
 
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Total Affiliates"    value={formatNumber(affiliateProfiles.length)}    icon={Users}        spark={sparkFrom(affiliateProfiles.map((a) => Number(a.total_clicks || 0)))} />
-        <MetricCard label="Pending Commissions" value={formatCurrency(pendingAffiliateCommissions)} icon={Clock3}     spark={sparkFrom(affiliateCommissions.filter((a) => a.status === "pending").map((a) => Number(a.amount || 0)))} />
-        <MetricCard label="Paid Commissions"    value={formatCurrency(paidAffiliateCommissions)}  icon={CheckCircle2} spark={sparkFrom(affiliateCommissions.filter((a) => a.status === "paid").map((a) => Number(a.amount || 0)))} />
-        <MetricCard label="Conversion Revenue"  value={formatCurrency(totalAffiliateEarnings)}    icon={TrendingUp}   spark={sparkFrom(affiliateCommissions.map((a) => Number(a.amount || 0)))} />
+        <MetricCard label="Total Affiliates"    value={formatNumber(totals?.total_affiliates ?? affiliateProfiles.length)} icon={Users}        spark={sparkFrom(leaderboard.map((a) => a.total_clicks))} />
+        <MetricCard label="Pending Commissions" value={formatCurrency(totals?.total_pending ?? pendingAffiliateCommissions)} icon={Clock3}      spark={sparkFrom(leaderboard.map((a) => a.pending_commissions))} />
+        <MetricCard label="Paid Commissions"    value={formatCurrency(totals?.total_paid ?? paidAffiliateCommissions)}       icon={CheckCircle2} spark={sparkFrom(leaderboard.map((a) => a.total_earned))} />
+        <MetricCard label="Conversion Revenue"  value={formatCurrency(totals?.conversion_revenue ?? totalAffiliateEarnings)} icon={TrendingUp}   spark={sparkFrom(leaderboard.map((a) => a.total_earned))} />
       </section>
 
       <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-        <SectionCard title="Affiliate Leaderboard" subtitle="Top performers by earnings and conversions">
-          <DataTable headers={["rank", "email", "clicks", "conversions", "earned"]} colSpan={5} empty={!affiliateProfiles.length}>
-            {affiliateProfiles.slice(0, 10).map((a, idx) => (
-              <tr key={a.user_id} className="border-t hover:bg-white/[0.015] transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}>
+        <SectionCard title="Affiliate Leaderboard" subtitle="Top performers — aggregated from authoritative sources">
+          <DataTable headers={["rank", "email", "clicks", "conversions", "rate", "earned"]} colSpan={6} empty={!leaderboard.length}>
+            {leaderboard.map((a, idx) => (
+              <tr key={a.affiliate_user_id} className="border-t hover:bg-white/[0.015] transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}>
                 <td className="px-4 py-2.5">
-                  <span className="text-[10px] font-mono" style={{ color: idx === 0 ? "hsl(38 92% 55%)" : idx === 1 ? "hsl(220 15% 55%)" : idx === 2 ? "hsl(25 60% 45%)" : "hsl(var(--muted-foreground) / 0.25)" }}>
-                    #{idx + 1}
-                  </span>
+                  <span className="text-[10px] font-mono" style={{ color: idx === 0 ? "hsl(38 92% 55%)" : idx === 1 ? "hsl(220 15% 55%)" : idx === 2 ? "hsl(25 60% 45%)" : "hsl(var(--muted-foreground) / 0.25)" }}>#{idx + 1}</span>
                 </td>
-                <td className="px-4 py-2.5 text-foreground/80 max-w-[160px] truncate">{profileMap.get(a.user_id)?.email ?? a.user_id.slice(0, 8)}</td>
+                <td className="px-4 py-2.5 text-foreground/80 max-w-[140px] truncate">{a.email}</td>
                 <td className="px-4 py-2.5 font-mono text-foreground/60">{formatNumber(a.total_clicks)}</td>
-                <td className="px-4 py-2.5 font-mono text-foreground/60">{formatNumber(a.total_conversions)}</td>
+                <td className="px-4 py-2.5 font-mono text-foreground/60">{formatNumber(a.paid_conversions)}</td>
+                <td className="px-4 py-2.5 font-mono text-[10px]" style={{ color: a.conversion_rate > 50 ? "hsl(38 92% 58%)" : "hsl(var(--muted-foreground) / 0.45)" }}>{a.conversion_rate.toFixed(1)}%</td>
                 <td className="px-4 py-2.5 font-mono font-semibold" style={{ color: "hsl(217 91% 65%)" }}>{formatCurrency(a.total_earned)}</td>
               </tr>
             ))}
@@ -2251,44 +2281,49 @@ const AdminDashboard = () => {
           title={<div className="flex items-center gap-2.5">Referral Conversions<LiveBadge color="amber" /></div>}
           subtitle={<span className="font-mono">ROBINOS:AFF · Per-affiliate conversion and earnings</span>}
         >
-          <div className="relative rounded-xl overflow-hidden" style={{ background: "linear-gradient(180deg, hsl(222 32% 4%) 0%, hsl(222 26% 3%) 100%)", border: "1px solid hsl(217 28% 10%)" }}>
-            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, hsl(217 28% 12% / 0.22) 0px, transparent 1px, transparent 40px)", backgroundSize: "100% 40px" }} />
-            <div className="h-[240px] px-1 pt-3 pb-1">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={affiliateProfiles.slice(0, 8).map((a) => ({ name: (profileMap.get(a.user_id)?.email || a.user_id).split("@")[0], conversions: a.total_conversions, earned: a.total_earned }))}
-                  margin={{ top: 4, right: 8, left: -24, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="affConvGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(217 91% 60%)" stopOpacity={0.9} /><stop offset="100%" stopColor="hsl(217 91% 60%)" stopOpacity={0.35} /></linearGradient>
-                    <linearGradient id="affEarnGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(38 92% 50%)" stopOpacity={0.85} /><stop offset="100%" stopColor="hsl(38 92% 50%)" stopOpacity={0.3} /></linearGradient>
-                  </defs>
-                  <CartesianGrid vertical={false} stroke="hsl(217 28% 12% / 0)" />
-                  <XAxis dataKey="name" tick={{ fontSize: 8, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.3)" }} axisLine={{ stroke: "hsl(217 28% 11%)" }} tickLine={false} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "hsl(var(--muted-foreground) / 0.3)" }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ background: "hsl(222 28% 7% / 0.98)", border: "1px solid hsl(217 28% 16%)", borderRadius: "8px", fontSize: "11px", fontFamily: "monospace", boxShadow: "0 12px 40px hsl(0 0% 0% / 0.6)" }} cursor={{ fill: "hsl(217 91% 60% / 0.04)" }} />
-                  <Bar dataKey="conversions" name="Conversions" fill="url(#affConvGrad)" radius={[3, 3, 0, 0]} maxBarSize={18} />
-                  <Bar dataKey="earned" name="Earned" fill="url(#affEarnGrad)" radius={[3, 3, 0, 0]} maxBarSize={18} />
-                </BarChart>
-              </ResponsiveContainer>
+          {isLoading ? (
+            <div className="h-[240px] flex items-center justify-center">
+              <div className="w-6 h-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
             </div>
-          </div>
+          ) : chartData.length === 0 ? (
+            <div className="h-[240px] flex flex-col items-center justify-center gap-2">
+              <TrendingUp className="w-6 h-6" style={{ color: "hsl(var(--muted-foreground) / 0.15)" }} />
+              <p className="text-[10px] font-mono" style={{ color: "hsl(var(--muted-foreground) / 0.3)" }}>No affiliate activity yet</p>
+            </div>
+          ) : (
+            <div className="relative rounded-xl overflow-hidden" style={{ background: "linear-gradient(180deg, hsl(222 32% 4%) 0%, hsl(222 26% 3%) 100%)", border: "1px solid hsl(217 28% 10%)" }}>
+              <div style={{ height: 240, padding: "12px 4px 4px" }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 4, right: 8, left: -24, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="affConvGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0.9} /><stop offset="100%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0.35} /></linearGradient>
+                      <linearGradient id="affEarnGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0.85} /><stop offset="100%" stopColor="hsl(38, 92%, 50%)" stopOpacity={0.3} /></linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.03)" />
+                    <XAxis dataKey="name" tick={{ fontSize: 8, fontFamily: "monospace", fill: "rgba(255,255,255,0.3)" }} axisLine={{ stroke: "rgba(255,255,255,0.08)" }} tickLine={false} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 9, fontFamily: "monospace", fill: "rgba(255,255,255,0.3)" }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ background: "hsl(222, 28%, 7%)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", fontSize: "11px", fontFamily: "monospace" }} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+                    <Bar dataKey="conversions" name="conversions" fill="url(#affConvGrad)" radius={[3, 3, 0, 0]} maxBarSize={18} />
+                    <Bar dataKey="earned"      name="earned"      fill="url(#affEarnGrad)" radius={[3, 3, 0, 0]} maxBarSize={18} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
         </SectionCard>
       </section>
 
       <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-        <SectionCard
-          title={<div className="flex items-center gap-2.5">Affiliate Growth<LiveBadge color="green" /></div>}
-          subtitle={<span className="font-mono">ROBINOS:AFFG · Cumulative affiliate onboarding</span>}
-        >
+        <SectionCard title={<div className="flex items-center gap-2.5">Affiliate Growth<LiveBadge color="green" /></div>} subtitle={<span className="font-mono">ROBINOS:AFFG · Cumulative affiliate onboarding</span>}>
           <TerminalChart id="affGrowth" data={dailySeries} dataKey="users" color="hsl(142 70% 45%)" height={200} emptyMsg="No affiliate activity detected." />
         </SectionCard>
-        <SectionCard title="Pending Commission Queue" subtitle="Awaiting processing and payout">
-          <DataTable headers={["affiliate", "commission", "date"]} colSpan={3} empty={!affiliateCommissions.filter((c) => c.status === "pending").length}>
-            {affiliateCommissions.filter((c) => c.status === "pending").slice(0, 10).map((c) => (
+        <SectionCard title="Pending Commission Queue" subtitle="Awaiting 14-day cooldown approval">
+          <DataTable headers={["affiliate", "commission", "plan", "date"]} colSpan={4} empty={!pendingQueue.length}>
+            {pendingQueue.map((c) => (
               <tr key={c.id} className="border-t hover:bg-white/[0.015] transition-colors" style={{ borderColor: "hsl(217 28% 10%)" }}>
                 <td className="px-4 py-2.5 text-foreground/80">{profileMap.get(c.affiliate_user_id)?.email ?? c.affiliate_user_id.slice(0, 8)}</td>
                 <td className="px-4 py-2.5 font-mono text-foreground/80">{formatCurrency(c.amount)}</td>
+                <td className="px-4 py-2.5 font-mono text-[10px] text-muted-foreground/45">{(c as any).plan_code ?? "—"}</td>
                 <td className="px-4 py-2.5 font-mono text-[10px] text-muted-foreground/35">{new Date(c.created_at).toLocaleDateString()}</td>
               </tr>
             ))}
@@ -2297,7 +2332,7 @@ const AdminDashboard = () => {
       </section>
     </div>
   );
-
+  };
   const paidWithdrawalsMonth = useMemo(() => {
     const monthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
     return withdrawals.filter((w) => asWithdrawStatus(w.status) === "paid" && new Date(w.created_at).getTime() >= monthAgo);
@@ -2307,8 +2342,7 @@ const AdminDashboard = () => {
   const failedWithdrawals = useMemo(() => withdrawals.filter((w) => asWithdrawStatus(w.status) === "rejected").length, [withdrawals]);
 
   const renderWithdrawalsPage = () => {
-    const filtered = withdrawStatusFilter === "all" ? withdrawals : withdrawals.filter((w) => asWithdrawStatus(w.status) === withdrawStatusFilter);
-    return (
+    const filtered = withdrawStatusFilter === "all" ? withdrawals : withdrawals.filter((w) => asWithdrawStatus(w.status) === withdrawStatusFilter);    return (
       <div className="space-y-6">
         {/* ── Hero ── */}
         <motion.div
