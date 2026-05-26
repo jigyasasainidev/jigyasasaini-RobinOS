@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { motion } from "framer-motion";
@@ -13,6 +13,7 @@ import { warmCriticalRoutes } from "@/lib/routePrefetch";
 import { TopScrollProgress } from "@/components/TopScrollProgress";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { referralCoordinator } from "@/services/affiliate/referralCoordinator";
 import {
   PageSkeleton,
   SplitPageSkeleton,
@@ -118,11 +119,35 @@ const ScrollManager = () => {
       }
     };
   }, []);
-
   useLayoutEffect(() => {
     if (hash) return;
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [pathname, hash]);
+
+  return null;
+};
+
+// ── Referral capture — runs on every page load ─────────────
+// Checks ?ref= param on ANY page (homepage, pricing, landing, etc.)
+// and persists it to sessionStorage + localStorage + cookie.
+// This must run at the router level so it fires before auth flow.
+const ReferralCapture = () => {
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const ref = searchParams.get("ref")?.trim();
+    if (!ref) return;
+
+    const captured = referralCoordinator.captureFromUrl(ref);
+    if (captured) {
+      const { overwriteBlocked } = referralCoordinator.persist(captured);
+      if (!overwriteBlocked) {
+        console.info(`[ReferralCapture] Saved referral code: ${captured.code}`);
+      }
+    }
+  // Only run when ?ref= param changes — not on every navigation
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.get("ref")]);
 
   return null;
 };
@@ -135,6 +160,7 @@ const App = () => (
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <TopScrollProgress />
         <ScrollManager />
+        <ReferralCapture />
         <AuthProvider>
           <CurrencyProvider>
           <ErrorBoundary>
