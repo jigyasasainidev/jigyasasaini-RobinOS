@@ -1308,7 +1308,7 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
                   : "0 20px 52px hsl(0 0% 0% / 0.35), 0 0 0 1px hsl(217 91% 60% / 0.12)"
               }}
               transition={{ type: "spring", stiffness: 300, damping: 22 }}
-                className={`relative rounded-xl p-6 sm:p-7 ${
+                className={`relative rounded-xl overflow-hidden ${(yearlyBadge || plan.badge) ? "pt-8 px-6 sm:px-7 pb-6 sm:pb-7" : "p-6 sm:p-7"} ${
                 plan.isAgency
                     ? "border border-amber-500/30 bg-card/60 shadow-[0_0_24px_-10px_hsl(38_92%_50%/0.24)]"
                   : plan.featured
@@ -1317,13 +1317,8 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
               }`}
             >
               {yearlyBadge && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ duration: 0.35 }}
-                  className="absolute -top-4 left-1/2 -translate-x-1/2 z-10"
-                >
-                  <div className={`px-3 py-1 rounded-full text-[10px] font-mono tracking-[0.12em] uppercase border backdrop-blur-md whitespace-nowrap ${
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-px">
+                  <div className={`px-3 py-1 rounded-b-lg text-[10px] font-mono tracking-[0.12em] uppercase border whitespace-nowrap ${
                     plan.isAgency
                       ? "bg-amber-500/15 text-amber-300 border-amber-400/40 shadow-[0_0_18px_hsl(38_92%_50%/0.22)]"
                       : plan.featured
@@ -1331,16 +1326,14 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
                         : "bg-primary/10 text-primary border-primary/30 shadow-[0_0_14px_hsl(217_91%_60%/0.2)]"
                   }`}>
                     {yearlyBadge.primary}
+                    {yearlyBadge.secondary && <span className="ml-1.5 opacity-70">{yearlyBadge.secondary}</span>}
                   </div>
-                  {yearlyBadge.secondary && (
-                    <p className="text-center text-[9px] mt-1 text-primary/90 font-medium tracking-[0.08em] uppercase">{yearlyBadge.secondary}</p>
-                  )}
-                </motion.div>
+                </div>
               )}
 
               {!yearlyBadge && plan.badge && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className={`px-3 py-0.5 rounded-full text-[10px] font-mono tracking-widest uppercase ${
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-px">
+                  <span className={`inline-flex px-3 py-1 rounded-b-lg text-[10px] font-mono tracking-widest uppercase whitespace-nowrap ${
                     plan.badge === "PREMIUM" || plan.badge === "ELITE"
                       ? "bg-amber-500 text-black"
                       : "bg-primary text-primary-foreground"

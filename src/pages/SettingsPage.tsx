@@ -608,7 +608,7 @@ const SettingsPage = () => {
               return (
                 <div
                   key={planConfig.name}
-                  className={`relative rounded-xl border p-5 transition-all ${
+                  className={`relative rounded-xl border p-5 pt-6 transition-all overflow-hidden ${
                     isAgencyCard
                       ? "border-amber-500/30 bg-amber-500/5 shadow-[0_0_24px_-10px_hsl(38_92%_50%/0.24)]"
                       : planConfig.popular
@@ -617,10 +617,10 @@ const SettingsPage = () => {
                   }`}
                 >
                   {planConfig.badge && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Badge className={`text-[10px] font-mono tracking-wider px-3 ${planConfig.badge === "PREMIUM" ? "bg-amber-500 text-black" : "bg-primary text-primary-foreground"}`}>
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-px">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-b-lg text-[9px] font-mono tracking-wider whitespace-nowrap ${planConfig.badge === "PREMIUM" ? "bg-amber-500 text-black" : "bg-primary text-primary-foreground"}`}>
                         {planConfig.badge}
-                      </Badge>
+                      </span>
                     </div>
                   )}
 
