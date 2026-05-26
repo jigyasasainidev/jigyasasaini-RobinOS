@@ -50,10 +50,11 @@ export async function createCheckoutSession(
   req: CheckoutSessionRequest
 ): Promise<CheckoutSessionResponse> {
   return callEdgeFunction<CheckoutSessionResponse>("create-checkout", {
-    planKey:   req.planKey,
-    userId:    req.userId,
-    userEmail: req.userEmail,
-    userName:  req.userName ?? "",
+    planKey:      req.planKey,
+    userId:       req.userId,
+    userEmail:    req.userEmail,
+    userName:     req.userName ?? "",
+    referralCode: req.referralCode ?? null,
   });
 }
 
@@ -66,11 +67,17 @@ export async function redirectToCheckout(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
+  // Restore referral code from storage (survives OAuth redirects)
+  // Import lazily to avoid circular deps
+  const { referralCoordinator } = await import("@/services/affiliate/referralCoordinator");
+  const referralCode = referralCoordinator.peek().code ?? null;
+
   const { checkoutUrl } = await createCheckoutSession({
     planKey,
-    userId:    user.id,
-    userEmail: userEmail || user.email || "",
+    userId:       user.id,
+    userEmail:    userEmail || user.email || "",
     userName,
+    referralCode,
   });
 
   window.location.href = checkoutUrl;

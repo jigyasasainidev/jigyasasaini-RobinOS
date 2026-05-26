@@ -12,6 +12,7 @@ export interface CheckoutSessionRequest {
   userId: string;
   userEmail: string;
   userName?: string;
+  referralCode?: string | null;
 }
 
 export interface CheckoutSessionResponse {

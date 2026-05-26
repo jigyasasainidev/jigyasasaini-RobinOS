@@ -59,6 +59,7 @@ Deno.serve(async (req) => {
     const planKey   = String(body?.planKey   ?? "").toLowerCase();
     const userEmail = String(body?.userEmail ?? user.email ?? "");
     const userName  = String(body?.userName  ?? "");
+    const referralCode = body?.referralCode ? String(body.referralCode).trim().toUpperCase() : null;
 
     if (!VALID_PLANS.includes(planKey as typeof VALID_PLANS[number])) {
       return new Response(JSON.stringify({ error: `Invalid plan: ${planKey}` }), {
@@ -118,6 +119,7 @@ Deno.serve(async (req) => {
         plan_key:      planKey,
         billing_cycle: "monthly",
         source:        "robinos_web",
+        ...(referralCode ? { referral_code: referralCode } : {}),
       },
     });
 

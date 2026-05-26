@@ -296,6 +296,24 @@ async function handlePaymentSucceeded(
         p_triggered_by:    "webhook",
       });
       if (error) throw new Error(`safe_plan_switch (payment.succeeded) failed: ${error.message}`);
+
+      // ── Affiliate commission attribution ──────────────────
+      // If this user was referred, calculate and record 30% commission
+      const referralCode = metadata.referral_code ?? null;
+      if (referralCode && amount > 0) {
+        await recordAffiliateCommission(supabase, userId, referralCode, amount, subscriptionId);
+      } else {
+        // Fallback: check profiles.referred_by_code (set at signup)
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("referred_by_code")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (profile?.referred_by_code && amount > 0) {
+          await recordAffiliateCommission(supabase, userId, profile.referred_by_code, amount, subscriptionId);
+        }
+      }
     }
   }
 
@@ -331,4 +349,87 @@ async function handlePaymentFailed(
   });
 
   console.log(`[dodo-webhook] Payment failed for user: ${userId}`);
+}
+
+// ── Affiliate commission recording ────────────────────────
+// Called on every successful payment for a referred user.
+// Commission rate is read live from platform_settings (admin-controlled).
+// Idempotent: unique constraint on (affiliate_user_id, referred_user_id, subscription_id).
+
+async function recordAffiliateCommission(
+  supabase: ReturnType<typeof createClient>,
+  referredUserId: string,
+  referralCode:   string,
+  paymentAmount:  number,
+  subscriptionId: string
+): Promise<void> {
+  try {
+    // 1. Find affiliate by referral code
+    const { data: affiliateProfile } = await supabase
+      .from("affiliate_profiles")
+      .select("user_id, referral_code")
+      .eq("referral_code", referralCode.toUpperCase())
+      .maybeSingle();
+
+    if (!affiliateProfile?.user_id) {
+      console.warn(`[dodo-webhook] Referral code not found: ${referralCode}`);
+      return;
+    }
+
+    const affiliateUserId = affiliateProfile.user_id;
+
+    // Prevent self-referral
+    if (affiliateUserId === referredUserId) {
+      console.warn(`[dodo-webhook] Self-referral blocked: ${affiliateUserId}`);
+      return;
+    }
+
+    // 2. Read live commission rate from platform_settings
+    const { data: settings } = await supabase
+      .from("platform_settings")
+      .select("affiliate_commission_percent")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const commissionPercent = Number(settings?.affiliate_commission_percent ?? 30);
+    const commissionRate    = commissionPercent / 100;
+    const commissionAmount  = Math.round(paymentAmount * commissionRate * 100) / 100;
+
+    console.log(`[dodo-webhook] Commission: affiliate=${affiliateUserId} referred=${referredUserId} amount=$${paymentAmount} rate=${commissionPercent}% commission=$${commissionAmount}`);
+
+    // 3. Insert commission record (idempotent via dodo_subscription_id)
+    const { error: commErr } = await supabase
+      .from("affiliate_commissions")
+      .insert({
+        affiliate_user_id:   affiliateUserId,
+        referred_user_id:    referredUserId,
+        dodo_subscription_id: subscriptionId,
+        amount:              commissionAmount,
+        status:              "pending",
+      })
+      .select("id")
+      .single();
+
+    if (commErr) {
+      // Unique constraint violation = already recorded (idempotent)
+      if (commErr.code === "23505") {
+        console.log(`[dodo-webhook] Commission already recorded (idempotent)`);
+        return;
+      }
+      throw new Error(`Commission insert failed: ${commErr.message}`);
+    }
+
+    // 4. Update affiliate_profiles totals atomically
+    await supabase.rpc("increment_affiliate_balance", {
+      p_affiliate_user_id: affiliateUserId,
+      p_amount:            commissionAmount,
+    });
+
+    console.log(`[dodo-webhook] Commission recorded: $${commissionAmount} for affiliate ${affiliateUserId}`);
+
+  } catch (err) {
+    // Never let commission recording crash the payment flow
+    console.error(`[dodo-webhook] Commission recording failed (non-fatal):`, err instanceof Error ? err.message : err);
+  }
 }
