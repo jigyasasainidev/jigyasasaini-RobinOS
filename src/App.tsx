@@ -69,6 +69,7 @@ const CreatorOSPage = lazy(lazyWithRetry(() => import("./pages/public/CreatorOSP
 const JVZooAffiliatePage = lazy(lazyWithRetry(() => import("./pages/public/JVZooAffiliatePage"), "jvzoo-affiliate"));
 const BlogPage = lazy(lazyWithRetry(() => import("./pages/blog/BlogPage"), "blog-index"));
 const BlogPostPage = lazy(lazyWithRetry(() => import("./pages/blog/BlogPostPage"), "blog-post"));
+const AdminAuthPage = lazy(() => import("./pages/AdminAuthPage"));
 const AdminAuthCallbackPage = lazy(() => import("./pages/AdminAuthCallbackPage"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AuthCallbackPage = lazy(() => import("./pages/AuthCallbackPage"));
