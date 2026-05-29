@@ -30,6 +30,7 @@ Allow: /acceptable-use-policy
 Allow: /report-abuse
 Allow: /creator-os
 Allow: /launch-partners
+Allow: /jvzooaffiliate
 Allow: /minidemo
 
 # ── Block private / auth / dashboard pages ────────────────
@@ -37,15 +38,7 @@ Allow: /minidemo
 Disallow: /dashboard/
 Disallow: /adminsh/
 Disallow: /auth/
-Disallow: /auth/callback
 Disallow: /login
-Disallow: /jvzooaffiliate
-
-# ── Block common crawl noise ──────────────────────────────
-Disallow: /*.json$
-Disallow: /api/
-Disallow: /_next/
-Disallow: /static/
 
 # ── Specific bot rules ────────────────────────────────────
 User-agent: Googlebot
