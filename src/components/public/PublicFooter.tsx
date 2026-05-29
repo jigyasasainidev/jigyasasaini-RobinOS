@@ -33,10 +33,11 @@ const legalLinks = [
 ];
 
 const resourceLinks = [
-  { label: "Documentation", to: "/docs" },
-  { label: "Help Center", to: "/help" },
-  { label: "Creator Guide", to: "/creator-guide" },
-  { label: "Affiliate Guide", to: "/affiliate-guide" },
+  { label: "Blog",           to: "/blog" },
+  { label: "Documentation",  to: "/docs" },
+  { label: "Help Center",    to: "/help" },
+  { label: "Creator Guide",  to: "/creator-guide" },
+  { label: "Affiliate Guide",to: "/affiliate-guide" },
 ];
 
 function LinkColumn({ title, links }: { title: string; links: { label: string; to: string }[] }) {
