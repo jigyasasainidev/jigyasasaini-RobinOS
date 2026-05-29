@@ -31,6 +31,7 @@ Allow: /report-abuse
 Allow: /creator-os
 Allow: /launch-partners
 Allow: /jvzooaffiliate
+Allow: /blog
 Allow: /minidemo
 
 # ── Block private / auth / dashboard pages ────────────────

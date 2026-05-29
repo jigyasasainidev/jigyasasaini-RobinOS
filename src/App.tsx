@@ -67,7 +67,8 @@ const AcceptableUsePolicyPage = lazy(() => import("./pages/public/AcceptableUseP
 const ReportAbusePage = lazy(() => import("./pages/public/ReportAbusePage").then((m) => ({ default: m.ReportAbusePage })));
 const CreatorOSPage = lazy(lazyWithRetry(() => import("./pages/public/CreatorOSPage"), "creator-os"));
 const JVZooAffiliatePage = lazy(lazyWithRetry(() => import("./pages/public/JVZooAffiliatePage"), "jvzoo-affiliate"));
-const AdminAuthPage = lazy(() => import("./pages/AdminAuthPage"));
+const BlogPage = lazy(lazyWithRetry(() => import("./pages/blog/BlogPage"), "blog-index"));
+const BlogPostPage = lazy(lazyWithRetry(() => import("./pages/blog/BlogPostPage"), "blog-post"));
 const AdminAuthCallbackPage = lazy(() => import("./pages/AdminAuthCallbackPage"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AuthCallbackPage = lazy(() => import("./pages/AuthCallbackPage"));
@@ -242,6 +243,8 @@ const App = () => (
               <Route path="/creator-os" element={<CreatorOSPage />} />
               <Route path="/jvzooaffiliate" element={<JVZooAffiliatePage />} />
               <Route path="/launch-partners" element={<JVZooAffiliatePage />} />
+              <Route path="/blog" element={<BlogPage />} />
+              <Route path="/blog/:slug" element={<BlogPostPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

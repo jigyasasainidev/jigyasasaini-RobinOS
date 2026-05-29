@@ -1,0 +1,62 @@
+/* ── Blog article prose styles ─────────────────────────── */
+/* Scoped to .prose-blog — does not affect any other styles */
+
+.prose-blog h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: hsl(var(--foreground) / 0.9);
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.prose-blog h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: hsl(var(--foreground) / 0.8);
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.prose-blog p {
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  color: hsl(var(--muted-foreground) / 0.75);
+  margin-bottom: 1rem;
+}
+
+.prose-blog ul {
+  margin: 0.75rem 0 1rem 1.25rem;
+  list-style-type: disc;
+}
+
+.prose-blog li {
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  color: hsl(var(--muted-foreground) / 0.7);
+  margin-bottom: 0.35rem;
+}
+
+.prose-blog strong {
+  color: hsl(var(--foreground) / 0.85);
+  font-weight: 600;
+}
+
+.prose-blog a {
+  color: hsl(217 91% 65%);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: hsl(217 91% 60% / 0.35);
+  transition: color 0.15s, text-decoration-color 0.15s;
+}
+
+.prose-blog a:hover {
+  color: hsl(217 91% 72%);
+  text-decoration-color: hsl(217 91% 60% / 0.7);
+}
+
+.prose-blog h2:first-child {
+  margin-top: 0;
+}
