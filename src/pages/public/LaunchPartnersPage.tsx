@@ -587,15 +587,29 @@ export default function LaunchPartnersPage() {
           </p>
         </Reveal>
 
-        {promoAssets.length === 0 ? (
-          <Reveal>
-            <div className="rounded-2xl p-12 text-center"
-              style={{ background: "linear-gradient(135deg, hsl(222 32% 8%), hsl(222 28% 6.5%))", border: "1px solid hsl(217 28% 14%)", borderStyle: "dashed" }}>
-              <Sparkles className="w-8 h-8 text-muted-foreground/20 mx-auto mb-3" strokeWidth={1.5} />
-              <p className="text-sm text-muted-foreground/50">Promo resources will appear here.</p>
-              {affiliateResourcesUrl ? (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[
+            { icon: Users, title: "Affiliate Guide", desc: "Step-by-step instructions, onboarding, and promotion guidance for RobinOS affiliates.", delay: 0 },
+            { icon: Sparkles, title: "Brand Assets", desc: "Official RobinOS brand guidelines, colors, and usage rules.", delay: 0.05 },
+            { icon: Film, title: "Demo Videos", desc: "Pre-recorded demo reels and walkthroughs you can share anywhere.", delay: 0.10 },
+            { icon: Mail, title: "Email Templates", desc: "Ready-to-send outreach and follow-up templates for affiliates.", delay: 0.15 },
+            { icon: Image, title: "Logos", desc: "Official RobinOS logos and branding assets.", delay: 0.20 },
+            { icon: Star, title: "Product Screenshots", desc: "Ready-to-use screenshots for promotional content.", delay: 0.25 },
+            { icon: Play, title: "Reels", desc: "Short-form video clips optimized for social sharing.", delay: 0.30 },
+            { icon: PenTool, title: "Swipe Copy", desc: "Pre-written captions, hooks, and ad copy you can post instantly.", delay: 0.35 },
+          ].map(({ icon: Icon, title, desc, delay }, i) => (
+            <Reveal key={title} delay={delay}>
+              <motion.div className="rounded-xl p-4 relative overflow-hidden flex flex-col h-full"
+                style={{ background: "linear-gradient(135deg, hsl(222 32% 8%), hsl(222 28% 6.5%))", border: "1px solid hsl(217 28% 14%)" }}
+                whileHover={{ borderColor: "hsl(217 91% 60% / 0.2)", y: -1 }} transition={{ duration: 0.2 }}>
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center mb-3"
+                  style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.15)" }}>
+                  <Icon className="w-3.5 h-3.5 text-primary/60" strokeWidth={1.5} />
+                </div>
+                <p className="text-sm font-semibold text-foreground">{title}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed pr-8 flex-1">{desc}</p>
                 <a
-                  href={affiliateResourcesUrl}
+                  href={affiliateResourcesUrl || "#"}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-mono transition-colors"
@@ -603,42 +617,10 @@ export default function LaunchPartnersPage() {
                 >
                   Open Resource Library <ExternalLink className="w-3 h-3" />
                 </a>
-              ) : (
-                <p className="text-[10px] font-mono text-muted-foreground/30 mt-1">Managed from Admin → Launch Partner Controls</p>
-              )}
-            </div>
-          </Reveal>
-        ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {promoAssets.map((asset, i) => {
-              const Icon = resolveIcon(asset.icon_name);
-              return (
-                <Reveal key={asset.id} delay={i * 0.05}>
-                  <motion.div className="rounded-xl p-4 relative overflow-hidden flex flex-col h-full"
-                    style={{ background: "linear-gradient(135deg, hsl(222 32% 8%), hsl(222 28% 6.5%))", border: "1px solid hsl(217 28% 14%)" }}
-                    whileHover={{ borderColor: "hsl(217 91% 60% / 0.2)", y: -1 }} transition={{ duration: 0.2 }}>
-
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center mb-3"
-                      style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.15)" }}>
-                      <Icon className="w-3.5 h-3.5 text-primary/60" strokeWidth={1.5} />
-                    </div>
-                    <p className="text-sm font-semibold text-foreground">{asset.title}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed pr-8 flex-1">{asset.description}</p>
-                    <a
-                      href={affiliateResourcesUrl || asset.button_url || "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-mono transition-colors"
-                      style={{ color: "hsl(217 91% 68%)" }}
-                    >
-                      {asset.button_text || "Open Resource Library"} <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </motion.div>
-                </Reveal>
-              );
-            })}
-          </div>
-        )}
+              </motion.div>
+            </Reveal>
+          ))}
+        </div>
       </section>
 
       {/* ════════════ 9. DEMO VIDEO ══════════════════════════ */}
