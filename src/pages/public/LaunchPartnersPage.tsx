@@ -608,19 +608,26 @@ export default function LaunchPartnersPage() {
                 </div>
                 <p className="text-sm font-semibold text-foreground">{title}</p>
                 <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed pr-8 flex-1">{desc}</p>
-                <a
-                  href={affiliateResourcesUrl || "#"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-mono transition-colors"
-                  style={{ color: "hsl(217 91% 68%)" }}
-                >
-                  Open Resource Library <ExternalLink className="w-3 h-3" />
-                </a>
               </motion.div>
             </Reveal>
           ))}
         </div>
+
+        {affiliateResourcesUrl && (
+          <Reveal delay={0.4}>
+            <div className="mt-8 text-center">
+              <a
+                href={affiliateResourcesUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 h-12 px-8 rounded-xl text-sm font-semibold text-white transition-all duration-300"
+                style={{ background: "linear-gradient(135deg, hsl(142 70% 42%), hsl(142 65% 35%))", boxShadow: "0 4px 20px hsl(142 70% 55% / 0.35), inset 0 1px 0 hsl(0 0% 100% / 0.1)" }}
+              >
+                Open Resource Library <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
+          </Reveal>
+        )}
       </section>
 
       {/* ════════════ 9. DEMO VIDEO ══════════════════════════ */}
