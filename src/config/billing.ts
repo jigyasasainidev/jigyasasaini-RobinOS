@@ -34,3 +34,6 @@ export function getCheckoutReturnUrl(planKey: string): string {
 
 // ── Dodo subscription_source value ────────────────────────
 export const DODO_SOURCE = "dodo" as const;
+
+// ── Whop subscription_source value ──────────────────────
+export const WHOP_SOURCE = "whop" as const;
