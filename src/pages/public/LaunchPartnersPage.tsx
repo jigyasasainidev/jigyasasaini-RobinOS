@@ -169,29 +169,28 @@ function AngleCard({ hook, support, tag, delay }: { hook: string; support: strin
 }
 
 // ── Expandable FAQ item ───────────────────────────────────
-function FaqItem({ q, a, delay }: { q: string; a: string; delay: number }) {
-  const [open, setOpen] = useState(false);
+function FaqItem({ q, a, delay, isOpen, onToggle }: { q: string; a: string; delay: number; isOpen: boolean; onToggle: () => void }) {
   return (
     <Reveal delay={delay}>
       <motion.div
         className="rounded-xl overflow-hidden cursor-pointer"
         style={{ background: "linear-gradient(135deg, hsl(222 32% 8%), hsl(222 28% 6.5%))", border: "1px solid hsl(217 28% 12%)" }}
-        animate={{ borderColor: open ? "hsl(142 70% 55% / 0.2)" : "hsl(217 28% 12%)" }}
+        animate={{ borderColor: isOpen ? "hsl(142 70% 55% / 0.2)" : "hsl(217 28% 12%)" }}
         transition={{ duration: 0.2 }}
-        onClick={() => setOpen((v) => !v)}
+        onClick={onToggle}
       >
         <div className="flex items-center justify-between gap-3 px-5 py-4">
           <p className="text-sm font-semibold text-foreground">{q}</p>
-          <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.25 }}
+          <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.25 }}
             className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
-            style={{ background: open ? "hsl(142 70% 55% / 0.12)" : "hsl(217 28% 12%)" }}>
+            style={{ background: isOpen ? "hsl(142 70% 55% / 0.12)" : "hsl(217 28% 12%)" }}>
             <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
-              <path d="M1 1l4 4 4-4" stroke={open ? "hsl(142 70% 60%)" : "hsl(var(--muted-foreground))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M1 1l4 4 4-4" stroke={isOpen ? "hsl(142 70% 60%)" : "hsl(var(--muted-foreground))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </motion.div>
         </div>
         <AnimatePresence initial={false}>
-          {open && (
+          {isOpen && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
@@ -272,6 +271,7 @@ export default function LaunchPartnersPage() {
   const navigate = useNavigate();
   const { data: settings, isLoading } = usePlatformSettings();
   const { data: promoAssets = [] }     = useAffiliatePromoAssets();
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   useEffect(() => {
     // Only redirect if settings loaded AND explicitly set to false
@@ -702,7 +702,7 @@ export default function LaunchPartnersPage() {
             { q: "Do affiliates get promo assets?",   a: "Yes — video demos, swipe copy, and banner creatives are being prepared and will be available in the affiliate area.", delay: 0.16 },
             { q: "Is RobinOS beginner friendly?",     a: "Absolutely. The platform is designed to be picked up in minutes. Users see value in the first session.", delay: 0.20 },
             { q: "Can international affiliates join?",a: "Yes. We support international partners. RobinOS accepts users worldwide.", delay: 0.24 },
-          ].map((item) => <FaqItem key={item.q} {...item} />)}
+          ].map((item, index) => <FaqItem key={item.q} {...item} isOpen={openIndex === index} onToggle={() => setOpenIndex(openIndex === index ? null : index)} />)}
         </div>
       </section>
 
