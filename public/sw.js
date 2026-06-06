@@ -12,7 +12,7 @@
 //   - Only static build artifacts are cached
 // ============================================================
 
-const CACHE_VERSION = "robinos-admin-v2";
+const CACHE_VERSION = "robinos-admin-v3";
 const SHELL_CACHE   = `${CACHE_VERSION}-shell`;
 
 // Static assets to pre-cache on install (app shell)
@@ -143,7 +143,7 @@ self.addEventListener("push", (event) => {
   const options = {
     body:    payload.body    ?? "New admin notification",
     icon:    payload.icon    ?? "/android-chrome-192x192.png",
-    badge:   payload.badge   ?? "/robinos.ico?v=3",
+    badge:   payload.badge   ?? "/robinos.ico?v=4",
     tag:     payload.tag     ?? "robinos-admin",
     data:    payload.data    ?? {},
     vibrate: [100, 50, 100],
