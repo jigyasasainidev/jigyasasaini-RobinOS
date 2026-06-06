@@ -63,6 +63,7 @@ const ResourcesPage = lazy(() => import("./pages/public/PublicInfoPages").then((
 const RoadmapPage = lazy(() => import("./pages/public/PublicInfoPages").then((m) => ({ default: m.RoadmapPage })));
 const SupportPage = lazy(() => import("./pages/public/PublicInfoPages").then((m) => ({ default: m.SupportPage })));
 const TrustSafetyPage = lazy(() => import("./pages/public/TrustSafetyPage").then((m) => ({ default: m.TrustSafetyPage })));
+const WelcomePage = lazy(() => import("./pages/public/WelcomePage").then((m) => ({ default: m.WelcomePage })));
 const AcceptableUsePolicyPage = lazy(() => import("./pages/public/AcceptableUsePolicyPage").then((m) => ({ default: m.AcceptableUsePolicyPage })));
 const ReportAbusePage = lazy(() => import("./pages/public/ReportAbusePage").then((m) => ({ default: m.ReportAbusePage })));
 const CreatorOSPage = lazy(lazyWithRetry(() => import("./pages/public/CreatorOSPage"), "creator-os"));
@@ -239,6 +240,7 @@ const App = () => (
               <Route path="/affiliate-terms" element={<AffiliateTermsPage />} />
               <Route path="/disclaimer" element={<DisclaimerPolicyPage />} />
               <Route path="/trust-safety" element={<TrustSafetyPage />} />
+              <Route path="/welcome" element={<WelcomePage />} />
               <Route path="/acceptable-use-policy" element={<AcceptableUsePolicyPage />} />
               <Route path="/report-abuse" element={<ReportAbusePage />} />
               <Route path="/creator-os" element={<CreatorOSPage />} />
