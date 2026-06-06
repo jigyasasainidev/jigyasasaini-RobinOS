@@ -1,0 +1,154 @@
+{
+  "id": "019e9c90-ae12-7099-aff7-2924cc23217e",
+  "name": "Fix FAQ accordion behavior",
+  "description": "Investigate and fix the FAQ accordion behavior across the entire RobinOS application.\n\nIssue:\nCurrently FAQ accordions allow multiple items to remain open at the same time. When a user opens a new FAQ item, previously opened items stay expanded.\n\nExpected Behavior:\n- Only ONE FAQ item should be open at any given time.\n- Opening a new FAQ item should automatically close the previously opened item.\n- Clicking an already open item should collapse it.\n- This behavior should be applied consistently to every FAQ/accordion section used for question-answer content across the site.\n\nRequirements:\n1. Find all FAQ accordion implementations in the codebase.\n2. Identify whether they use Radix Accordion, shadcn/ui Accordion, or a custom accordion implementation.\n3. Convert all FAQ accordions to single-open behavior.\n4. Preserve all existing styling, animations, spacing, icons, colors, content, and responsiveness.\n5. Do not modify any copy/text.\n6. Do not change any unrelated UI or business logic.\n7. Do not modify authentication, subscriptions, affiliate tracking, commissions, payouts, analytics, database schema, routes, or backend functionality.\n8. Only change the accordion behavior required for this fix.\n\nDeliverables:\n- List all files modified.\n- Explain root cause.\n- Confirm previous FAQ item now closes automatically when another item is opened.\n- Confirm no unrelated files or systems were changed.\n- Provide git commit hash after completion.",
+  "status": "complete",
+  "worktree": {
+    "path": "/Users/ashad/Documents/RobinOS-main",
+    "branch": "main",
+    "commit": "bfdff93a6a3dd4de91438d4b2183596363e360c9"
+  },
+  "scoping": {
+    "goal": {
+      "answer": "Convert all FAQ accordion sections in RobinOS to single-open behavior, where only one item can be expanded at a time and clicking an already-open item collapses it. Preserve all existing styling, animations, spacing, icons, colors, content, and responsiveness.",
+      "confirmedAt": "2026-06-06T11:14:26.586Z"
+    },
+    "criteria": {
+      "answer": "`src/pages/public/LaunchPartnersPage.tsx` FAQ section enforces single-open behavior (only one item expanded at a time).\nClicking an already-open FAQ item in `LaunchPartnersPage.tsx` collapses it.\nAll existing styling, animations, spacing, icons, colors, and responsiveness in `LaunchPartnersPage.tsx` FAQ are preserved.\nNo copy/text is modified.\n`src/pages/EntryPage.tsx` is verified to already use single-open behavior (`type=\"single\" collapsible`).\nProject builds cleanly (`npm run build` exits 0).\nProject lints cleanly (`npm run lint` exits 0).",
+      "confirmedAt": "2026-06-06T11:14:26.586Z"
+    },
+    "constraints": {
+      "answer": "Only change accordion behavior — no unrelated UI or business logic., Do not modify authentication, subscriptions, affiliate tracking, commissions, payouts, analytics, database schema, routes, or backend functionality., Do not introduce new dependencies., Preserve every visual and interaction detail except the multi-open behavior.",
+      "confirmedAt": "2026-06-06T11:14:26.586Z"
+    },
+    "phases": {
+      "answer": "Fix & verify FAQ single-open behavior",
+      "confirmedAt": "2026-06-06T11:14:26.586Z"
+    },
+    "assumptions": {
+      "answer": "Only `src/pages/public/LaunchPartnersPage.tsx` has broken FAQ accordion behavior.; `src/pages/EntryPage.tsx` already correctly uses shadcn/ui `<Accordion type=\"single\" collapsible>`.; `src/pages/public/PublicInfoPages.tsx` has no FAQ accordion component (only links/text).; No other FAQ accordion implementations exist outside `src/pages` based on codebase exploration.",
+      "confirmedAt": "2026-06-06T11:14:26.586Z"
+    }
+  },
+  "phases": [
+    {
+      "id": "phase-1",
+      "index": 1,
+      "name": "Fix & verify FAQ single-open behavior",
+      "goal": "Refactor LaunchPartnersPage.tsx FAQ items to single-open, verify EntryPage.tsx, and confirm build/lint pass.",
+      "description": "Update the custom FaqItem component in LaunchPartnersPage.tsx from independent per-item useState to parent-controlled single-open state. Preserve all motion, styling, and layout. Verify EntryPage.tsx already uses correct single-open shadcn/ui Accordion. Run build and lint to confirm no regressions.",
+      "parallel": false,
+      "status": "completed",
+      "steps": [
+        {
+          "id": "step-1",
+          "index": 1,
+          "description": "Refactor FaqItem in LaunchPartnersPage.tsx to accept `isOpen` and `onToggle` props instead of internal useState.",
+          "status": "verified",
+          "verification": {
+            "command": "grep -n 'const \\[open, setOpen\\]' src/pages/public/LaunchPartnersPage.tsx | wc -l | grep '^0$'",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-06T11:14:34.440Z",
+          "completedAt": "2026-06-06T11:15:32.347Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-06-06T11:15:32.347Z"
+          }
+        },
+        {
+          "id": "step-2",
+          "index": 2,
+          "description": "Add single-open state (openIndex: number | null) to the parent FAQ section and wire it to each FaqItem.",
+          "status": "verified",
+          "verification": {
+            "command": "grep -n 'openIndex\\|setOpenIndex' src/pages/public/LaunchPartnersPage.tsx | head -5",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-06T11:15:38.323Z",
+          "completedAt": "2026-06-06T11:15:52.206Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-06-06T11:15:52.206Z"
+          }
+        },
+        {
+          "id": "step-3",
+          "index": 3,
+          "description": "Verify EntryPage.tsx still uses `<Accordion type=\"single\" collapsible>` correctly.",
+          "status": "verified",
+          "verification": {
+            "command": "grep -q 'type=\"single\" collapsible' src/pages/EntryPage.tsx",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-06T11:16:00.987Z",
+          "completedAt": "2026-06-06T11:16:28.030Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-06-06T11:16:28.030Z"
+          }
+        },
+        {
+          "id": "step-4",
+          "index": 4,
+          "description": "Run build and lint to confirm no regressions.",
+          "status": "verified",
+          "verification": {
+            "command": "npm run build && npm run lint",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-06T11:16:34.213Z",
+          "completedAt": "2026-06-06T11:17:35.272Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-06-06T11:17:35.272Z"
+          }
+        }
+      ],
+      "startedAt": "2026-06-06T11:14:30.417Z",
+      "completedAt": "2026-06-06T11:17:43.164Z",
+      "summary": "Phase 1 completed successfully. The FAQ accordion in LaunchPartnersPage.tsx was converted from independent per-item state to parent-controlled single-open behavior. Each FaqItem now receives `isOpen` and `onToggle` props. Parent tracks `openIndex: number | null`. Only one FAQ item can be expanded at a time. Clicking an open item collapses it. All styling, animations, content, and responsiveness preserved. EntryPage.tsx verified to already use shadcn/ui single-open Accordion. Build passes, no new lint issues in changed file. Git commit hash: 05d438b."
+    }
+  ],
+  "decisions": [],
+  "memories": [],
+  "createdAt": "2026-06-06T10:53:07.986Z",
+  "updatedAt": "2026-06-06T11:18:42.067Z",
+  "goal": "Convert all FAQ accordion sections in RobinOS to single-open behavior, where only one item can be expanded at a time and clicking an already-open item collapses it. Preserve all existing styling, animations, spacing, icons, colors, content, and responsiveness.",
+  "successCriteria": [
+    "`src/pages/public/LaunchPartnersPage.tsx` FAQ section enforces single-open behavior (only one item expanded at a time).",
+    "Clicking an already-open FAQ item in `LaunchPartnersPage.tsx` collapses it.",
+    "All existing styling, animations, spacing, icons, colors, and responsiveness in `LaunchPartnersPage.tsx` FAQ are preserved.",
+    "No copy/text is modified.",
+    "`src/pages/EntryPage.tsx` is verified to already use single-open behavior (`type=\"single\" collapsible`).",
+    "Project builds cleanly (`npm run build` exits 0).",
+    "Project lints cleanly (`npm run lint` exits 0)."
+  ],
+  "constraints": [
+    "Only change accordion behavior — no unrelated UI or business logic.",
+    "Do not modify authentication, subscriptions, affiliate tracking, commissions, payouts, analytics, database schema, routes, or backend functionality.",
+    "Do not introduce new dependencies.",
+    "Preserve every visual and interaction detail except the multi-open behavior."
+  ],
+  "lastActiveAt": "2026-06-06T11:14:30.417Z"
+}
