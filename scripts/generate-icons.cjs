@@ -23,10 +23,6 @@ const icons = [
   { file: "android-chrome-192x192.png",size: 192, pad: false },
   // Apple touch icon — 180×180, slight padding looks better on iOS
   { file: "apple-touch-icon.png",      size: 180, pad: true  },
-  // Favicons
-  { file: "favicon-64x64.png",         size: 64,  pad: false },
-  { file: "favicon-32x32.png",         size: 32,  pad: false },
-  { file: "favicon-16x16.png",         size: 16,  pad: false },
 ];
 
 async function run() {
@@ -43,11 +39,13 @@ async function run() {
     console.log(`  ✅  ${file.padEnd(30)} ${size}×${size}`);
   }
 
-  // Generate robinos.ico from 32×32 PNG (just copy — browsers accept PNG ico)
-  const ico32 = path.join(OUTDIR, "favicon-32x32.png");
+  // Generate robinos.ico from source (32×32 PNG for browsers)
+  const icoSrc = path.join(OUTDIR, "__tmp-robinos-32.png");
+  await sharp(SRC).resize(32, 32, { fit: "cover" }).png({ compressionLevel: 9 }).toFile(icoSrc);
   const icoOut = path.join(OUTDIR, "robinos.ico");
-  fs.copyFileSync(ico32, icoOut);
-  console.log(`  ✅  robinos.ico                    (copied from 32×32)`);
+  fs.copyFileSync(icoSrc, icoOut);
+  fs.unlinkSync(icoSrc);
+  console.log(`  ✅  robinos.ico                    (32×32 PNG)`);
 
   console.log("\n✨  All icons generated successfully.");
 }
