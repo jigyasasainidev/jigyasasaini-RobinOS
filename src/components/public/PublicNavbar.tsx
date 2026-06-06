@@ -52,7 +52,7 @@ export function PublicNavbar() {
           <BrandMark size={24} withWordmark />
         </SmartLink>
 
-        <nav className="hidden items-center gap-0.5 sm:flex">
+        <nav className="hidden items-center gap-1.5 sm:flex">
           {links.map((item) => {
             const active = pathname === item.to;
             return (
@@ -69,7 +69,7 @@ export function PublicNavbar() {
                 }}
                 onMouseEnter={() => prefetchRoute(item.to)}
                 onFocus={() => prefetchRoute(item.to)}
-                className={`rounded-md px-2.5 py-1.5 text-xs font-mono tracking-[0.08em] transition-colors ${
+                className={`rounded-md px-3 py-1.5 text-xs font-mono tracking-[0.08em] transition-colors ${
                   active
                     ? "bg-primary/12 text-primary"
                     : "text-foreground/80 hover:text-foreground"
