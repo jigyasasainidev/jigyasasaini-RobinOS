@@ -238,7 +238,7 @@ function StickyJoinCTA({ ctaUrl, btnText }: { ctaUrl: string; btnText: string })
             whileHover={{ scale: 1.03, boxShadow: "0 6px 28px hsl(142 70% 55% / 0.4), 0 2px 8px hsl(0 0% 0% / 0.4)" }}
             whileTap={{ scale: 0.97 }}
           >
-            Join JVZoo Program <ArrowRight className="w-3.5 h-3.5" />
+            Become a Launch Partner <ArrowRight className="w-3.5 h-3.5" />
           </motion.a>
         </motion.div>
       )}
@@ -268,7 +268,7 @@ function resolveIcon(name: string): LucideIcon {
 }
 
 // ── Main page ─────────────────────────────────────────────
-export default function JVZooAffiliatePage() {
+export default function LaunchPartnersPage() {
   const navigate = useNavigate();
   const { data: settings, isLoading } = usePlatformSettings();
   const { data: promoAssets = [] }     = useAffiliatePromoAssets();
@@ -318,7 +318,7 @@ export default function JVZooAffiliatePage() {
               style={{ background: "hsl(142 70% 55% / 0.08)", border: "1px solid hsl(142 70% 55% / 0.2)" }}>
               <motion.span className="w-1.5 h-1.5 rounded-full bg-emerald-400"
                 animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 2, repeat: Infinity }} />
-              <span className="text-[11px] font-mono tracking-[0.18em] uppercase" style={{ color: "hsl(142 70% 60%)" }}>JVZoo Partner Program</span>
+              <span className="text-[11px] font-mono tracking-[0.18em] uppercase" style={{ color: "hsl(142 70% 60%)" }}>RobinOS Launch Partner Program</span>
             </motion.div>
 
             <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65, delay: 0.08 }}
@@ -592,7 +592,7 @@ export default function JVZooAffiliatePage() {
               style={{ background: "linear-gradient(135deg, hsl(222 32% 8%), hsl(222 28% 6.5%))", border: "1px solid hsl(217 28% 14%)", borderStyle: "dashed" }}>
               <Sparkles className="w-8 h-8 text-muted-foreground/20 mx-auto mb-3" strokeWidth={1.5} />
               <p className="text-sm text-muted-foreground/50">Promo resources will appear here.</p>
-              <p className="text-[10px] font-mono text-muted-foreground/30 mt-1">Managed from Admin → JVZoo Affiliate Launch Controls</p>
+              <p className="text-[10px] font-mono text-muted-foreground/30 mt-1">Managed from Admin → Launch Partner Controls</p>
             </div>
           </Reveal>
         ) : (
@@ -701,13 +701,13 @@ export default function JVZooAffiliatePage() {
         </Reveal>
         <div className="space-y-2">
           {[
-            { q: "How do payouts work?",              a: "Payouts are processed via JVZoo's standard payment schedule. You receive your commission directly to your JVZoo account.", delay: 0 },
+            { q: "How do payouts work?",              a: "Payouts are processed via our standard affiliate payout schedule. You receive your commission directly to your partner account.", delay: 0 },
             { q: "Is commission truly recurring?",    a: "Yes. You earn 60% of every monthly subscription payment as long as the customer stays active. No time limits.", delay: 0.04 },
-            { q: "When are payouts sent?",            a: "JVZoo processes affiliate payouts based on their standard schedule after the refund period clears.", delay: 0.08 },
-            { q: "Who can promote RobinOS?",          a: "Any affiliate with a JVZoo account can apply. Creators, marketers, educators, and review channel owners are the best fit.", delay: 0.12 },
+            { q: "When are payouts sent?",            a: "We process affiliate payouts based on our standard schedule after the refund period clears.", delay: 0.08 },
+            { q: "Who can promote RobinOS?",          a: "Any partner can apply. Creators, marketers, educators, and review channel owners are the best fit.", delay: 0.12 },
             { q: "Do affiliates get promo assets?",   a: "Yes — video demos, swipe copy, and banner creatives are being prepared and will be available in the affiliate area.", delay: 0.16 },
             { q: "Is RobinOS beginner friendly?",     a: "Absolutely. The platform is designed to be picked up in minutes. Users see value in the first session.", delay: 0.20 },
-            { q: "Can international affiliates join?",a: "Yes. JVZoo supports international affiliates. RobinOS accepts users worldwide.", delay: 0.24 },
+            { q: "Can international affiliates join?",a: "Yes. We support international partners. RobinOS accepts users worldwide.", delay: 0.24 },
           ].map((item) => <FaqItem key={item.q} {...item} />)}
         </div>
       </section>
