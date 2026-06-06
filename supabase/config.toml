@@ -2,3 +2,6 @@ project_id = "iitfxyasjizlbneevwsa"
 
 [functions.dodo-webhook]
 verify_jwt = false
+
+[functions.whop-webhook]
+verify_jwt = false
