@@ -1,0 +1,22 @@
+-- ============================================================
+-- MIGRATION 26 — TREND REFRESH ARCHITECTURE NOTE
+-- ============================================================
+-- Trending Audio + Hashtags are now generated LIVE by Groq.
+--
+-- Architecture:
+--   User clicks "Find Trending Audio/Hashtags"
+--     → trending-audio edge function
+--       → Groq API (llama-3.3-70b-versatile) generates fresh data
+--         → 15 results returned directly to frontend
+--           → Frontend caches in localStorage for 12 hours
+--
+-- NO database writes needed.
+-- NO pg_cron needed.
+-- NO Idea Stream service needed.
+--
+-- The 12-hour refresh is handled client-side:
+--   localStorage TTL = 12h (STORAGE_KEY = robinos_audio_hashtag_v3)
+--   After 12h cache expires, next scan triggers fresh Groq generation.
+--
+-- This migration is intentionally empty — kept for migration numbering.
+-- ============================================================

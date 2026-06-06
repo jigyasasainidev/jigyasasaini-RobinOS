@@ -1,0 +1,4 @@
+project_id = "iitfxyasjizlbneevwsa"
+
+[functions.dodo-webhook]
+verify_jwt = false

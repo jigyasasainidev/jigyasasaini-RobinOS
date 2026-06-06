@@ -1,0 +1,82 @@
+# RobinOS — robots.txt
+# https://tryrobin.xyz/
+
+# ── Allow all crawlers on public pages ────────────────────
+User-agent: *
+Allow: /
+Allow: /pricing
+Allow: /affiliates
+Allow: /affiliate-guide
+Allow: /creator-guide
+Allow: /about
+Allow: /contact
+Allow: /help
+Allow: /docs
+Allow: /api-access
+Allow: /changelog
+Allow: /roadmap
+Allow: /status
+Allow: /resources
+Allow: /support
+Allow: /privacy
+Allow: /terms
+Allow: /refund-policy
+Allow: /cookie-policy
+Allow: /ai-transparency
+Allow: /affiliate-terms
+Allow: /disclaimer
+Allow: /trust-safety
+Allow: /acceptable-use-policy
+Allow: /report-abuse
+Allow: /creator-os
+Allow: /launch-partners
+Allow: /jvzooaffiliate
+Allow: /blog
+Allow: /minidemo
+
+# ── Block private / auth / dashboard pages ────────────────
+# These are app-internal pages that should not be indexed.
+Disallow: /dashboard/
+Disallow: /adminsh/
+Disallow: /auth/
+Disallow: /login
+
+# ── Specific bot rules ────────────────────────────────────
+User-agent: Googlebot
+Allow: /
+Disallow: /dashboard/
+Disallow: /adminsh/
+Disallow: /auth/
+
+User-agent: Bingbot
+Allow: /
+Disallow: /dashboard/
+Disallow: /adminsh/
+Disallow: /auth/
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+Disallow: /dashboard/
+Disallow: /adminsh/
+
+User-agent: Claude-Web
+Allow: /
+Disallow: /dashboard/
+Disallow: /adminsh/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /dashboard/
+Disallow: /adminsh/
+
+# ── Sitemap ───────────────────────────────────────────────
+Sitemap: https://tryrobin.xyz/sitemap.xml
