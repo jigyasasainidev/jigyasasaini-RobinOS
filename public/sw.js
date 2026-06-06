@@ -143,7 +143,7 @@ self.addEventListener("push", (event) => {
   const options = {
     body:    payload.body    ?? "New admin notification",
     icon:    payload.icon    ?? "/android-chrome-192x192.png",
-    badge:   payload.badge   ?? "/robinos.ico?v=5",
+    badge:   payload.badge   ?? "/robinos.ico?v=6",
     tag:     payload.tag     ?? "robinos-admin",
     data:    payload.data    ?? {},
     vibrate: [100, 50, 100],
