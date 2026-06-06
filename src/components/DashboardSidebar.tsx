@@ -1,6 +1,7 @@
+import { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Zap, PenTool, Settings, LogOut, Clock, Link2, Crown, Mic, Film, BarChart3, Type, Flag, TrendingUp, Music, Hash } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Menu, X, Zap, PenTool, Settings, LogOut, Clock, Link2, Crown, Mic, Film, BarChart3, Type, Flag, TrendingUp, Music, Hash } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlanKey, useIsProOrAbove, useIsAgency } from "@/hooks/useEntitlements";
 import { BrandMark } from "@/components/BrandMark";
@@ -40,56 +41,154 @@ const sidebarSections = [
   },
 ];
 
-// Mobile bottom nav — 7 most-used in workflow order
-const bottomNavItems = [
-  { to: "/dashboard/trend-scanner",  label: "Trends",    icon: TrendingUp },
-  { to: "/dashboard/studio",         label: "Script",    icon: PenTool },
-  { to: "/dashboard/audio-hashtag",  label: "Audio",     icon: Music },
-  { to: "/dashboard/caption",        label: "Caption",   icon: Type },
-  { to: "/dashboard/voice",          label: "Voice",     icon: Mic },
-  { to: "/dashboard/video",          label: "Video",     icon: Film },
-  { to: "/dashboard/settings",       label: "Settings",  icon: Settings },
-];
-
 export function DashboardSidebar() {
   const { signOut } = useAuth();
   const location = useLocation();
   const plan = usePlanKey();
   const isAgency = useIsAgency();
   const isProOrAbove = useIsProOrAbove();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Close drawer on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && mobileOpen) {
+        setMobileOpen(false);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [mobileOpen]);
+
+  // Lock body scroll when drawer is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
+  const closeDrawer = () => setMobileOpen(false);
+
+  const handleNavClick = () => {
+    closeDrawer();
+    // Scroll to top if already on this route
+    if (location.pathname) window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <>
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 pb-[env(safe-area-inset-bottom)]">
-        <div className="mx-2 mb-2 rounded-2xl glass-strong border border-border/50 shadow-[0_-4px_30px_hsl(0_0%_0%/0.4)]">
-          <div className="px-3 pt-2 pb-1 border-b border-border/40 flex justify-center">
-            <BrandMark size={16} withWordmark className="opacity-85" />
-          </div>
-          <div className="grid grid-cols-7 gap-0.5 px-1 py-1.5">
-            {bottomNavItems.map((item) => {
-              const active = location.pathname === item.to;
-              return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  onMouseEnter={() => prefetchRoute(item.to)}
-                  onFocus={() => prefetchRoute(item.to)}
-                  onClick={() => { if (location.pathname === item.to) window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                  className="flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 rounded-xl transition-all duration-300 min-w-0"
-                >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center border transition-all duration-300 ${active ? "bg-gradient-to-b from-primary/16 to-primary/8 border-primary/30 shadow-[0_0_16px_hsl(217_91%_60%/0.2)]" : "bg-transparent border-transparent"}`}>
-                    <item.icon strokeWidth={1.9} className={`w-4 h-4 transition-colors duration-300 ${active ? "text-primary" : "text-muted-foreground"}`} />
-                  </div>
-                  <span className={`text-[9px] font-medium leading-none transition-all duration-300 ${active ? "text-primary opacity-100" : "text-muted-foreground/70 opacity-80"}`}>
-                    {item.label}
-                  </span>
-                </NavLink>
-              );
-            })}
-          </div>
-        </div>
-      </nav>
+      {/* ── Mobile hamburger button ── */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="md:hidden fixed top-4 left-4 z-50 p-2.5 rounded-xl glass-strong border border-border/50 shadow-[0_4px_20px_hsl(0_0%_0%/0.4)]"
+        aria-label="Open navigation menu"
+      >
+        <Menu className="w-5 h-5 text-foreground" />
+      </button>
 
+      {/* ── Mobile drawer overlay ── */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 md:hidden"
+              onClick={closeDrawer}
+            />
+
+            {/* Drawer panel */}
+            <motion.aside
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 280 }}
+              className="fixed inset-y-0 left-0 w-72 z-50 flex flex-col bg-card/95 backdrop-blur-xl border-r border-border/60 shadow-[8px_0_40px_hsl(0_0%_0%/0.5)] md:hidden"
+            >
+              {/* Drawer header */}
+              <div className="h-16 flex items-center justify-between px-5 border-b border-border/60 shrink-0">
+                <BrandMark size={20} withWordmark />
+                <button
+                  onClick={closeDrawer}
+                  className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                  aria-label="Close navigation menu"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Drawer nav body */}
+              <nav className="flex-1 p-4 space-y-5 overflow-y-auto">
+                {sidebarSections.map((section) => (
+                  <div key={section.label} className="space-y-1.5">
+                    <div className="px-3 pt-1 pb-0.5 text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground/60">
+                      {section.label}
+                    </div>
+                    <div className="space-y-1">
+                      {section.items.map((item) => {
+                        const active = location.pathname === item.to;
+                        return (
+                          <NavLink
+                            key={item.to}
+                            to={item.to}
+                            onClick={handleNavClick}
+                            onMouseEnter={() => prefetchRoute(item.to)}
+                            onFocus={() => prefetchRoute(item.to)}
+                            className="block"
+                          >
+                            <div
+                              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm border transition-all duration-300 ${active
+                                  ? "bg-gradient-to-r from-primary/14 via-primary/8 to-transparent text-primary border-primary/25"
+                                  : "text-foreground border-transparent hover:text-foreground hover:bg-secondary/70 hover:border-border/60"
+                                }`}
+                            >
+                              <div className={`w-8 h-8 rounded-md flex items-center justify-center border shrink-0 transition-all duration-300 ${active
+                                  ? "bg-primary/10 border-primary/30"
+                                  : "bg-secondary/50 border-border/50"
+                                }`}>
+                                <item.icon strokeWidth={1.9} className="w-4 h-4" />
+                              </div>
+                              <span className="font-medium truncate">{item.label}</span>
+                            </div>
+                          </NavLink>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </nav>
+
+              {/* Drawer footer */}
+              <div className="p-4 border-t border-border/60 shrink-0">
+                <a
+                  href="/report-abuse"
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm border border-red-500/15 bg-red-500/5 text-red-400/70 hover:text-red-400 hover:border-red-500/25 w-full transition-colors mb-2"
+                >
+                  <Flag className="w-4 h-4 shrink-0" />
+                  <span>Report Abuse</span>
+                </a>
+                <button
+                  onClick={() => { signOut(); closeDrawer(); }}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-foreground hover:text-foreground hover:bg-secondary/70 w-full transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ── Desktop sidebar (unchanged) ── */}
       <aside className="hidden md:flex flex-col w-56 min-h-screen border-r border-border bg-sidebar shrink-0">
         <div className="h-16 flex items-center justify-between px-6 border-b border-border">
           <motion.div animate={{ opacity: [0.75, 1, 0.75] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}>

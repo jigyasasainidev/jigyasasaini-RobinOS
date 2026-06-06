@@ -224,7 +224,7 @@ const DashboardLayout = () => {
       <div className="ambient-glow" />
       <DashboardSidebar />
 
-      <main className="flex-1 min-h-screen overflow-y-auto relative z-10 pb-24 md:pb-0">
+      <main className="flex-1 min-h-screen overflow-y-auto relative z-10">
         <div className="px-4 py-6 md:p-10 max-w-5xl mx-auto md:mx-0">
           <AnimatePresence>
             {maintenanceActive && !maintenanceDismissed ? (
