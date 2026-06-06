@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   CircleDollarSign,
   ArrowUpRight,
+  ExternalLink,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -46,7 +47,7 @@ const CountValue = ({ value, prefix = "", suffix = "" }: { value: number; prefix
 
 const ReferralsPage = () => {
   const queryClient = useQueryClient();
-  const { dashboard, withdrawals, loading, minimumWithdrawal, payoutDelayDays, affiliateCommissionPercent } = useReferralData();
+  const { dashboard, withdrawals, loading, minimumWithdrawal, payoutDelayDays, affiliateCommissionPercent, affiliateResourcesUrl } = useReferralData();
 
   const [copied, setCopied] = useState(false);
   const [savingPayout, setSavingPayout] = useState(false);
@@ -387,6 +388,29 @@ const ReferralsPage = () => {
                     </div>
                   </motion.div>
                 ))}
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-lg border border-border/60 bg-card/45 backdrop-blur-md p-5">
+            <p className="text-sm text-foreground font-medium mb-2">Affiliate Resources</p>
+            <p className="text-[11px] text-muted-foreground mb-4">
+              Access promotional assets, templates, videos, and marketing resources provided by RobinOS.
+            </p>
+            {affiliateResourcesUrl ? (
+              <a
+                href={affiliateResourcesUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 h-10 px-5 rounded-lg bg-primary text-primary-foreground text-sm font-medium"
+              >
+                Open Resource Library <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 gap-2 text-center rounded-xl"
+                style={{ background: "hsl(222 28% 6%)", border: "1px dashed hsl(217 28% 13%)" }}>
+                <p className="text-xs text-muted-foreground/40 font-mono">No resource library configured</p>
+                <p className="text-[10px] text-muted-foreground/25 leading-relaxed">Check back later for promotional assets and marketing materials.</p>
               </div>
             )}
           </section>

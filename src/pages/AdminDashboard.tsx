@@ -898,6 +898,7 @@ const AdminDashboard = () => {
         jvzoo_affiliate_cta_url:        platformSettings.jvzoo_affiliate_cta_url ?? "",
         jvzoo_affiliate_button_text:    platformSettings.jvzoo_affiliate_button_text ?? "Join Affiliate Program",
         jvzoo_affiliate_login_url:      platformSettings.jvzoo_affiliate_login_url ?? "https://www.tryrobin.xyz/login",
+        affiliate_resources_url:        platformSettings.affiliate_resources_url ?? "",
       });
     }
   }, [platformSettings]);
@@ -1322,6 +1323,7 @@ const AdminDashboard = () => {
         jvzoo_affiliate_cta_url:        settingsDraft.jvzoo_affiliate_cta_url?.trim() || null,
         jvzoo_affiliate_button_text:    settingsDraft.jvzoo_affiliate_button_text?.trim() || "Join Affiliate Program",
         jvzoo_affiliate_login_url:      settingsDraft.jvzoo_affiliate_login_url?.trim() || "https://www.tryrobin.xyz/login",
+        affiliate_resources_url:        settingsDraft.affiliate_resources_url?.trim() || null,
       };
 
       if (platformSettings?.id) {
@@ -1920,6 +1922,18 @@ const AdminDashboard = () => {
                 <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Payout Delay</p>
                 <Input type="number" min={0} className="h-9 text-sm" value={settingsDraft.payout_delay_days} onChange={(e) => setSettingsDraft((s) => ({ ...s, payout_delay_days: Number(e.target.value) }))} />
               </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Affiliate Resources" subtitle="Google Drive folder shared with affiliates">
+            <div className="space-y-1.5">
+              <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Google Drive Folder URL</p>
+              <Input
+                value={settingsDraft.affiliate_resources_url}
+                onChange={(e) => setSettingsDraft((s) => ({ ...s, affiliate_resources_url: e.target.value }))}
+                placeholder="https://drive.google.com/drive/folders/..."
+                className="h-9 text-sm"
+              />
             </div>
           </SectionCard>
         </div>

@@ -98,12 +98,12 @@ export function useReferralData() {
     queryFn: async (): Promise<{ minimum_withdrawal: number; payout_delay_days: number; affiliate_commission_percent: number } | null> => {
       const { data, error } = await db
         .from("platform_settings")
-        .select("minimum_withdrawal,payout_delay_days,affiliate_commission_percent,updated_at")
+        .select("minimum_withdrawal,payout_delay_days,affiliate_commission_percent,affiliate_resources_url,updated_at")
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
       if (error) throw error;
-      return (data ?? null) as { minimum_withdrawal: number; payout_delay_days: number; affiliate_commission_percent: number } | null;
+      return (data ?? null) as { minimum_withdrawal: number; payout_delay_days: number; affiliate_commission_percent: number; affiliate_resources_url: string | null } | null;
     },
     enabled: !!user,
     staleTime: 30 * 1000,
@@ -167,6 +167,7 @@ export function useReferralData() {
     minimumWithdrawal: Number(settingsQuery.data?.minimum_withdrawal ?? 25),
     payoutDelayDays: Number(settingsQuery.data?.payout_delay_days ?? 3),
     affiliateCommissionPercent: Number(settingsQuery.data?.affiliate_commission_percent ?? 30),
+    affiliateResourcesUrl: String(settingsQuery.data?.affiliate_resources_url ?? ""),
     loading: dashboardQuery.isLoading || withdrawalsQuery.isLoading,
     isRefetching: dashboardQuery.isRefetching || withdrawalsQuery.isRefetching || settingsQuery.isRefetching,
   };

@@ -288,6 +288,7 @@ export default function LaunchPartnersPage() {
 
   const videoUrl = settings?.jvzoo_affiliate_demo_video_url ?? null;
   const btnText  = settings?.jvzoo_affiliate_button_text?.trim() || "Join Affiliate Program";
+  const affiliateResourcesUrl = settings?.affiliate_resources_url ?? "";
 
   // ── Centralized affiliate CTA URL ──────────────────────────
   // All CTA buttons on this page use this single source of truth.
@@ -592,7 +593,19 @@ export default function LaunchPartnersPage() {
               style={{ background: "linear-gradient(135deg, hsl(222 32% 8%), hsl(222 28% 6.5%))", border: "1px solid hsl(217 28% 14%)", borderStyle: "dashed" }}>
               <Sparkles className="w-8 h-8 text-muted-foreground/20 mx-auto mb-3" strokeWidth={1.5} />
               <p className="text-sm text-muted-foreground/50">Promo resources will appear here.</p>
-              <p className="text-[10px] font-mono text-muted-foreground/30 mt-1">Managed from Admin → Launch Partner Controls</p>
+              {affiliateResourcesUrl ? (
+                <a
+                  href={affiliateResourcesUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-mono transition-colors"
+                  style={{ color: "hsl(217 91% 68%)" }}
+                >
+                  Open Resource Library <ExternalLink className="w-3 h-3" />
+                </a>
+              ) : (
+                <p className="text-[10px] font-mono text-muted-foreground/30 mt-1">Managed from Admin → Launch Partner Controls</p>
+              )}
             </div>
           </Reveal>
         ) : (
@@ -604,30 +617,22 @@ export default function LaunchPartnersPage() {
                   <motion.div className="rounded-xl p-4 relative overflow-hidden flex flex-col h-full"
                     style={{ background: "linear-gradient(135deg, hsl(222 32% 8%), hsl(222 28% 6.5%))", border: "1px solid hsl(217 28% 14%)" }}
                     whileHover={{ borderColor: "hsl(217 91% 60% / 0.2)", y: -1 }} transition={{ duration: 0.2 }}>
-                    {asset.badge && (
-                      <div className="absolute top-3 right-3">
-                        <span className="text-[8px] font-mono px-1.5 py-0.5 rounded-full"
-                          style={{ background: "hsl(38 92% 55% / 0.08)", border: "1px solid hsl(38 92% 55% / 0.15)", color: "hsl(38 92% 55% / 0.7)" }}>
-                          {asset.badge}
-                        </span>
-                      </div>
-                    )}
+
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center mb-3"
                       style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.15)" }}>
                       <Icon className="w-3.5 h-3.5 text-primary/60" strokeWidth={1.5} />
                     </div>
                     <p className="text-sm font-semibold text-foreground">{asset.title}</p>
                     <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed pr-8 flex-1">{asset.description}</p>
-                    {asset.button_url && (
-                      <a href={asset.button_url} target="_blank" rel="noopener noreferrer"
-                        className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-mono transition-colors"
-                        style={{ color: "hsl(217 91% 68%)" }}>
-                        {asset.button_text} <ExternalLink className="w-3 h-3" />
-                      </a>
-                    )}
-                    {!asset.button_url && (
-                      <p className="mt-3 text-[10px] font-mono text-muted-foreground/30">{asset.button_text}</p>
-                    )}
+                    <a
+                      href={affiliateResourcesUrl || asset.button_url || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-mono transition-colors"
+                      style={{ color: "hsl(217 91% 68%)" }}
+                    >
+                      {asset.button_text || "Open Resource Library"} <ExternalLink className="w-3 h-3" />
+                    </a>
                   </motion.div>
                 </Reveal>
               );
