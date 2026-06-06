@@ -43,11 +43,11 @@ async function run() {
     console.log(`  ✅  ${file.padEnd(30)} ${size}×${size}`);
   }
 
-  // Generate favicon.ico from 32×32 PNG (just copy — browsers accept PNG ico)
+  // Generate robinos.ico from 32×32 PNG (just copy — browsers accept PNG ico)
   const ico32 = path.join(OUTDIR, "favicon-32x32.png");
-  const icoOut = path.join(OUTDIR, "favicon.ico");
+  const icoOut = path.join(OUTDIR, "robinos.ico");
   fs.copyFileSync(ico32, icoOut);
-  console.log(`  ✅  favicon.ico                    (copied from 32×32)`);
+  console.log(`  ✅  robinos.ico                    (copied from 32×32)`);
 
   console.log("\n✨  All icons generated successfully.");
 }

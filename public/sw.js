@@ -21,7 +21,7 @@ const SHELL_ASSETS = [
   "/adminsh/dashboard",
   "/manifest.json",
   "/admin-manifest.json",
-  "/favicon.ico",
+  "/robinos.ico",
   "/robinos-logo.png",
 ];
 
