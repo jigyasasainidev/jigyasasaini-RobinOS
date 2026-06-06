@@ -12,7 +12,7 @@
 //   - Only static build artifacts are cached
 // ============================================================
 
-const CACHE_VERSION = "robinos-admin-v1";
+const CACHE_VERSION = "robinos-admin-v2";
 const SHELL_CACHE   = `${CACHE_VERSION}-shell`;
 
 // Static assets to pre-cache on install (app shell)
