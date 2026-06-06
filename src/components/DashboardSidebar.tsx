@@ -147,7 +147,7 @@ export function DashboardSidebar() {
                             <div
                               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm border transition-all duration-300 ${active
                                   ? "bg-gradient-to-r from-primary/14 via-primary/8 to-transparent text-primary border-primary/25"
-                                  : "text-foreground border-transparent hover:text-foreground hover:bg-secondary/70 hover:border-border/60"
+                                  : "text-foreground border-transparent hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/90 hover:border-border/60"
                                 }`}
                             >
                               <div className={`w-8 h-8 rounded-md flex items-center justify-center border shrink-0 transition-all duration-300 ${active
@@ -177,7 +177,7 @@ export function DashboardSidebar() {
                 </a>
                 <button
                   onClick={() => { signOut(); closeDrawer(); }}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-foreground hover:text-foreground hover:bg-secondary/70 w-full transition-colors"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/90 w-full transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Sign Out</span>
