@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  const eventType = String(payload.event ?? "");
+  const eventType = String(payload.type ?? "");
   const data      = (payload.data  ?? {}) as Record<string, unknown>;
   const id        = String(data.id    ?? payload.id ?? "unknown");
 
