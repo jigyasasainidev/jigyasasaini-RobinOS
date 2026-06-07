@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { BrandMark } from "@/components/BrandMark";
 import { SmartLink } from "@/components/SmartLink";
@@ -18,6 +19,8 @@ export function PublicNavbar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { data: settings } = usePlatformSettings();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const links = BASE_LINKS.filter((link) => {
     if (link.requiresSetting === "creator_os_page_enabled") {
@@ -43,6 +46,36 @@ export function PublicNavbar() {
     }
 
     navigate(to);
+  };
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    if (mobileMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [mobileMenuOpen]);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  const handleMobileNavClick = (to: string) => {
+    if (pathname === to) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      navigateWithTransition(to);
+    }
+    setMobileMenuOpen(false);
   };
 
   return (
@@ -81,7 +114,23 @@ export function PublicNavbar() {
           })}
         </nav>
 
-        <Link
+        <div className="flex items-center gap-2">
+          {/* Mobile menu trigger */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="flex sm:hidden items-center justify-center w-9 h-9 rounded-md text-foreground/80 hover:text-foreground hover:bg-primary/5 transition-colors"
+            aria-label="Open navigation menu"
+            aria-expanded={mobileMenuOpen}
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="9" cy="4" r="1.5" fill="currentColor" />
+              <circle cx="9" cy="9" r="1.5" fill="currentColor" />
+              <circle cx="9" cy="14" r="1.5" fill="currentColor" />
+            </svg>
+          </button>
+
+          <Link
           to="/login"
           onMouseEnter={() => prefetchRoute("/login")}
           onFocus={() => prefetchRoute("/login")}
@@ -89,7 +138,38 @@ export function PublicNavbar() {
         >
           Sign In
         </Link>
+        </div>
       </div>
+
+      {/* Mobile dropdown menu */}
+      {mobileMenuOpen && (
+        <div
+          ref={mobileMenuRef}
+          className="sm:hidden border-t border-border/50 bg-background/95 backdrop-blur-xl"
+        >
+          <nav className="mx-auto max-w-[1240px] px-4 py-3 flex flex-col gap-1">
+            {links.map((item) => {
+              const active = pathname === item.to;
+              return (
+                <button
+                  key={item.to}
+                  type="button"
+                  onClick={() => handleMobileNavClick(item.to)}
+                  onMouseEnter={() => prefetchRoute(item.to)}
+                  onFocus={() => prefetchRoute(item.to)}
+                  className={`flex items-center rounded-md px-3 py-3 text-xs font-mono tracking-[0.08em] transition-colors text-left min-h-[44px] ${
+                    active
+                      ? "bg-primary/12 text-primary"
+                      : "text-foreground/80 hover:text-foreground hover:bg-primary/5"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+      )}
     </header>
   );
 }
