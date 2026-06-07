@@ -16,6 +16,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { CORS_HEADERS } from "../_shared/entitlement.ts";
+import { recordAffiliateCommission } from "../_shared/affiliate.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -186,6 +187,26 @@ async function handleMembershipActivated(
   if (error) throw new Error(`safe_plan_switch failed: ${error.message}`);
 
   console.log(`[whop-webhook] Plan activated: ${JSON.stringify(result)}`);
+
+  // ── Affiliate commission attribution ──────────────────
+  const referralCode = metadata.referral_code ?? null;
+  if (referralCode && PLAN_AMOUNTS[planKey] > 0) {
+    console.log(`[whop-webhook] Attribution via metadata.referral_code=${referralCode}`);
+    await recordAffiliateCommission(supabase, userId, referralCode, PLAN_AMOUNTS[planKey], membershipId);
+  } else {
+    // Fallback: check profiles.referred_by_code (set at signup)
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("referred_by_code")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (profile?.referred_by_code && PLAN_AMOUNTS[planKey] > 0) {
+      console.log(`[whop-webhook] Attribution via profiles.referred_by_code=${profile.referred_by_code}`);
+      await recordAffiliateCommission(supabase, userId, profile.referred_by_code, PLAN_AMOUNTS[planKey], membershipId);
+    } else {
+      console.log(`[whop-webhook] No referral attribution for user=${userId}`);
+    }
+  }
 
   return { success: true, activated: result };
 }
