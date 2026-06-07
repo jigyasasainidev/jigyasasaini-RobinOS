@@ -20,7 +20,7 @@ export function PublicNavbar() {
   const navigate = useNavigate();
   const { data: settings } = usePlatformSettings();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const menuWrapperRef = useRef<HTMLDivElement>(null);
 
   const links = BASE_LINKS.filter((link) => {
     if (link.requiresSetting === "creator_os_page_enabled") {
@@ -48,19 +48,27 @@ export function PublicNavbar() {
     navigate(to);
   };
 
-  // Close mobile menu when clicking outside
+  // Close mobile menu when clicking outside or pressing Escape
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+      if (menuWrapperRef.current && !menuWrapperRef.current.contains(event.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
         setMobileMenuOpen(false);
       }
     };
 
     if (mobileMenuOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleEsc);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEsc);
     };
   }, [mobileMenuOpen]);
 
@@ -115,39 +123,51 @@ export function PublicNavbar() {
         </nav>
 
         <div className="flex items-center gap-2">
-          {/* Mobile menu trigger */}
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="flex sm:hidden items-center justify-center w-9 h-9 rounded-md text-foreground/80 hover:text-foreground hover:bg-primary/5 transition-colors"
-            aria-label="Open navigation menu"
-            aria-expanded={mobileMenuOpen}
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="9" cy="4" r="1.5" fill="currentColor" />
-              <circle cx="9" cy="9" r="1.5" fill="currentColor" />
-              <circle cx="9" cy="14" r="1.5" fill="currentColor" />
-            </svg>
-          </button>
+          <div ref={menuWrapperRef} className="flex items-center gap-2">
+            {/* Mobile menu trigger */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              className="flex sm:hidden items-center justify-center w-9 h-9 rounded-md text-foreground/80 hover:text-foreground hover:bg-primary/5 transition-colors"
+              aria-label="Toggle navigation menu"
+              aria-expanded={mobileMenuOpen}
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="9" cy="4" r="1.5" fill="currentColor" />
+                <circle cx="9" cy="9" r="1.5" fill="currentColor" />
+                <circle cx="9" cy="14" r="1.5" fill="currentColor" />
+              </svg>
+            </button>
 
-          <Link
-          to="/login"
-          onMouseEnter={() => prefetchRoute("/login")}
-          onFocus={() => prefetchRoute("/login")}
-          className="rounded-md border border-border/55 bg-background/35 px-3 py-1.5 text-[11px] font-mono tracking-[0.08em] text-foreground/90 backdrop-blur-md transition-all duration-200 hover:border-primary/35 hover:text-foreground hover:bg-primary/5 hover:shadow-[0_0_16px_hsl(217_91%_60%/0.12)]"
-        >
-          Sign In
-        </Link>
+            <Link
+              to="/login"
+              onMouseEnter={() => prefetchRoute("/login")}
+              onFocus={() => prefetchRoute("/login")}
+              className="hidden sm:inline-flex rounded-md border border-border/55 bg-background/35 px-3 py-1.5 text-[11px] font-mono tracking-[0.08em] text-foreground/90 backdrop-blur-md transition-all duration-200 hover:border-primary/35 hover:text-foreground hover:bg-primary/5 hover:shadow-[0_0_16px_hsl(217_91%_60%/0.12)]"
+            >
+              Sign In
+            </Link>
+          </div>
         </div>
       </div>
 
       {/* Mobile dropdown menu */}
       {mobileMenuOpen && (
-        <div
-          ref={mobileMenuRef}
-          className="sm:hidden border-t border-border/50 bg-background/95 backdrop-blur-xl"
-        >
+        <div className="sm:hidden border-t border-border/50 bg-background/95 backdrop-blur-xl">
           <nav className="mx-auto max-w-[1240px] px-4 py-3 flex flex-col gap-1">
+            <button
+              type="button"
+              onClick={() => handleMobileNavClick("/login")}
+              onMouseEnter={() => prefetchRoute("/login")}
+              onFocus={() => prefetchRoute("/login")}
+              className={`flex items-center rounded-md px-3 py-3 text-xs font-mono tracking-[0.08em] transition-colors text-left min-h-[44px] ${
+                pathname === "/login"
+                  ? "bg-primary/12 text-primary"
+                  : "text-foreground/80 hover:text-foreground hover:bg-primary/5"
+              }`}
+            >
+              Sign In
+            </button>
             {links.map((item) => {
               const active = pathname === item.to;
               return (
