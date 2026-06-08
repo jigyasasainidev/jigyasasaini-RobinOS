@@ -68,8 +68,16 @@ const AuthCallbackPage = () => {
 
       // Clean up all storage layers after successful attribution
       referralCoordinator.cleanup(restored.traceId);
-      console.info("[AuthCallback] Success, redirecting to dashboard");
-      navigate("/dashboard", { replace: true });
+
+      const returnTo = sessionStorage.getItem("robinos_return_to");
+      if (returnTo) {
+        sessionStorage.removeItem("robinos_return_to");
+        console.info("[AuthCallback] Success, redirecting to", returnTo);
+        navigate(returnTo, { replace: true });
+      } else {
+        console.info("[AuthCallback] Success, redirecting to dashboard");
+        navigate("/dashboard", { replace: true });
+      }
     };
 
     void handleCallback();

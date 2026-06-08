@@ -41,7 +41,13 @@ const AuthPage = () => {
     // Clean up referral storage after successful attribution
     if (effectiveRef) referralCoordinator.cleanup(restored.traceId);
 
-    navigate("/dashboard");
+    const returnTo = sessionStorage.getItem("robinos_return_to");
+    if (returnTo) {
+      sessionStorage.removeItem("robinos_return_to");
+      navigate(returnTo);
+    } else {
+      navigate("/dashboard");
+    }
   };
 
   useEffect(() => {

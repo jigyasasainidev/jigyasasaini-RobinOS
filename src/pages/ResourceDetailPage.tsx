@@ -1,3 +1,4 @@
+import { useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -43,8 +44,9 @@ type ResourceRow = {
 
 export default function ResourceDetailPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const pendingDownloadTriggeredRef = useRef(false);
 
   const {
     data: resource,
@@ -72,24 +74,38 @@ export default function ResourceDetailPage() {
         .eq("id", resourceId);
       if (error) throw error;
     },
+    onSuccess: () => {
+      if (!resource) return;
+      const pdfUrl = getPublicUrl("resource-pdfs", resource.pdf_url);
+      window.open(pdfUrl, "_blank", "noopener,noreferrer");
+    },
   });
 
   const handleDownload = () => {
     if (!resource) return;
 
     if (!user) {
-      // Redirect to login, storing return path
-      navigate("/login", { state: { from: `/resources/${resource.slug}` } });
+      // Store return path and pending download for post-auth resume
+      sessionStorage.setItem("robinos_return_to", `/resources/${resource.slug}`);
+      sessionStorage.setItem("robinos_pending_download_slug", resource.slug);
+      navigate("/login");
       return;
     }
 
-    // Increment download count
     downloadMutation.mutate(resource.id);
-
-    // Open PDF in new tab
-    const pdfUrl = getPublicUrl("resource-pdfs", resource.pdf_url);
-    window.open(pdfUrl, "_blank", "noopener,noreferrer");
   };
+
+  useEffect(() => {
+    if (loading || !user || !resource || !slug) return;
+
+    const pendingSlug = sessionStorage.getItem("robinos_pending_download_slug");
+    if (pendingSlug === slug && !pendingDownloadTriggeredRef.current) {
+      pendingDownloadTriggeredRef.current = true;
+      sessionStorage.removeItem("robinos_pending_download_slug");
+      sessionStorage.removeItem("robinos_return_to");
+      downloadMutation.mutate(resource.id);
+    }
+  }, [loading, user, resource, slug, downloadMutation]);
 
   if (isLoading) {
     return (
