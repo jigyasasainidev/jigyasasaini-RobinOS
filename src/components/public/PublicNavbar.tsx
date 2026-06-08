@@ -22,6 +22,7 @@ export function PublicNavbar() {
   const { data: settings } = usePlatformSettings();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuWrapperRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const links = BASE_LINKS.filter((link) => {
     if (link.requiresSetting === "creator_os_page_enabled") {
@@ -52,7 +53,9 @@ export function PublicNavbar() {
   // Close mobile menu when clicking outside or pressing Escape
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuWrapperRef.current && !menuWrapperRef.current.contains(event.target as Node)) {
+      const isInMenuWrapper = menuWrapperRef.current && menuWrapperRef.current.contains(event.target as Node);
+      const isInMobileMenu = mobileMenuRef.current && mobileMenuRef.current.contains(event.target as Node);
+      if (!isInMenuWrapper && !isInMobileMenu) {
         setMobileMenuOpen(false);
       }
     };
@@ -154,7 +157,7 @@ export function PublicNavbar() {
 
       {/* Mobile dropdown menu */}
       {mobileMenuOpen && (
-        <div className="sm:hidden border-t border-border/50 bg-background/95 backdrop-blur-xl">
+        <div ref={mobileMenuRef} className="sm:hidden border-t border-border/50 bg-background/95 backdrop-blur-xl">
           <nav className="mx-auto max-w-[1240px] px-4 py-3 flex flex-col gap-1">
             <button
               type="button"
