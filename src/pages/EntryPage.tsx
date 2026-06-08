@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { motion, AnimatePresence, useInView, useScroll, useTransform } from "framer-motion";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Lenis from "lenis";
-import { ChevronDown, Scan, Video, BarChart3, Globe, Check, Zap, Shield, Clock, Music, Mic, Layers, Brain, Hash, Type } from "lucide-react";
+import { ChevronDown, Scan, Video, BarChart3, Globe, Check, Zap, Shield, Clock, Music, Mic, Layers, Brain, Hash, Type, BookOpen } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -1457,6 +1457,36 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
           <div className="mt-6 flex justify-center">
             <motion.div whileHover={{ y: -1, boxShadow: "0 6px 24px hsl(217 91% 60% / 0.3)" }} whileTap={{ scale: 0.98 }}>
               <Link to="/contact" className="btn-primary inline-flex items-center justify-center">Contact RobinOS</Link>
+            </motion.div>
+          </div>
+        </motion.div>
+      </RevealSection>
+
+      {/* ─── 7.5. RESOURCE VAULT CTA ─── */}
+      <RevealSection className="py-16 md:py-24 px-4 sm:px-6 max-w-4xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="relative rounded-3xl border border-border/40 bg-card/40 p-8 sm:p-12 overflow-hidden"
+        >
+          <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: "radial-gradient(ellipse 60% 50% at 50% 0%, hsl(217 91% 60% / 0.12), transparent)" }} />
+          <div className="relative text-center">
+            <div className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold bg-primary/10 text-primary border border-primary/15 mb-5">
+              <BookOpen className="w-3 h-3" />
+              FREE CREATOR RESOURCES
+            </div>
+            <h2 className="text-chrome text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight mb-3">
+              Templates, Hooks, Scripts & Creator Resources
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
+              Access free creator resources designed to help you grow faster.
+            </p>
+            <motion.div whileHover={{ y: -1, boxShadow: "0 6px 24px hsl(217 91% 60% / 0.3)" }} whileTap={{ scale: 0.98 }}>
+              <Link to="/resources" className="btn-primary inline-flex items-center justify-center">
+                Explore Resources
+              </Link>
             </motion.div>
           </div>
         </motion.div>

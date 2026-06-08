@@ -8,6 +8,7 @@ import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 const BASE_LINKS = [
   { label: "Creator OS", to: "/creator-os", requiresSetting: "creator_os_page_enabled" as const },
   { label: "Blog",       to: "/blog" },
+  { label: "Resources",  to: "/resources" },
   { label: "Pricing",    to: "/pricing" },
   { label: "Launch Partners", to: "/launch-partners" },
   { label: "API Access", to: "/api-access" },

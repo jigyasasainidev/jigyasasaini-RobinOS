@@ -38,6 +38,7 @@ const resourceLinks = [
   { label: "Help Center",    to: "/help" },
   { label: "Creator Guide",  to: "/creator-guide" },
   { label: "Affiliate Guide",to: "/affiliate-guide" },
+  { label: "Resource Vault", to: "/resources" },
 ];
 
 function LinkColumn({ title, links }: { title: string; links: { label: string; to: string }[] }) {

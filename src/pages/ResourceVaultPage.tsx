@@ -246,7 +246,10 @@ export default function ResourceVaultPage() {
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
             <FileText className="w-10 h-10 mx-auto mb-3 opacity-40" />
-            <p className="text-sm font-medium">{search || activeCategory !== "all" ? "No resources match your filters." : "No resources available yet. Check back soon!"}</p>
+            <p className="text-sm font-medium mb-4">{search || activeCategory !== "all" ? "No resources match your filters." : "New creator resources are being added soon."}</p>
+            <Button variant="outline" size="sm" onClick={() => window.location.href = "/"}>
+              Return Home
+            </Button>
           </div>
         ) : (
           <div className="space-y-10">
