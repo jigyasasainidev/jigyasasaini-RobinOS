@@ -59,7 +59,6 @@ const ChangelogPage = lazy(() => import("./pages/public/PublicInfoPages").then((
 const StatusPage = lazy(() => import("./pages/public/PublicInfoPages").then((m) => ({ default: m.StatusPage })));
 const CreatorGuidePage = lazy(() => import("./pages/public/PublicInfoPages").then((m) => ({ default: m.CreatorGuidePage })));
 const AffiliateGuidePage = lazy(() => import("./pages/public/PublicInfoPages").then((m) => ({ default: m.AffiliateGuidePage })));
-const ResourcesPage = lazy(() => import("./pages/public/PublicInfoPages").then((m) => ({ default: m.ResourcesPage })));
 const RoadmapPage = lazy(() => import("./pages/public/PublicInfoPages").then((m) => ({ default: m.RoadmapPage })));
 const SupportPage = lazy(() => import("./pages/public/PublicInfoPages").then((m) => ({ default: m.SupportPage })));
 const TrustSafetyPage = lazy(() => import("./pages/public/TrustSafetyPage").then((m) => ({ default: m.TrustSafetyPage })));
@@ -75,6 +74,8 @@ const AdminAuthCallbackPage = lazy(() => import("./pages/AdminAuthCallbackPage")
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AuthCallbackPage = lazy(() => import("./pages/AuthCallbackPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const ResourceVaultPage = lazy(() => import("./pages/ResourceVaultPage"));
+const ResourceDetailPage = lazy(() => import("./pages/ResourceDetailPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -218,11 +219,13 @@ const App = () => (
               <Route path="/adminsh/subscriptions" element={<AdminRouteGuard><AdminDashboard /></AdminRouteGuard>} />
               <Route path="/adminsh/affiliates" element={<AdminRouteGuard><AdminDashboard /></AdminRouteGuard>} />
               <Route path="/adminsh/withdrawals" element={<AdminRouteGuard><AdminDashboard /></AdminRouteGuard>} />
+              <Route path="/adminsh/resources" element={<AdminRouteGuard><AdminDashboard /></AdminRouteGuard>} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/affiliates" element={<AffiliatesProgramPage />} />
               <Route path="/api" element={<DocsPage />} />
-              <Route path="/resources" element={<ResourcesPage />} />
+              <Route path="/resources" element={<ResourceVaultPage />} />
+              <Route path="/resources/:slug" element={<ResourceDetailPage />} />
               <Route path="/roadmap" element={<RoadmapPage />} />
               <Route path="/support" element={<SupportPage />} />
               <Route path="/help" element={<HelpCenterPage />} />

@@ -10,6 +10,7 @@ import {
   Clock3,
   Copy,
   Inbox,
+  Library,
   Loader2,
   LogOut,
   Mic,
@@ -51,6 +52,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { subscribeMultiTable } from "@/lib/realtime/channelManager";
 import { AdminPWAInstall } from "@/components/admin/AdminPWAInstall";
 import { AdminNotifications } from "@/components/admin/AdminNotifications";
+import AdminResourcesPage from "@/components/admin/AdminResourcesPage";
 import {
   Sidebar,
   SidebarContent,
@@ -76,7 +78,8 @@ type AdminPath =
   | "/adminsh/users"
   | "/adminsh/subscriptions"
   | "/adminsh/affiliates"
-  | "/adminsh/withdrawals";
+  | "/adminsh/withdrawals"
+  | "/adminsh/resources";
 
 type NavItem = {
   label: string;
@@ -227,6 +230,12 @@ const navGroups: { title: string; items: NavItem[] }[] = [
       { label: "Withdrawals", path: "/adminsh/withdrawals", icon: Wallet },
     ],
   },
+  {
+    title: "Content",
+    items: [
+      { label: "Resources", path: "/adminsh/resources", icon: Library },
+    ],
+  },
 ];
 
 const pageMeta: Record<AdminPath, { title: string; subtitle: string }> = {
@@ -257,6 +266,10 @@ const pageMeta: Record<AdminPath, { title: string; subtitle: string }> = {
   "/adminsh/withdrawals": {
     title: "Withdrawal Operations",
     subtitle: "Approve payout queue with full audit-safe backend operations.",
+  },
+  "/adminsh/resources": {
+    title: "Resource Vault",
+    subtitle: "Upload, edit, and manage creator resources and downloadables.",
   },
 };
 
@@ -2643,6 +2656,8 @@ const AdminDashboard = () => {
     );
   };
 
+  const renderResourcesPage = () => <AdminResourcesPage />;
+
   const renderPage = () => {
     switch (currentPath) {
       case "/adminsh/dashboard":
@@ -2659,6 +2674,8 @@ const AdminDashboard = () => {
         return renderAffiliatesPage();
       case "/adminsh/withdrawals":
         return renderWithdrawalsPage();
+      case "/adminsh/resources":
+        return renderResourcesPage();
       default:
         return renderDashboardPage();
     }
