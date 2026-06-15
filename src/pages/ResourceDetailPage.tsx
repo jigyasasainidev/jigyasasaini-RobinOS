@@ -1,5 +1,6 @@
 import { useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { motion } from "framer-motion";
 import {
   Download,
@@ -47,6 +48,8 @@ export default function ResourceDetailPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const pendingDownloadTriggeredRef = useRef(false);
+
+  const { data: settings } = usePlatformSettings();
 
   const {
     data: resource,
@@ -106,6 +109,11 @@ export default function ResourceDetailPage() {
       downloadMutation.mutate(resource.id);
     }
   }, [loading, user, resource, slug, downloadMutation]);
+
+  if (settings && settings.resource_vault_enabled === false) {
+    navigate("/", { replace: true });
+    return null;
+  }
 
   if (isLoading) {
     return (

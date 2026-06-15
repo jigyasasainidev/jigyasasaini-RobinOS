@@ -8,7 +8,7 @@ import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 const BASE_LINKS = [
   { label: "Creator OS", to: "/creator-os", requiresSetting: "creator_os_page_enabled" as const },
   { label: "Blog",       to: "/blog" },
-  { label: "Resources",  to: "/resources" },
+  { label: "Resources",  to: "/resources", requiresSetting: "resource_vault_enabled" as const },
   { label: "Pricing",    to: "/pricing" },
   { label: "Launch Partners", to: "/launch-partners" },
   { label: "API Access", to: "/api-access" },
@@ -28,6 +28,10 @@ export function PublicNavbar() {
     if (link.requiresSetting === "creator_os_page_enabled") {
       // Default true — show unless explicitly disabled
       return settings ? settings.creator_os_page_enabled !== false : true;
+    }
+    if (link.requiresSetting === "resource_vault_enabled") {
+      // Default true — show unless explicitly disabled
+      return settings ? settings.resource_vault_enabled !== false : true;
     }
     return true;
   });

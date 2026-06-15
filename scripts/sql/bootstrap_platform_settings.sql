@@ -44,7 +44,11 @@ alter table public.platform_settings
   add column if not exists jvzoo_affiliate_login_url      text
     default 'https://www.tryrobin.xyz/login';
 
--- ── 5. RLS ────────────────────────────────────────────────
+-- ── 5. Add Resource Vault toggle (migration 48) ────────────
+alter table public.platform_settings
+  add column if not exists resource_vault_enabled       boolean not null default true;
+
+-- ── 6. RLS ────────────────────────────────────────────────
 alter table public.platform_settings enable row level security;
 
 drop policy if exists "Public read platform settings" on public.platform_settings;
@@ -55,12 +59,12 @@ drop policy if exists "Service role manage platform settings" on public.platform
 create policy "Service role manage platform settings"
   on public.platform_settings for all to service_role using (true) with check (true);
 
--- ── 6. Seed one row if table is empty ────────────────────
+-- ── 7. Seed one row if table is empty ────────────────────
 insert into public.platform_settings (id)
 select gen_random_uuid()
 where not exists (select 1 from public.platform_settings);
 
--- ── 7. Verify ────────────────────────────────────────────
+-- ── 8. Verify ────────────────────────────────────────────
 select
   id,
   maintenance_mode,

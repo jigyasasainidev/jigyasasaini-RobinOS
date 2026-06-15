@@ -907,6 +907,7 @@ const AdminDashboard = () => {
         creator_os_page_enabled:        platformSettings.creator_os_page_enabled ?? true,
         creator_os_demo_video_url:      platformSettings.creator_os_demo_video_url ?? "",
         jvzoo_affiliate_enabled:        platformSettings.jvzoo_affiliate_enabled ?? false,
+        resource_vault_enabled:         platformSettings.resource_vault_enabled ?? true,
         jvzoo_affiliate_demo_video_url: platformSettings.jvzoo_affiliate_demo_video_url ?? "",
         jvzoo_affiliate_cta_url:        platformSettings.jvzoo_affiliate_cta_url ?? "",
         jvzoo_affiliate_button_text:    platformSettings.jvzoo_affiliate_button_text ?? "Join Affiliate Program",
@@ -1332,6 +1333,7 @@ const AdminDashboard = () => {
         creator_os_page_enabled:        !!settingsDraft.creator_os_page_enabled,
         creator_os_demo_video_url:      settingsDraft.creator_os_demo_video_url?.trim() || null,
         jvzoo_affiliate_enabled:        !!settingsDraft.jvzoo_affiliate_enabled,
+        resource_vault_enabled:         !!settingsDraft.resource_vault_enabled,
         jvzoo_affiliate_demo_video_url: settingsDraft.jvzoo_affiliate_demo_video_url?.trim() || null,
         jvzoo_affiliate_cta_url:        settingsDraft.jvzoo_affiliate_cta_url?.trim() || null,
         jvzoo_affiliate_button_text:    settingsDraft.jvzoo_affiliate_button_text?.trim() || "Join Affiliate Program",
@@ -1368,6 +1370,7 @@ const AdminDashboard = () => {
         jvzoo_affiliate_cta_url:        savedPayload.jvzoo_affiliate_cta_url ?? "",
         jvzoo_affiliate_button_text:    savedPayload.jvzoo_affiliate_button_text ?? "Join Affiliate Program",
         jvzoo_affiliate_login_url:      savedPayload.jvzoo_affiliate_login_url ?? "https://www.tryrobin.xyz/login",
+        resource_vault_enabled:         savedPayload.resource_vault_enabled,
       }));
 
       // Invalidate downstream consumers (public pages, affiliate page, etc.)
@@ -2006,7 +2009,7 @@ const AdminDashboard = () => {
             </div>
           </SectionCard>
 
-          <SectionCard title="Launch Partners Page Controls" subtitle="Affiliate page visibility, video, CTA, and button text — controls /launch-partners route">
+          <SectionCard title="Public Page Controls" subtitle="Resource Vault, affiliate page visibility, video, CTA, and button text">
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Affiliate Page Visibility</p>
@@ -2019,6 +2022,18 @@ const AdminDashboard = () => {
                   <option value="true">● VISIBLE — /launch-partners publicly accessible</option>
                 </select>
                 <p className="text-[9px] font-mono text-muted-foreground/25">Current: {settingsDraft.jvzoo_affiliate_enabled ? "● VISIBLE" : "⬤ HIDDEN"} · Save to apply</p>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Resource Vault</p>
+                <select
+                  value={settingsDraft.resource_vault_enabled ? "true" : "false"}
+                  onChange={(e) => setSettingsDraft((s) => ({ ...s, resource_vault_enabled: e.target.value === "true" }))}
+                  className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground"
+                >
+                  <option value="true">● VISIBLE — /resource-vault publicly accessible</option>
+                  <option value="false">⬤ HIDDEN — /resource-vault redirects to homepage</option>
+                </select>
+                <p className="text-[9px] font-mono text-muted-foreground/25">Current: {settingsDraft.resource_vault_enabled ? "● VISIBLE" : "⬤ HIDDEN"} · Save to apply</p>
               </div>
               <div className="space-y-1.5">
                 <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Demo Video URL</p>

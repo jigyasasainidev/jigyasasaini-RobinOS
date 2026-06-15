@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -114,6 +115,8 @@ function ResourceCard({ resource }: { resource: ResourceRow }) {
 }
 
 export default function ResourceVaultPage() {
+  const navigate = useNavigate();
+  const { data: settings } = usePlatformSettings();
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
@@ -150,6 +153,11 @@ export default function ResourceVaultPage() {
 
   const featured = useMemo(() => filtered.filter((r) => r.featured), [filtered]);
   const regular = useMemo(() => filtered.filter((r) => !r.featured), [filtered]);
+
+  if (settings && settings.resource_vault_enabled === false) {
+    navigate("/", { replace: true });
+    return null;
+  }
 
   return (
     <PublicLayout>

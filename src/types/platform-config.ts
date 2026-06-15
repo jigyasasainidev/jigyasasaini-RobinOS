@@ -28,6 +28,7 @@ export interface PlatformSettingsRow {
   jvzoo_affiliate_button_text: string | null;
   jvzoo_affiliate_login_url: string | null;
   affiliate_resources_url: string | null;
+  resource_vault_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -57,6 +58,7 @@ export interface PlatformSettingsDraft {
   jvzoo_affiliate_button_text: string;
   jvzoo_affiliate_login_url: string;
   affiliate_resources_url: string;
+  resource_vault_enabled: boolean;
 }
 
 /**
@@ -82,6 +84,7 @@ export const PLATFORM_SETTINGS_DEFAULTS: PlatformSettingsDraft = {
   jvzoo_affiliate_button_text: "Join Affiliate Program",
   jvzoo_affiliate_login_url: "https://www.tryrobin.xyz/login",
   affiliate_resources_url: "",
+  resource_vault_enabled: true,
 };
 
 /**
@@ -130,4 +133,5 @@ export interface PlatformSettingsLive {
   jvzoo_affiliate_button_text: string | null;
   jvzoo_affiliate_login_url: string | null;
   updated_at: string;
+  resource_vault_enabled: boolean;
 }

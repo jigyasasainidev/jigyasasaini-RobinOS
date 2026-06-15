@@ -2,6 +2,7 @@ import { Shield, ShieldCheck, Eye, Zap } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { SmartLink } from "@/components/SmartLink";
 import { prefetchRoute } from "@/lib/routePrefetch";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 const productLinks = [
   { label: "Creator OS", to: "/creator-os" },
@@ -77,6 +78,15 @@ const trustBadges = [
 ];
 
 export function PublicFooter() {
+  const { data: settings } = usePlatformSettings();
+
+  const filteredResourceLinks = resourceLinks.filter((link) => {
+    if (link.label === "Resource Vault") {
+      return settings ? settings.resource_vault_enabled !== false : true;
+    }
+    return true;
+  });
+
   return (
     <footer className="relative mt-16 overflow-hidden border-t border-border/70 bg-card/40">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,hsl(var(--primary)/0.14),transparent_38%),radial-gradient(circle_at_82%_12%,hsl(var(--primary)/0.1),transparent_42%)]" />
@@ -121,7 +131,7 @@ export function PublicFooter() {
         <LinkColumn title="Product" links={productLinks} />
         <LinkColumn title="Company" links={companyLinks} />
         <LinkColumn title="Legal" links={legalLinks} />
-        <LinkColumn title="Resources" links={resourceLinks} />
+        <LinkColumn title="Resources" links={filteredResourceLinks} />
       </div>
 
       <div className="relative border-t border-border/60">

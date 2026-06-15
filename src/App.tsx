@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } from "react-router-dom";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { motion } from "framer-motion";
@@ -142,6 +143,14 @@ const ScrollManager = () => {
 //   - First-touch: coordinator blocks overwrite if valid code exists
 //   - Duplicate: same code already stored → skip silently
 //   - Self-referral: enforced server-side in initialize_user_account()
+const VaultRouteGuard = ({ children }: { children: React.ReactNode }) => {
+  const { data: settings } = usePlatformSettings();
+  if (settings && settings.resource_vault_enabled === false) {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
+};
+
 const ReferralCapture = () => {
   const [searchParams] = useSearchParams();
 
@@ -224,8 +233,8 @@ const App = () => (
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/affiliates" element={<AffiliatesProgramPage />} />
               <Route path="/api" element={<DocsPage />} />
-              <Route path="/resources" element={<ResourceVaultPage />} />
-              <Route path="/resources/:slug" element={<ResourceDetailPage />} />
+              <Route path="/resources" element={<VaultRouteGuard><ResourceVaultPage /></VaultRouteGuard>} />
+              <Route path="/resources/:slug" element={<VaultRouteGuard><ResourceDetailPage /></VaultRouteGuard>} />
               <Route path="/roadmap" element={<RoadmapPage />} />
               <Route path="/support" element={<SupportPage />} />
               <Route path="/help" element={<HelpCenterPage />} />

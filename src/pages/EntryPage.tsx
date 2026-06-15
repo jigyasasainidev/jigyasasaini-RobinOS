@@ -1463,6 +1463,7 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
       </RevealSection>
 
       {/* ─── 7.5. RESOURCE VAULT CTA ─── */}
+      {platformSettings?.resource_vault_enabled !== false && (
       <RevealSection className="py-16 md:py-24 px-4 sm:px-6 max-w-4xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1491,6 +1492,7 @@ const EntryPage = ({ initialSection }: EntryPageProps) => {
           </div>
         </motion.div>
       </RevealSection>
+      )}
 
       <PublicFooter />
     </div>
