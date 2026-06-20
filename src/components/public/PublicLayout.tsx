@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { Helmet } from "react-helmet-async";
 import { motion, AnimatePresence } from "framer-motion";
 import { PublicNavbar } from "@/components/public/PublicNavbar";
 import { PublicFooter } from "@/components/public/PublicFooter";
@@ -13,7 +14,15 @@ export function PublicLayout({ children }: { children: ReactNode }) {
     "Platform maintenance is in progress. Some features may be temporarily limited.";
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-background grain">
+    <>
+      <Helmet>
+        <script
+          async
+          src="https://assets.endorsely.com/endorsely.js"
+          data-endorsely="b9d35abf-aadb-4aee-86fe-c1ff3e3c3f35"
+        />
+      </Helmet>
+      <div className="relative min-h-screen overflow-x-hidden bg-background grain">
       <div className="ambient-glow" />
       <PublicNavbar />
 
@@ -58,5 +67,6 @@ export function PublicLayout({ children }: { children: ReactNode }) {
       <main className="relative z-10">{children}</main>
       <PublicFooter />
     </div>
+    </>
   );
 }
