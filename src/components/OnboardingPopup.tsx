@@ -82,9 +82,14 @@ export const OnboardingPopup = ({ onComplete }: OnboardingPopupProps) => {
   const [leaving, setLeaving] = useState(false);
 
   const persistAndClose = useCallback((permanent = false) => {
-    try { localStorage.setItem(STORAGE_KEY_PREFS, JSON.stringify(prefs)); } catch { /**/ }
-    localStorage.setItem(STORAGE_KEY_DONE, "true");
-    if (permanent) localStorage.setItem(STORAGE_KEY_PERM, "true");
+    try {
+      localStorage.setItem(STORAGE_KEY_PREFS, JSON.stringify(prefs));
+      localStorage.setItem(STORAGE_KEY_DONE, "true");
+      if (permanent) localStorage.setItem(STORAGE_KEY_PERM, "true");
+    } catch {
+      // localStorage may be disabled or full; closing the modal is more
+      // important than persisting onboarding flags.
+    }
     onComplete();
   }, [prefs, onComplete]);
 
@@ -164,7 +169,7 @@ export const OnboardingPopup = ({ onComplete }: OnboardingPopupProps) => {
               Set up my workspace <ArrowRight className="w-4 h-4" />
             </motion.button>
 
-            <button onClick={dismiss}
+            <button type="button" onClick={dismiss}
               className="text-[10.5px] text-muted-foreground/35 hover:text-muted-foreground/60 transition-colors">
               Skip setup — go to dashboard
             </button>
@@ -428,7 +433,7 @@ export const OnboardingPopup = ({ onComplete }: OnboardingPopupProps) => {
           </div>
 
           {/* Close button */}
-          <button onClick={dismiss}
+          <button type="button" onClick={dismiss}
             className="absolute top-4 right-4 z-10 w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
             style={{ background: "hsl(217 28% 9%)", border: "1px solid hsl(217 28% 14%)", color: "hsl(215 16% 40%)" }}>
             <X className="w-3.5 h-3.5" />
