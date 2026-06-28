@@ -405,55 +405,65 @@ export const OnboardingPopup = ({ onComplete }: OnboardingPopupProps) => {
           onClick={step === 0 ? dismiss : undefined}
         />
 
-        {/* Panel */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.94, y: 24 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.94, y: 24 }}
-          transition={{ duration: 0.38, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="relative w-full max-w-md rounded-2xl overflow-hidden"
-          style={{
-            background: "linear-gradient(160deg, hsl(222 28% 8%) 0%, hsl(222 26% 6%) 100%)",
-            border:     "1px solid hsl(217 28% 14%)",
-            boxShadow:  "0 0 80px hsl(217 91% 60% / 0.08), 0 24px 64px hsl(0 0% 0% / 0.5), inset 0 1px 0 hsl(0 0% 100% / 0.04)",
-          }}
-        >
-          {/* Top ambient glow */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-24 pointer-events-none"
-            style={{ background: "radial-gradient(ellipse, hsl(217 91% 60% / 0.1) 0%, transparent 70%)" }} />
-
-          {/* Progress bar */}
-          <div className="relative h-[2px] w-full" style={{ background: "hsl(217 28% 11%)" }}>
-            <motion.div
-              className="absolute inset-y-0 left-0 rounded-full"
-              style={{ background: "linear-gradient(90deg, hsl(217 91% 52%), hsl(217 91% 68%))" }}
-              animate={{ width: `${progressPct}%` }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            />
-          </div>
-
+        {/* Modal container — button is positioned outside the panel so it
+            cannot be clipped or covered by the panel’s overflow-hidden/rounded
+            corners or internal content stacking. */}
+        <div className="relative w-full max-w-md">
           {/* Close button */}
-          <button type="button" onClick={dismiss}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              dismiss();
+            }}
             className="absolute top-4 right-4 z-10 w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
             style={{ background: "hsl(217 28% 9%)", border: "1px solid hsl(217 28% 14%)", color: "hsl(215 16% 40%)" }}>
             <X className="w-3.5 h-3.5" />
           </button>
 
-          {/* Content */}
-          <div className="relative p-6 pt-5">
-            <AnimatePresence mode="wait">
+          {/* Panel */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: 24 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.94, y: 24 }}
+            transition={{ duration: 0.38, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="relative w-full rounded-2xl overflow-hidden"
+            style={{
+              background: "linear-gradient(160deg, hsl(222 28% 8%) 0%, hsl(222 26% 6%) 100%)",
+              border:     "1px solid hsl(217 28% 14%)",
+              boxShadow:  "0 0 80px hsl(217 91% 60% / 0.08), 0 24px 64px hsl(0 0% 0% / 0.5), inset 0 1px 0 hsl(0 0% 100% / 0.04)",
+            }}
+          >
+            {/* Top ambient glow */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-24 pointer-events-none"
+              style={{ background: "radial-gradient(ellipse, hsl(217 91% 60% / 0.1) 0%, transparent 70%)" }} />
+
+            {/* Progress bar */}
+            <div className="relative h-[2px] w-full" style={{ background: "hsl(217 28% 11%)" }}>
               <motion.div
-                key={step}
-                initial={{ opacity: 0, x: 16, filter: "blur(4px)" }}
-                animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-                exit={{ opacity: 0, x: -16, filter: "blur(4px)" }}
-                transition={{ duration: 0.28, ease: "easeOut" }}
-              >
-                {renderStep()}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </motion.div>
+                className="absolute inset-y-0 left-0 rounded-full"
+                style={{ background: "linear-gradient(90deg, hsl(217 91% 52%), hsl(217 91% 68%))" }}
+                animate={{ width: `${progressPct}%` }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+              />
+            </div>
+
+            {/* Content */}
+            <div className="relative p-6 pt-5">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={step}
+                  initial={{ opacity: 0, x: 16, filter: "blur(4px)" }}
+                  animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, x: -16, filter: "blur(4px)" }}
+                  transition={{ duration: 0.28, ease: "easeOut" }}
+                >
+                  {renderStep()}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        </div>
       </motion.div>
     </AnimatePresence>
   );
