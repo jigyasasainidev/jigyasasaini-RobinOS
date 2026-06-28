@@ -6,7 +6,7 @@ import { prefetchRoute } from "@/lib/routePrefetch";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 const BASE_LINKS = [
-  { label: "Creator OS", to: "/jvzoo", requiresSetting: "creator_os_page_enabled" as const },
+  { label: "JVZoo", to: "/jvzoo", requiresSetting: "creator_os_page_enabled" as const },
   { label: "Blog",       to: "/blog" },
   { label: "Resources",  to: "/resources", requiresSetting: "resource_vault_enabled" as const },
   { label: "Pricing",    to: "/pricing" },
