@@ -7,6 +7,7 @@ interface ErrorBoundaryProps {
   fallback?:  React.ReactNode;       // custom fallback — uses built-in if absent
   onError?:   (error: Error, info: React.ErrorInfo) => void;
   isolate?:   boolean;               // true = fill parent, false = full-page
+  name?:      string;                // optional identifier for logging/debugging
 }
 
 interface ErrorBoundaryState {
@@ -26,7 +27,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error("[ErrorBoundary] caught:", error.message, info.componentStack?.slice(0, 300));
+    const boundaryName = this.props.name ? `[${this.props.name}] ` : "";
+    console.error(`[ErrorBoundary] ${boundaryName}caught error:`, error);
+    console.error(`[ErrorBoundary] ${boundaryName}error stack:`, error.stack);
+    console.error(`[ErrorBoundary] ${boundaryName}component stack:`, info.componentStack);
     this.props.onError?.(error, info);
   }
 
@@ -59,6 +63,8 @@ function BoundaryFallback({
   onReset:  () => void;
   isolate?: boolean;
 }) {
+  console.error("[ErrorBoundary] BoundaryFallback rendered for error:", error);
+  console.error("[ErrorBoundary] BoundaryFallback error stack:", error?.stack);
   const containerCls = isolate
     ? "flex flex-col items-center justify-center px-6 py-12 rounded-2xl text-center"
     : "min-h-[50vh] flex flex-col items-center justify-center px-6 py-16 text-center";
@@ -129,10 +135,10 @@ function BoundaryFallback({
 // ── Convenience functional wrapper ────────────────────────
 // <RouteErrorBoundary> — wraps a route's rendered content
 export function RouteErrorBoundary({ children }: { children: React.ReactNode }) {
-  return <ErrorBoundary>{children}</ErrorBoundary>;
+  return <ErrorBoundary name="RouteErrorBoundary">{children}</ErrorBoundary>;
 }
 
 // <SectionErrorBoundary> — isolates a card/section
 export function SectionErrorBoundary({ children }: { children: React.ReactNode }) {
-  return <ErrorBoundary isolate>{children}</ErrorBoundary>;
+  return <ErrorBoundary name="SectionErrorBoundary" isolate>{children}</ErrorBoundary>;
 }

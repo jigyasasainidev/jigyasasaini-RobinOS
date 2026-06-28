@@ -190,7 +190,7 @@ const App = () => (
         <ReferralCapture />
         <AuthProvider>
           <CurrencyProvider>
-          <ErrorBoundary>
+          <ErrorBoundary name="AppRoot">
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<EntryPage />} />
