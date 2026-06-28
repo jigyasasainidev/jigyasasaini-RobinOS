@@ -143,8 +143,7 @@ const DashboardLayout = () => {
     setMaintenanceDismissed(true);
   };
 
-  // eslint-disable-next-line no-console
-  console.log("[DashboardLayout] render", { showOnboarding, hasUser: !!user, loading });
+  const maintenanceActive = !!maintenanceQuery.data?.maintenance_mode;
   const maintenanceMessage = maintenanceQuery.data?.announcement_banner?.trim() || "Platform maintenance is in progress. Some features may be temporarily limited.";
 
   if (loading) {
