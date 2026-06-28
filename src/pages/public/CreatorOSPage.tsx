@@ -7,6 +7,8 @@ import {
   Layers, Cpu, Wand2, Activity, type LucideIcon,
 } from "lucide-react";
 import { PublicLayout } from "@/components/public/PublicLayout";
+import { JVZooCTA } from "@/components/public/JVZooCTA";
+import { JVZooDisclaimer } from "@/components/public/JVZooDisclaimer";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { BrandMark } from "@/components/BrandMark";
 
@@ -317,15 +319,17 @@ export default function CreatorOSPage() {
 
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.28 }}
               className="flex flex-wrap gap-3 mb-8">
-              <PrimaryButton to="/login">
+              <JVZooCTA>
                 Start Creating <ArrowRight className="w-4 h-4" />
-              </PrimaryButton>
+              </JVZooCTA>
               <motion.a href="#demo-video" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                 className="inline-flex items-center gap-2 h-12 px-6 rounded-xl text-sm font-medium transition-all duration-200"
                 style={{ background: "hsl(217 91% 60% / 0.06)", border: "1px solid hsl(217 91% 60% / 0.2)", color: "hsl(217 91% 68%)" }}>
                 <Play className="w-3.5 h-3.5" /> Watch Demo
               </motion.a>
             </motion.div>
+
+            <JVZooDisclaimer className="mt-2" />
 
             {/* Live ecosystem stats */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5, duration: 0.6 }}
@@ -621,9 +625,9 @@ export default function CreatorOSPage() {
               Join thousands of creators who ship faster with RobinOS. Start free — no credit card required.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <PrimaryButton to="/login">
+              <JVZooCTA>
                 <Wand2 className="w-4 h-4" /> Launch Creator OS
-              </PrimaryButton>
+              </JVZooCTA>
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Link to="/pricing"
                   className="inline-flex items-center gap-2 h-12 px-8 rounded-xl text-sm font-medium transition-all duration-200"
@@ -632,6 +636,8 @@ export default function CreatorOSPage() {
                 </Link>
               </motion.div>
             </div>
+
+            <JVZooDisclaimer align="center" className="mt-4" />
           </motion.div>
         </Reveal>
       </section>
