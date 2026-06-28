@@ -1,0 +1,134 @@
+{
+  "id": "019ea8b3-5d14-774a-afa0-19aec6e07b03",
+  "name": "Resource Vault Download Gating",
+  "description": "Implement download gating for Resource Vault in RobinOS:\n\nCurrent state:\n- Resource Vault already exists\n- /resources page exists\n- /resources/:slug detail page exists\n- PDF preview works\n- PDF download works\n- Google auth already exists in RobinOS\n- DO NOT redesign UI\n- DO NOT change styling\n- DO NOT refactor unrelated code\n- ONLY implement download gating\n\nGOAL\n\nPreview PDF:\n- Public\n- Anyone can preview without login\n\nDownload PDF:\n- Requires authentication\n- User must sign in with existing RobinOS auth\n- After login, return to the exact resource page\n- Automatically continue download after successful login\n- Increment download count only when authenticated download occurs\n\nREQUIRED FLOW\n\nCase 1 - Logged In\nUser → Resource Detail Page → Click Download PDF → Download starts → download_count increments\n\nCase 2 - Not Logged In\nUser → Resource Detail Page → Click Download PDF → Existing login/auth modal or login page → Continue With Google → Authentication completes → Redirect back to same resource URL → Download automatically starts → download_count increments\n\nIMPORTANT\nPreserve exact resource URL. After login user MUST return to /resources/:slug NOT /, /dashboard, or /resources. Use redirect/returnTo pattern already used elsewhere in RobinOS if available.\n\nDOWNLOAD COUNT RULE\nIncrement count ONLY when user is authenticated and download action succeeds. Do NOT increment on preview, page view, or anonymous visitors.\n\nUI REQUIREMENTS\nKeep current UI exactly as-is. No redesign, no layout changes, no styling changes.\n\nIMPLEMENTATION TASKS\n1. Trace existing auth flow\n2. Add auth guard to Download button\n3. Preserve resource URL during login\n4. Auto-resume download after login\n5. Increment download_count after successful authenticated download\n6. Test both logged-in and logged-out scenarios\n\nDELIVERABLE\nAfter implementation provide:\n1. Files modified\n2. Exact flow implemented\n3. Test results for logged in user, logged out user, redirect back to resource, download count increment",
+  "status": "complete",
+  "worktree": {
+    "path": "/Users/ashad/Documents/RobinOS-main",
+    "branch": "main",
+    "commit": "581a6982989ef7a2a6332f6035c54fc11e424827"
+  },
+  "scoping": {
+    "goal": {
+      "answer": "Gate PDF downloads in the RobinOS Resource Vault behind authentication, ensuring: (1) previews remain public, (2) unauthenticated users are redirected through the existing Google OAuth flow, (3) after login the user returns to the exact resource URL, and (4) the download automatically resumes and the download count increments only on successful authenticated downloads.",
+      "confirmedAt": "2026-06-08T19:45:55.922Z"
+    },
+    "criteria": {
+      "answer": "Authenticated user on /resources/:slug clicks Download → PDF opens and download_count increments by 1 in Supabase\nUnauthenticated user clicks Download → redirected to /login with resource URL preserved in sessionStorage\nAfter Google OAuth callback, user returns to exact /resources/:slug (not /dashboard or /)\nUpon returning to resource page while authenticated, download auto-triggers and count increments\nPreview PDF button remains public and never increments download_count\nNo UI layout, styling, or text changes to existing buttons or page",
+      "confirmedAt": "2026-06-08T19:45:55.922Z"
+    },
+    "constraints": {
+      "answer": "Do not redesign UI or modify styling, Do not refactor unrelated code, Use existing Supabase OAuth and React Router patterns, Do not introduce new dependencies, Preserve exact resource URL during login redirect, Only modify files directly involved in the download/auth flow",
+      "confirmedAt": "2026-06-08T19:45:55.922Z"
+    },
+    "phases": {
+      "answer": "Implement download gating across auth flow",
+      "confirmedAt": "2026-06-08T19:45:55.922Z"
+    },
+    "assumptions": {
+      "answer": "sessionStorage survives the OAuth redirect because signInWithOAuth redirects in the same tab (standard Supabase behavior); The current public Supabase storage URL for PDFs is acceptable — we gate the download action, not the PDF file itself (security through URL obscurity is existing behavior); React StrictMode double-mount is guarded against with a ref in ResourceDetailPage; User explicitly requested no questions be asked — intent is fully specified in the requirement; Existing AuthContext loading state is available via useAuth()",
+      "confirmedAt": "2026-06-08T19:45:55.922Z"
+    }
+  },
+  "phases": [
+    {
+      "id": "phase-1",
+      "index": 1,
+      "name": "Implement download gating across auth flow",
+      "goal": "Modify ResourceDetailPage, AuthCallbackPage, and AuthPage to implement the complete download gating and returnTo flow",
+      "description": "Single-phase implementation since all changes are small, tightly coupled, and build on each other. Each file corresponds to one commit: (1) ResourceDetailPage adds sessionStorage persistence for pending download, auto-resume on mount, and refactors mutation to only open PDF on success; (2) AuthCallbackPage reads stored returnTo from sessionStorage and redirects there instead of /dashboard; (3) AuthPage reads stored returnTo and redirects there for already-logged-in users.",
+      "parallel": false,
+      "status": "completed",
+      "steps": [
+        {
+          "id": "step-1",
+          "index": 1,
+          "description": "Modify ResourceDetailPage: add sessionStorage on download click when unauthenticated, add useEffect for auto-resume after login, refactor downloadMutation.onSuccess to open PDF only after count increment succeeds",
+          "status": "verified",
+          "verification": {
+            "command": "grep -n 'robinos_return_to' src/pages/ResourceDetailPage.tsx && grep -n 'robinos_pending_download_slug' src/pages/ResourceDetailPage.tsx && grep -n 'onSuccess' src/pages/ResourceDetailPage.tsx",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-08T19:46:24.338Z",
+          "completedAt": "2026-06-08T19:50:51.427Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-06-08T19:50:51.427Z"
+          }
+        },
+        {
+          "id": "step-2",
+          "index": 2,
+          "description": "Modify AuthCallbackPage: read sessionStorage returnTo after successful account initialization and redirect there instead of /dashboard",
+          "status": "verified",
+          "verification": {
+            "command": "grep -n 'robinos_return_to' src/pages/AuthCallbackPage.tsx",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-08T19:51:19.835Z",
+          "completedAt": "2026-06-08T19:53:00.755Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-06-08T19:53:00.755Z"
+          }
+        },
+        {
+          "id": "step-3",
+          "index": 3,
+          "description": "Modify AuthPage: read sessionStorage returnTo in initializeAccount and redirect there instead of /dashboard when present",
+          "status": "verified",
+          "verification": {
+            "command": "grep -n 'robinos_return_to' src/pages/AuthPage.tsx",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-08T19:53:14.077Z",
+          "completedAt": "2026-06-08T19:55:46.512Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-06-08T19:55:46.512Z"
+          }
+        }
+      ],
+      "startedAt": "2026-06-08T19:46:15.592Z",
+      "completedAt": "2026-06-08T19:56:24.646Z",
+      "summary": "All three files have been modified to implement the complete download gating flow:\n\n1. **src/pages/ResourceDetailPage.tsx**\n   - `handleDownload()` now stores `robinos_return_to` and `robinos_pending_download_slug` in sessionStorage when user is not authenticated, then navigates to `/login`\n   - `downloadMutation` now has `onSuccess` callback that opens the PDF only after the Supabase download_count increment succeeds\n   - Added `useEffect` that auto-triggers download when auth resolves and a pending slug matches the current page\n   - Added `pendingDownloadTriggeredRef` to prevent double-fire under React StrictMode\n\n2. **src/pages/AuthCallbackPage.tsx**\n   - After successful OAuth callback and account initialization, reads `robinos_return_to` from sessionStorage\n   - Redirects to the exact resource URL if present; otherwise falls back to `/dashboard`\n   - Clears the sessionStorage key immediately after reading\n\n3. **src/pages/AuthPage.tsx**\n   - `initializeAccount()` now checks `robinos_return_to` in sessionStorage after successful init\n   - Redirects to the stored URL if present; otherwise falls back to `/dashboard`\n   - Covers edge case where an already-logged-in user visits `/login`\n\nTypeScript compilation passes with zero errors across the entire project. No UI layout, styling, or text changes were made. Preview PDF button remains public and untouched."
+    }
+  ],
+  "decisions": [],
+  "memories": [],
+  "createdAt": "2026-06-08T19:26:27.604Z",
+  "updatedAt": "2026-06-08T20:03:42.719Z",
+  "goal": "Gate PDF downloads in the RobinOS Resource Vault behind authentication, ensuring: (1) previews remain public, (2) unauthenticated users are redirected through the existing Google OAuth flow, (3) after login the user returns to the exact resource URL, and (4) the download automatically resumes and the download count increments only on successful authenticated downloads.",
+  "successCriteria": [
+    "Authenticated user on /resources/:slug clicks Download → PDF opens and download_count increments by 1 in Supabase",
+    "Unauthenticated user clicks Download → redirected to /login with resource URL preserved in sessionStorage",
+    "After Google OAuth callback, user returns to exact /resources/:slug (not /dashboard or /)",
+    "Upon returning to resource page while authenticated, download auto-triggers and count increments",
+    "Preview PDF button remains public and never increments download_count",
+    "No UI layout, styling, or text changes to existing buttons or page"
+  ],
+  "constraints": [
+    "Do not redesign UI or modify styling",
+    "Do not refactor unrelated code",
+    "Use existing Supabase OAuth and React Router patterns",
+    "Do not introduce new dependencies",
+    "Preserve exact resource URL during login redirect",
+    "Only modify files directly involved in the download/auth flow"
+  ],
+  "lastActiveAt": "2026-06-08T19:46:15.592Z"
+}

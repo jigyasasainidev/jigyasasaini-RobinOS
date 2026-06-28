@@ -5,7 +5,7 @@ import { prefetchRoute } from "@/lib/routePrefetch";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 const productLinks = [
-  { label: "Creator OS", to: "/creator-os" },
+  { label: "Creator OS", to: "/jvzoo" },
   { label: "Features", to: "/minidemo" },
   { label: "Pricing", to: "/pricing" },
   { label: "Affiliates", to: "/affiliates" },

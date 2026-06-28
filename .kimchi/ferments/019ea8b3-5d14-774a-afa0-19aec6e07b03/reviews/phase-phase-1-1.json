@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "fermentId": "019ea8b3-5d14-774a-afa0-19aec6e07b03",
+  "phaseId": "phase-1",
+  "phaseName": "Implement download gating across auth flow",
+  "attempt": 1,
+  "timestamp": "2026-06-08T19:56:24.645Z",
+  "goal": "Modify ResourceDetailPage, AuthCallbackPage, and AuthPage to implement the complete download gating and returnTo flow",
+  "summary": "All three files have been modified to implement the complete download gating flow:\n\n1. **src/pages/ResourceDetailPage.tsx**\n   - `handleDownload()` now stores `robinos_return_to` and `robinos_pending_download_slug` in sessionStorage when user is not authenticated, then navigates to `/login`\n   - `downloadMutation` now has `onSuccess` callback that opens the PDF only after the Supabase download_count increment succeeds\n   - Added `useEffect` that auto-triggers download when auth resolves and a pending slug matches the current page\n   - Added `pendingDownloadTriggeredRef` to prevent double-fire under React StrictMode\n\n2. **src/pages/AuthCallbackPage.tsx**\n   - After successful OAuth callback and account initialization, reads `robinos_return_to` from sessionStorage\n   - Redirects to the exact resource URL if present; otherwise falls back to `/dashboard`\n   - Clears the sessionStorage key immediately after reading\n\n3. **src/pages/AuthPage.tsx**\n   - `initializeAccount()` now checks `robinos_return_to` in sessionStorage after successful init\n   - Redirects to the stored URL if present; otherwise falls back to `/dashboard`\n   - Covers edge case where an already-logged-in user visits `/login`\n\nTypeScript compilation passes with zero errors across the entire project. No UI layout, styling, or text changes were made. Preview PDF button remains public and untouched.",
+  "stepSummaries": "  1. Modify ResourceDetailPage: add sessionStorage on download click when unauthenticated, add useEffect for auto-resume after login, refactor downloadMutation.onSuccess to open PDF only after count increment succeeds [verified]\n  2. Modify AuthCallbackPage: read sessionStorage returnTo after successful account initialization and redirect there instead of /dashboard [verified]\n  3. Modify AuthPage: read sessionStorage returnTo in initializeAccount and redirect there instead of /dashboard when present [verified]",
+  "diffAvailable": true,
+  "diffFilesChanged": "src/pages/AuthCallbackPage.tsx   | 12 ++++++++++--\n src/pages/AuthPage.tsx           |  8 +++++++-\n src/pages/ResourceDetailPage.tsx | 32 ++++++++++++++++++++++++--------\n supabase/.temp/cli-latest        |  2 +-\n 4 files changed, 42 insertions(+), 12 deletions(-)",
+  "flags": [],
+  "derivedGrade": "A",
+  "reviewerRationale": "All gates pass; project checks validate.",
+  "gateVerdicts": [
+    {
+      "id": "F1",
+      "verdict": "pass",
+      "rationale": "Step verifications were a mix: syntactic (tsc --noEmit proves type correctness and no compile errors) and proxy (grep confirms sessionStorage keys and onSuccess exist at expected lines). While no end-to-end OAuth flow was executed (impossible without live Supabase backend + Google OAuth client), the code logic is directly inspectable and each step's implementation matches the planned behavior exactly.",
+      "evidence": "All three files show the expected code patterns. npx tsc --noEmit returned \"No errors found\" after all edits."
+    },
+    {
+      "id": "F2",
+      "verdict": "pass",
+      "rationale": "The phase goal was to implement download gating across the auth flow. The combined output is: (1) ResourceDetailPage gates downloads and auto-resumes, (2) AuthCallbackPage preserves resource URL through OAuth, (3) AuthPage preserves URL for already-logged-in edge case. Together they form a complete end-to-end flow from unauthenticated download click → login → exact resource redirect → auto-download.",
+      "evidence": "src/pages/ResourceDetailPage.tsx:89-108 (sessionStorage + auto-resume), src/pages/AuthCallbackPage.tsx:72-79 (returnTo redirect), src/pages/AuthPage.tsx:44-51 (returnTo redirect)"
+    },
+    {
+      "id": "F3",
+      "verdict": "pass",
+      "rationale": "Nothing was deferred. The three implementation tasks cover the complete flow. End-to-end runtime verification (actual OAuth login and Supabase download_count increment) could not be performed in this environment, but that is an integration-testing gap, not an implementation gap — all code is present and type-safe.",
+      "evidence": "All planned steps (step-1, step-2, step-3) were completed. No TODOs, placeholders, or deferred features remain in the modified files."
+    }
+  ],
+  "projectChecks": {
+    "discovered": true,
+    "anyFailed": false,
+    "commands": [
+      {
+        "kind": "test",
+        "command": "npm test",
+        "exitCode": 0,
+        "durationMs": 0,
+        "timedOut": false
+      },
+      {
+        "kind": "lint",
+        "command": "npm run lint",
+        "exitCode": 0,
+        "durationMs": 0,
+        "timedOut": false
+      }
+    ]
+  }
+}

@@ -742,7 +742,7 @@ export default function LaunchPartnersPage() {
                 {btnText} <ArrowRight className="w-4 h-4" />
               </motion.a>
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Link to="/creator-os"
+                <Link to="/jvzoo"
                   className="inline-flex items-center gap-2 h-12 px-8 rounded-xl text-sm font-medium transition-all duration-200"
                   style={{ background: "hsl(217 91% 60% / 0.06)", border: "1px solid hsl(217 91% 60% / 0.2)", color: "hsl(217 91% 68%)" }}>
                   View Creator OS

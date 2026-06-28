@@ -103,7 +103,7 @@ export const PAGE_SEO: Record<string, { title: string; description: string; keyw
     description: "Become a RobinOS launch partner. Earn 60% recurring commission promoting the AI content operating system for creators.",
     keywords: "RobinOS launch partners, affiliate program, creator tool commission",
   },
-  "/creator-os": {
+  "/jvzoo": {
     title: "Creator OS — AI-Powered Content Operating System",
     description: "RobinOS Creator OS: the complete AI workflow for modern creators. Trend scanning, script generation, voice studio, and content intelligence in one platform.",
   },

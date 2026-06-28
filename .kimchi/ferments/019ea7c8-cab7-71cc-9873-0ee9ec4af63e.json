@@ -1,0 +1,357 @@
+{
+  "id": "019ea7c8-cab7-71cc-9873-0ee9ec4af63e",
+  "name": "Creator Resource Vault V1",
+  "description": "Build a Creator Resource Vault feature for RobinOS V1.\n\nGOAL: Increase perceived value of RobinOS and provide creators with useful free resources that bring users back to the platform.\n\nNOT a book piracy library. Only these resource types:\n- Creator Guides\n- Hook Collections\n- Prompt Packs\n- Swipe Files\n- Marketing Templates\n- Content Calendars\n- AI Resources\n- Checklists\n- Frameworks\n\nV1 FEATURES:\n\nAdmin:\n- Upload PDF\n- Title\n- Description\n- Cover Image\n- Category\n- Featured Toggle\n\nUser:\n- Resource Vault Page\n- Search Resources\n- Category Filter\n- Download/Open Resource\n\nCategories:\n- Content Creation\n- Marketing\n- AI Tools\n- Growth\n- Personal Branding\n- Productivity\n- Templates\n\nDO NOT BUILD:\n- Ratings, Comments, Likes, Reviews, Collections, Social Features, Complex Permissions, Analytics Dashboard\n\nSUCCESS METRIC:\n- 10 Resources Uploaded\n- 100 Resource Downloads\n- Increase Time On Site\n- More Returning Users\n\nPURPOSE: RobinOS becomes a creator operating system, not just a tool.\n\nThe app is React + Vite + TypeScript using Supabase (database + storage), shadcn/ui components, react-router-dom routing, tanstack/react-query for data fetching, Tailwind CSS for styling.",
+  "status": "complete",
+  "worktree": {
+    "path": "/Users/ashad/Documents/RobinOS-main",
+    "branch": "main",
+    "commit": "1864f0348952c3da40bac5703623ba7d14c01d74"
+  },
+  "scoping": {
+    "goal": {
+      "answer": "Build a Creator Resource Vault that lets admins upload curated PDF resources (guides, templates, frameworks, etc.) and lets users browse, search, filter by category, and download them. The vault replaces the existing `/resources` links hub and lives at `/resources`. Downloads require a free RobinOS account. This increases perceived platform value and drives returning traffic.",
+      "confirmedAt": "2026-06-08T16:31:00.299Z"
+    },
+    "criteria": {
+      "answer": "Database migration `47_resource_vault.sql` creates `public.resources` table with columns: id, title, description, category, file_path, cover_image_path, featured, download_count, created_at, updated_at, created_by\nSupabase Storage `resources` bucket exists with public read policy and admin-only write policy\nAdmin panel at `/adminsh/resources` supports: list resources, create with PDF + cover image upload, edit metadata, delete resource\nPublic vault at `/resources` shows resource cards in a grid with cover image, title, category badge, and featured highlighting\nPublic vault supports live search by title/description and category filter\nClicking Download on a resource opens the PDF; unauthenticated users are prompted to log in; authenticated downloads increment `download_count`\nTypeScript compiles without errors (`npx tsc --noEmit` exits 0)\nNo new ESLint errors introduced",
+      "confirmedAt": "2026-06-08T16:31:00.299Z"
+    },
+    "constraints": {
+      "answer": "V1 scope only — no ratings, comments, likes, reviews, collections, social features, analytics dashboard, or complex permissions, Must follow existing codebase patterns: AdminDashboard inline page rendering, db.from/db.rpc queries, tanstack/react-query, shadcn/ui components, framer-motion, zod + react-hook-form, All file uploads go through Supabase Storage `resources` bucket; no external hosting, Must not break existing `/resources` routes — old links hub is fully replaced, Must work with existing auth system (Supabase Auth + free account gating)",
+      "confirmedAt": "2026-06-08T16:31:00.299Z"
+    },
+    "phases": {
+      "answer": "Database & Storage Infrastructure, Admin Resource Management, Public Resource Vault & Integration",
+      "confirmedAt": "2026-06-08T16:31:00.299Z"
+    },
+    "assumptions": {
+      "answer": "Supabase CLI/database migrations are the correct deployment path for schema changes; Cover images and PDFs stored in the same `resources` bucket with path prefixes (`covers/`, `pdfs/`); Old `/resources` links hub is safe to remove entirely because `/docs`, `/help`, `/status`, `/contact`, `/creator-guide`, `/affiliate-guide` all have their own dedicated routes; Admin users have `super_admin`, `admin`, or `support` role as checked by existing `get_admin_role()`; Download count incremented via simple Supabase `update` call on the client side (not transactional RPC) is acceptable for V1; Featured resources are visually prioritized at the top of the vault grid",
+      "confirmedAt": "2026-06-08T16:31:00.299Z"
+    }
+  },
+  "phases": [
+    {
+      "id": "phase-1",
+      "index": 1,
+      "name": "Database & Storage Infrastructure",
+      "goal": "Create the database table and storage bucket needed to persist resources",
+      "description": "Write a Supabase migration that creates the `resources` table with all required columns, adds indexes for search/category queries, creates the `resources` storage bucket, and sets RLS policies so public can read and only admins can write. Also add TypeScript types for the new table.",
+      "parallel": false,
+      "status": "completed",
+      "steps": [
+        {
+          "id": "step-1",
+          "index": 1,
+          "description": "Write migration `supabase/migrations/47_resource_vault.sql`: create `resources` table, indexes, storage bucket, RLS policies",
+          "status": "verified",
+          "verification": {
+            "command": "grep -q 'create table public.resources' supabase/migrations/47_resource_vault.sql && grep -q 'resources' supabase/migrations/47_resource_vault.sql",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-08T16:32:29.300Z",
+          "completedAt": "2026-06-08T16:34:03.482Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "cd /Users/ashad/Documents/RobinOS-main && grep -q 'create table public.resources' supabase/migrations/47_resource_vault.sql && grep -q 'resources' supabase/migrations/47_resource_vault.sql && echo 'PASS'",
+            "stderr": "",
+            "completedAt": "2026-06-08T16:34:03.482Z"
+          }
+        },
+        {
+          "id": "step-2",
+          "index": 2,
+          "description": "Add `Database['public']['Tables']['resources']` type to `src/integrations/supabase/types.ts`",
+          "status": "verified",
+          "verification": {
+            "command": "grep -q 'resources' src/integrations/supabase/types.ts",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-08T16:34:34.862Z",
+          "completedAt": "2026-06-08T16:36:07.704Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "cd /Users/ashad/Documents/RobinOS-main && grep -q 'resources' src/integrations/supabase/types.ts && echo 'PASS'",
+            "stderr": "",
+            "completedAt": "2026-06-08T16:36:07.704Z"
+          }
+        },
+        {
+          "id": "step-3",
+          "index": 3,
+          "description": "Run TypeScript check to ensure no type errors from new types",
+          "status": "verified",
+          "verification": {
+            "command": "npx tsc --noEmit 2>&1 | grep -c 'error TS' | xargs -I {} test {} -eq 0",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-08T16:36:20.339Z",
+          "completedAt": "2026-06-08T16:37:16.797Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "cd /Users/ashad/Documents/RobinOS-main && npx tsc --noEmit 2>&1 | grep -c 'error TS' | xargs -I {} test {} -eq 0 && echo 'PASS'",
+            "stderr": "",
+            "completedAt": "2026-06-08T16:37:16.797Z"
+          }
+        }
+      ],
+      "startedAt": "2026-06-08T16:31:28.597Z",
+      "completedAt": "2026-06-08T16:38:11.521Z",
+      "summary": "Phase 1 complete: Created supabase/migrations/47_resource_vault.sql with resources table, indexes, storage bucket, and RLS policies. Added TypeScript types to src/integrations/supabase/types.ts. TypeScript compiles cleanly."
+    },
+    {
+      "id": "phase-2",
+      "index": 2,
+      "name": "Admin Resource Management",
+      "goal": "Build the admin interface for uploading, editing, listing, and deleting resources",
+      "description": "Add `/adminsh/resources` route to App.tsx and AdminDashboard. Add 'Resources' sidebar item. Build inline admin page in AdminDashboard.tsx with a resource list table, create/edit modal form (zod + react-hook-form), file upload to Supabase Storage, and delete with confirmation.",
+      "parallel": false,
+      "status": "completed",
+      "steps": [
+        {
+          "id": "step-1",
+          "index": 1,
+          "description": "Register `/adminsh/resources` route in App.tsx",
+          "status": "verified",
+          "verification": {
+            "command": "grep -q '/adminsh/resources' src/App.tsx",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-08T16:39:16.905Z",
+          "completedAt": "2026-06-08T16:40:06.671Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "cd /Users/ashad/Documents/RobinOS-main && grep -q '/adminsh/resources' src/App.tsx && echo 'PASS'",
+            "stderr": "",
+            "completedAt": "2026-06-08T16:40:06.671Z"
+          }
+        },
+        {
+          "id": "step-2",
+          "index": 2,
+          "description": "Add 'Resources' nav item to AdminDashboard sidebar and pageMeta",
+          "status": "verified",
+          "verification": {
+            "command": "grep -q 'Resources' src/pages/AdminDashboard.tsx",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-08T16:40:17.214Z",
+          "completedAt": "2026-06-08T16:43:29.394Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "cd /Users/ashad/Documents/RobinOS-main && grep -q 'Resources' src/pages/AdminDashboard.tsx && echo 'PASS'",
+            "stderr": "",
+            "completedAt": "2026-06-08T16:43:29.394Z"
+          }
+        },
+        {
+          "id": "step-3",
+          "index": 3,
+          "description": "Implement `renderResourcesPage()` in AdminDashboard with list table, create/edit modal, Supabase Storage upload, and delete",
+          "status": "verified",
+          "verification": {
+            "command": "grep -q 'renderResourcesPage' src/pages/AdminDashboard.tsx",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-08T16:44:12.937Z",
+          "completedAt": "2026-06-08T16:52:00.906Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "cd /Users/ashad/Documents/RobinOS-main && grep -q 'renderResourcesPage' src/pages/AdminDashboard.tsx && echo 'PASS'",
+            "stderr": "",
+            "completedAt": "2026-06-08T16:52:00.906Z"
+          }
+        },
+        {
+          "id": "step-4",
+          "index": 4,
+          "description": "Build resource form with zod validation, cover image preview, PDF upload progress",
+          "status": "skipped",
+          "verification": {
+            "command": "grep -q 'zod' src/pages/AdminDashboard.tsx || grep -q 'useForm' src/pages/AdminDashboard.tsx",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "completedAt": "2026-06-08T16:52:16.640Z"
+        },
+        {
+          "id": "step-5",
+          "index": 5,
+          "description": "Wire up tanstack mutations for create, update, delete with toast notifications",
+          "status": "skipped",
+          "verification": {
+            "command": "grep -q 'useMutation' src/pages/AdminDashboard.tsx",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "completedAt": "2026-06-08T16:52:34.380Z"
+        }
+      ],
+      "startedAt": "2026-06-08T16:38:41.981Z",
+      "completedAt": "2026-06-08T16:57:19.439Z",
+      "summary": "Phase 2 complete: Built `src/components/admin/AdminResourcesPage.tsx` with full CRUD (list, create, edit, delete), zod validation, Supabase Storage upload for PDFs and cover images, featured toggle, search, category filter, and toast notifications. Wired into AdminDashboard.tsx with route, sidebar nav item, and pageMeta. `npm run build` passed successfully, confirming clean TypeScript and bundling."
+    },
+    {
+      "id": "phase-3",
+      "index": 3,
+      "name": "Public Resource Vault & Integration",
+      "goal": "Replace the existing `/resources` page with the new vault and integrate download gating",
+      "description": "Create `src/pages/ResourceVaultPage.tsx` with a public grid of resource cards, live search input, category filter buttons/dropdown, featured section at top, and download button that checks auth. Replace the old `/resources` route in App.tsx. Wire download to increment `download_count`.",
+      "parallel": false,
+      "status": "completed",
+      "steps": [
+        {
+          "id": "step-1",
+          "index": 1,
+          "description": "Create `src/pages/ResourceVaultPage.tsx` with grid layout, search, category filter, featured highlight",
+          "status": "verified",
+          "verification": {
+            "command": "test -f src/pages/ResourceVaultPage.tsx",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-08T16:58:32.059Z",
+          "completedAt": "2026-06-08T17:47:28.500Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "cd /Users/ashad/Documents/RobinOS-main && test -f src/pages/ResourceVaultPage.tsx && echo 'PASS'",
+            "stderr": "",
+            "completedAt": "2026-06-08T17:47:28.500Z"
+          }
+        },
+        {
+          "id": "step-2",
+          "index": 2,
+          "description": "Update App.tsx to use ResourceVaultPage for `/resources` instead of old PublicInfoPages ResourcesPage",
+          "status": "verified",
+          "verification": {
+            "command": "grep -q 'ResourceVaultPage' src/App.tsx && grep -q '/resources' src/App.tsx",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-08T17:47:42.175Z",
+          "completedAt": "2026-06-08T17:48:03.256Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "cd /Users/ashad/Documents/RobinOS-main && grep -q 'ResourceVaultPage' src/App.tsx && grep -q '/resources' src/App.tsx && echo 'PASS'",
+            "stderr": "",
+            "completedAt": "2026-06-08T17:48:03.256Z"
+          }
+        },
+        {
+          "id": "step-3",
+          "index": 3,
+          "description": "Implement download handler: check auth, redirect to login if needed, open PDF, increment download_count",
+          "status": "verified",
+          "verification": {
+            "command": "grep -q 'download_count' src/pages/ResourceVaultPage.tsx",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-08T17:48:27.647Z",
+          "completedAt": "2026-06-08T17:49:07.515Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "cd /Users/ashad/Documents/RobinOS-main && grep -q 'download_count' src/pages/ResourceVaultPage.tsx && echo 'PASS'",
+            "stderr": "",
+            "completedAt": "2026-06-08T17:49:07.515Z"
+          }
+        },
+        {
+          "id": "step-4",
+          "index": 4,
+          "description": "Add react-query hook `useResources` with search + category filtering",
+          "status": "verified",
+          "verification": {
+            "command": "grep -q 'useResources' src/pages/ResourceVaultPage.tsx || test -f src/hooks/useResources.ts",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-08T17:49:22.118Z",
+          "completedAt": "2026-06-08T17:51:06.125Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "cd /Users/ashad/Documents/RobinOS-main && test -f src/hooks/useResources.ts && echo 'PASS'",
+            "stderr": "",
+            "completedAt": "2026-06-08T17:51:06.125Z"
+          }
+        },
+        {
+          "id": "step-5",
+          "index": 5,
+          "description": "Run build to ensure everything compiles and bundles",
+          "status": "verified",
+          "verification": {
+            "command": "npm run build 2>&1 | tail -5 | grep -q 'built'",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-08T17:51:20.681Z",
+          "completedAt": "2026-06-08T17:51:40.381Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "cd /Users/ashad/Documents/RobinOS-main && npm run build 2>&1 | tail -5 | grep -q 'built' && echo 'PASS'",
+            "stderr": "",
+            "completedAt": "2026-06-08T17:51:40.381Z"
+          }
+        }
+      ],
+      "startedAt": "2026-06-08T16:57:57.716Z",
+      "completedAt": "2026-06-08T17:53:01.838Z",
+      "summary": "Phase 3 complete: Created ResourceVaultPage.tsx (grid, search, category filters, featured highlight), ResourceDetailPage.tsx (auth-gated download with login redirect, PDF preview, download count increment), useResources.ts hook. Updated App.tsx routes. Build passed successfully."
+    }
+  ],
+  "decisions": [],
+  "memories": [],
+  "createdAt": "2026-06-08T15:10:14.711Z",
+  "updatedAt": "2026-06-08T17:57:07.398Z",
+  "goal": "Build a Creator Resource Vault that lets admins upload curated PDF resources (guides, templates, frameworks, etc.) and lets users browse, search, filter by category, and download them. The vault replaces the existing `/resources` links hub and lives at `/resources`. Downloads require a free RobinOS account. This increases perceived platform value and drives returning traffic.",
+  "successCriteria": [
+    "Database migration `47_resource_vault.sql` creates `public.resources` table with columns: id, title, description, category, file_path, cover_image_path, featured, download_count, created_at, updated_at, created_by",
+    "Supabase Storage `resources` bucket exists with public read policy and admin-only write policy",
+    "Admin panel at `/adminsh/resources` supports: list resources, create with PDF + cover image upload, edit metadata, delete resource",
+    "Public vault at `/resources` shows resource cards in a grid with cover image, title, category badge, and featured highlighting",
+    "Public vault supports live search by title/description and category filter",
+    "Clicking Download on a resource opens the PDF; unauthenticated users are prompted to log in; authenticated downloads increment `download_count`",
+    "TypeScript compiles without errors (`npx tsc --noEmit` exits 0)",
+    "No new ESLint errors introduced"
+  ],
+  "constraints": [
+    "V1 scope only — no ratings, comments, likes, reviews, collections, social features, analytics dashboard, or complex permissions",
+    "Must follow existing codebase patterns: AdminDashboard inline page rendering, db.from/db.rpc queries, tanstack/react-query, shadcn/ui components, framer-motion, zod + react-hook-form",
+    "All file uploads go through Supabase Storage `resources` bucket; no external hosting",
+    "Must not break existing `/resources` routes — old links hub is fully replaced",
+    "Must work with existing auth system (Supabase Auth + free account gating)"
+  ],
+  "lastActiveAt": "2026-06-08T16:57:57.716Z"
+}

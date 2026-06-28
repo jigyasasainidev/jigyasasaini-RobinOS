@@ -28,7 +28,7 @@ Allow: /disclaimer
 Allow: /trust-safety
 Allow: /acceptable-use-policy
 Allow: /report-abuse
-Allow: /creator-os
+Allow: /jvzoo
 Allow: /launch-partners
 Allow: /blog
 Allow: /minidemo

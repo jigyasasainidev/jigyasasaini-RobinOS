@@ -66,7 +66,7 @@ const TrustSafetyPage = lazy(() => import("./pages/public/TrustSafetyPage").then
 const WelcomePage = lazy(() => import("./pages/public/WelcomePage").then((m) => ({ default: m.WelcomePage })));
 const AcceptableUsePolicyPage = lazy(() => import("./pages/public/AcceptableUsePolicyPage").then((m) => ({ default: m.AcceptableUsePolicyPage })));
 const ReportAbusePage = lazy(() => import("./pages/public/ReportAbusePage").then((m) => ({ default: m.ReportAbusePage })));
-const CreatorOSPage = lazy(lazyWithRetry(() => import("./pages/public/CreatorOSPage"), "creator-os"));
+const CreatorOSPage = lazy(lazyWithRetry(() => import("./pages/public/CreatorOSPage"), "jvzoo"));
 const LaunchPartnersPage = lazy(lazyWithRetry(() => import("./pages/public/LaunchPartnersPage"), "launch-partners"));
 const BlogPage = lazy(lazyWithRetry(() => import("./pages/blog/BlogPage"), "blog-index"));
 const BlogPostPage = lazy(lazyWithRetry(() => import("./pages/blog/BlogPostPage"), "blog-post"));
@@ -255,7 +255,7 @@ const App = () => (
               <Route path="/welcome" element={<WelcomePage />} />
               <Route path="/acceptable-use-policy" element={<AcceptableUsePolicyPage />} />
               <Route path="/report-abuse" element={<ReportAbusePage />} />
-              <Route path="/creator-os" element={<CreatorOSPage />} />
+              <Route path="/jvzoo" element={<CreatorOSPage />} />
               <Route path="/jvzooaffiliate" element={<LaunchPartnersPage />} />
               <Route path="/launch-partners" element={<LaunchPartnersPage />} />
               <Route path="/blog" element={<BlogPage />} />

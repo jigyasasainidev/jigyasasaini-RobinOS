@@ -1992,7 +1992,7 @@ const AdminDashboard = () => {
                   onChange={(e) => setSettingsDraft((s) => ({ ...s, creator_os_page_enabled: e.target.value === "true" }))}
                   className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground"
                 >
-                  <option value="true">● VISIBLE — /creator-os publicly accessible</option>
+                  <option value="true">● VISIBLE — /jvzoo publicly accessible</option>
                   <option value="false">⬤ HIDDEN — redirects to homepage</option>
                 </select>
               </div>
