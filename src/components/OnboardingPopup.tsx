@@ -82,22 +82,48 @@ export const OnboardingPopup = ({ onComplete }: OnboardingPopupProps) => {
   const [leaving, setLeaving] = useState(false);
 
   const persistAndClose = useCallback((permanent = false) => {
+    // eslint-disable-next-line no-console
+    console.log("[Onboarding] persistAndClose called", { permanent, prefs });
     try {
+      // eslint-disable-next-line no-console
+      console.log("[Onboarding] before localStorage.setItem STORAGE_KEY_PREFS");
       localStorage.setItem(STORAGE_KEY_PREFS, JSON.stringify(prefs));
+      // eslint-disable-next-line no-console
+      console.log("[Onboarding] after localStorage.setItem STORAGE_KEY_PREFS");
+
+      // eslint-disable-next-line no-console
+      console.log("[Onboarding] before localStorage.setItem STORAGE_KEY_DONE");
       localStorage.setItem(STORAGE_KEY_DONE, "true");
-      if (permanent) localStorage.setItem(STORAGE_KEY_PERM, "true");
-    } catch {
-      // localStorage may be disabled or full; closing the modal is more
-      // important than persisting onboarding flags.
+      // eslint-disable-next-line no-console
+      console.log("[Onboarding] after localStorage.setItem STORAGE_KEY_DONE");
+
+      if (permanent) {
+        // eslint-disable-next-line no-console
+        console.log("[Onboarding] before localStorage.setItem STORAGE_KEY_PERM");
+        localStorage.setItem(STORAGE_KEY_PERM, "true");
+        // eslint-disable-next-line no-console
+        console.log("[Onboarding] after localStorage.setItem STORAGE_KEY_PERM");
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[Onboarding] localStorage write failed", err);
     }
+    // eslint-disable-next-line no-console
+    console.log("[Onboarding] before onComplete()");
     onComplete();
+    // eslint-disable-next-line no-console
+    console.log("[Onboarding] after onComplete()");
   }, [prefs, onComplete]);
 
   const next = () => {
     if (step < TOTAL_STEPS - 1) setStep((s) => s + 1);
   };
 
-  const dismiss = () => persistAndClose(false);
+  const dismiss = () => {
+    // eslint-disable-next-line no-console
+    console.log("[Onboarding] dismiss() called");
+    persistAndClose(false);
+  };
 
   const toggleGoal = (id: string) => {
     setPrefs((p) => ({
@@ -413,6 +439,8 @@ export const OnboardingPopup = ({ onComplete }: OnboardingPopupProps) => {
           <button
             type="button"
             onClick={(e) => {
+              // eslint-disable-next-line no-console
+              console.log("[Onboarding] X button onClick fired");
               e.stopPropagation();
               dismiss();
             }}

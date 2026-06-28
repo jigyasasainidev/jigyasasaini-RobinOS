@@ -94,11 +94,22 @@ const DashboardLayout = () => {
 
   // Show onboarding for new users
   useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log("[DashboardLayout] onboarding useEffect executed", {
+      hasUser: !!user,
+      loading,
+      permanent: localStorage.getItem("robinos_onboarding_done_permanent"),
+      session: localStorage.getItem("robinos_onboarding_done"),
+    });
     if (user && !loading) {
       const permanent = localStorage.getItem("robinos_onboarding_done_permanent");
       const session = localStorage.getItem("robinos_onboarding_done");
       if (!permanent && !session) {
+        // eslint-disable-next-line no-console
+        console.log("[DashboardLayout] about to call setShowOnboarding(true)");
         setShowOnboarding(true);
+        // eslint-disable-next-line no-console
+        console.log("[DashboardLayout] after setShowOnboarding(true)");
       }
     }
   }, [user, loading]);
@@ -132,7 +143,8 @@ const DashboardLayout = () => {
     setMaintenanceDismissed(true);
   };
 
-  const maintenanceActive = !!maintenanceQuery.data?.maintenance_mode;
+  // eslint-disable-next-line no-console
+  console.log("[DashboardLayout] render", { showOnboarding, hasUser: !!user, loading });
   const maintenanceMessage = maintenanceQuery.data?.announcement_banner?.trim() || "Platform maintenance is in progress. Some features may be temporarily limited.";
 
   if (loading) {
@@ -269,7 +281,17 @@ const DashboardLayout = () => {
       <RenewalReminder />
 
       {/* Onboarding popup for new users */}
-      {showOnboarding && <OnboardingPopup onComplete={() => setShowOnboarding(false)} />}
+      {showOnboarding && (
+        <OnboardingPopup
+          onComplete={() => {
+            // eslint-disable-next-line no-console
+            console.log("[DashboardLayout] onComplete called, about to setShowOnboarding(false)");
+            setShowOnboarding(false);
+            // eslint-disable-next-line no-console
+            console.log("[DashboardLayout] after setShowOnboarding(false)");
+          }}
+        />
+      )}
     </div>
   );
 };
