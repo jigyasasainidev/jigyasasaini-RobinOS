@@ -1,0 +1,171 @@
+-- ============================================================
+-- MIGRATION 49 — Remove onboarding backend infrastructure
+-- ============================================================
+-- Drops the onboarding_states table, its RLS policies, its
+-- updated_at trigger, the profiles.onboarding_completed column,
+-- and removes the onboarding insert from initialize_user_account().
+--
+-- Order matters: the current function body still inserts into
+-- public.onboarding_states, so we re-create the function first
+-- and only then drop the table.
+-- ============================================================
+
+-- ── 1. Recreate initialize_user_account(p_referred_by) without onboarding insert ─
+-- Body copied verbatim from supabase/migrations/39_fix_affiliate_conversions_schema.sql
+-- (lines 60-188), with ONLY the "Ensure onboarding state exists" block removed.
+
+create or replace function public.initialize_user_account(p_referred_by text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id               uuid := auth.uid();
+  v_email                 text := nullif(coalesce(auth.jwt() ->> 'email', ''), '');
+  v_display_name          text := nullif(
+    coalesce(
+      auth.jwt() -> 'user_metadata' ->> 'full_name',
+      auth.jwt() -> 'user_metadata' ->> 'name',
+      auth.jwt() ->> 'email'
+    ), ''
+  );
+  v_referral_code         text;
+  v_existing_referral_code text;
+  v_existing_referred_by  text;
+  v_clean_referred_by     text := nullif(upper(trim(coalesce(p_referred_by, ''))), '');
+  v_affiliate_user_id     uuid;
+  v_commission_rate       numeric;
+begin
+  if v_user_id is null then
+    return jsonb_build_object('ok', false, 'error', 'Unauthorized', 'code', 'AUTH_REQUIRED');
+  end if;
+
+  -- Get existing profile state
+  select referral_code, referred_by_code
+  into v_existing_referral_code, v_existing_referred_by
+  from public.profiles
+  where user_id = v_user_id;
+
+  v_referral_code := coalesce(v_existing_referral_code, public.generate_referral_code());
+
+  -- Prevent self-referral
+  if v_clean_referred_by = upper(v_referral_code) then
+    v_clean_referred_by := null;
+  end if;
+
+  -- Upsert profile
+  insert into public.profiles (
+    user_id, email, display_name, full_name,
+    referral_code, referred_by_code,
+    subscription_tier, current_plan
+  )
+  values (
+    v_user_id, v_email, v_display_name, v_display_name,
+    upper(v_referral_code), v_clean_referred_by,
+    'free', 'free'
+  )
+  on conflict (user_id) do update set
+    email        = coalesce(public.profiles.email,        excluded.email),
+    display_name = coalesce(public.profiles.display_name, excluded.display_name),
+    full_name    = coalesce(public.profiles.full_name,    excluded.full_name),
+    referral_code    = coalesce(public.profiles.referral_code,    excluded.referral_code),
+    referred_by_code = coalesce(public.profiles.referred_by_code, excluded.referred_by_code),
+    updated_at   = now();
+
+  -- Ensure affiliate profile exists
+  perform public.ensure_affiliate_profile();
+
+  -- ── Referral attribution ──────────────────────────────────
+  if v_existing_referred_by is null and v_clean_referred_by is not null then
+
+    -- Find the affiliate who owns this referral code
+    select user_id into v_affiliate_user_id
+    from public.affiliate_profiles
+    where upper(referral_code) = v_clean_referred_by
+      and user_id <> v_user_id
+    limit 1;
+
+    if v_affiliate_user_id is not null then
+
+      -- Increment click counter
+      update public.affiliate_profiles
+         set total_clicks = coalesce(total_clicks, 0) + 1,
+             updated_at   = now()
+       where user_id = v_affiliate_user_id;
+
+      -- Read live commission rate
+      select coalesce(affiliate_commission_percent, 30) / 100.0
+        into v_commission_rate
+        from public.platform_settings
+       order by updated_at desc
+       limit 1;
+
+      v_commission_rate := coalesce(v_commission_rate, 0.30);
+
+      -- Insert signup conversion (idempotent via new unique constraint)
+      insert into public.affiliate_conversions (
+        affiliate_user_id, referred_user_id,
+        plan_code, billed_amount,
+        commission_rate, commission_amount,
+        referral_code, status
+      )
+      values (
+        v_affiliate_user_id, v_user_id,
+        'signup', 0,
+        v_commission_rate, 0,
+        v_clean_referred_by, 'pending'
+      )
+      on conflict (affiliate_user_id, referred_user_id, plan_code) do nothing;
+
+      -- Update affiliate profile totals
+      update public.affiliate_profiles
+         set total_conversions = coalesce(total_conversions, 0) + 1,
+             updated_at        = now()
+       where user_id = v_affiliate_user_id;
+
+    end if;
+  end if;
+
+  -- Ensure free subscription row exists
+  insert into public.user_subscriptions (user_id, plan, status, amount, currency)
+  values (v_user_id, 'free', 'active', 0, 'USD')
+  on conflict (user_id) do nothing;
+
+  return jsonb_build_object('ok', true);
+exception
+  when others then
+    return jsonb_build_object('ok', false, 'error', sqlerrm, 'code', sqlstate);
+end;
+$$;
+
+-- ── 2. Recreate the no-arg overload as a thin wrapper ──────
+-- Kept as a schema-cache fallback for callers that don't pass a referral code.
+
+create or replace function public.initialize_user_account()
+returns jsonb
+language sql
+security definer
+set search_path = public
+as $$
+  select public.initialize_user_account(null);
+$$;
+
+-- Preserve grants exactly as in the previous definition.
+grant execute on function public.initialize_user_account(text) to authenticated, anon;
+grant execute on function public.initialize_user_account()     to authenticated, anon;
+
+-- ── 3. Drop RLS policies on public.onboarding_states ───────
+drop policy if exists "Users can view own onboarding state"   on public.onboarding_states;
+drop policy if exists "Users can manage own onboarding state" on public.onboarding_states;
+drop policy if exists "Admins can manage onboarding state"    on public.onboarding_states;
+
+-- ── 4. Drop the updated_at trigger ─────────────────────────
+drop trigger if exists trg_onboarding_states_updated_at on public.onboarding_states;
+
+-- ── 5. Drop the onboarding_states table ────────────────────
+-- No foreign keys from other tables reference this object, so a plain drop is safe.
+drop table if exists public.onboarding_states cascade;
+
+-- ── 6. Drop the onboarding_completed column from profiles ──
+alter table public.profiles drop column if exists onboarding_completed;

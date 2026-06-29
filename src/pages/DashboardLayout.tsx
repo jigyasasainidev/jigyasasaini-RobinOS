@@ -6,7 +6,6 @@ import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { useFreeTrialStatus, useProfile, useSubscriptionExpiry } from "@/hooks/useProfile";
 import { useEntitlementsLoading, useIsFree } from "@/hooks/useEntitlements";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
-import { OnboardingPopup } from "@/components/OnboardingPopup";
 import { RenewalReminder, RenewalBannerInline } from "@/components/RenewalReminder";
 import { db } from "@/lib/cloudDb";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -27,7 +26,6 @@ const DashboardLayout = () => {
   const isEntitlementsLoading = useEntitlementsLoading();
   const isFreeEntitlement = useIsFree();
   const [showUpgrade, setShowUpgrade] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const [maintenanceDismissed, setMaintenanceDismissed] = useState(false);
 
   const maintenanceQuery = useQuery({
@@ -91,28 +89,6 @@ const DashboardLayout = () => {
       downgrade();
     }
   }, [isEntitlementsLoading, subExpired, user, tier, queryClient]);
-
-  // Show onboarding for new users
-  useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log("[DashboardLayout] onboarding useEffect executed", {
-      hasUser: !!user,
-      loading,
-      permanent: localStorage.getItem("robinos_onboarding_done_permanent"),
-      session: localStorage.getItem("robinos_onboarding_done"),
-    });
-    if (user && !loading) {
-      const permanent = localStorage.getItem("robinos_onboarding_done_permanent");
-      const session = localStorage.getItem("robinos_onboarding_done");
-      if (!permanent && !session) {
-        // eslint-disable-next-line no-console
-        console.log("[DashboardLayout] about to call setShowOnboarding(true)");
-        setShowOnboarding(true);
-        // eslint-disable-next-line no-console
-        console.log("[DashboardLayout] after setShowOnboarding(true)");
-      }
-    }
-  }, [user, loading]);
 
   useEffect(() => {
     if (!user) return;
@@ -279,18 +255,6 @@ const DashboardLayout = () => {
       {/* Renewal reminder — popup for 3d/1d/grace, banner for 7d */}
       <RenewalReminder />
 
-      {/* Onboarding popup for new users */}
-      {showOnboarding && (
-        <OnboardingPopup
-          onComplete={() => {
-            // eslint-disable-next-line no-console
-            console.log("[DashboardLayout] onComplete called, about to setShowOnboarding(false)");
-            setShowOnboarding(false);
-            // eslint-disable-next-line no-console
-            console.log("[DashboardLayout] after setShowOnboarding(false)");
-          }}
-        />
-      )}
     </div>
   );
 };
