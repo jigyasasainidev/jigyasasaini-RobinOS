@@ -913,6 +913,8 @@ const AdminDashboard = () => {
         jvzoo_affiliate_button_text:    platformSettings.jvzoo_affiliate_button_text ?? "Join Affiliate Program",
         jvzoo_affiliate_login_url:      platformSettings.jvzoo_affiliate_login_url ?? "https://www.tryrobin.xyz/login",
         affiliate_resources_url:        platformSettings.affiliate_resources_url ?? "",
+        warriorplus_page_enabled:       platformSettings.warriorplus_page_enabled ?? false,
+        warriorplus_demo_video_url:     platformSettings.warriorplus_demo_video_url ?? "",
       });
     }
   }, [platformSettings]);
@@ -1339,6 +1341,8 @@ const AdminDashboard = () => {
         jvzoo_affiliate_button_text:    settingsDraft.jvzoo_affiliate_button_text?.trim() || "Join Affiliate Program",
         jvzoo_affiliate_login_url:      settingsDraft.jvzoo_affiliate_login_url?.trim() || "https://www.tryrobin.xyz/login",
         affiliate_resources_url:        settingsDraft.affiliate_resources_url?.trim() || null,
+        warriorplus_page_enabled:       !!settingsDraft.warriorplus_page_enabled,
+        warriorplus_demo_video_url:     settingsDraft.warriorplus_demo_video_url?.trim() || null,
       };
 
       if (platformSettings?.id) {
