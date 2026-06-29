@@ -92,6 +92,7 @@ function resolveVideoEmbed(url: string): { type: "youtube" | "vimeo" | "loom" | 
 // ── Demo video ─────────────────────────────────────────────
 function DemoVideo({ videoUrl }: { videoUrl: string | null }) {
   const resolved = resolveVideoEmbed(videoUrl ?? "");
+  console.log("resolved =", resolved);
   return (
     <motion.div
       id="demo-video"
@@ -481,6 +482,7 @@ export default function WarriorPlusPage() {
           {/* Right — Hero video player (live demo when configured, placeholder otherwise) */}
           <motion.div initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7, delay: 0.15 }}
             className="relative hidden lg:block">
+            {console.log("videoUrl =", videoUrl)}
             <DemoVideo videoUrl={videoUrl} />
           </motion.div>
         </div>
