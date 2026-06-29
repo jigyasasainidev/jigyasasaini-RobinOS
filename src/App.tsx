@@ -67,6 +67,7 @@ const WelcomePage = lazy(() => import("./pages/public/WelcomePage").then((m) => 
 const AcceptableUsePolicyPage = lazy(() => import("./pages/public/AcceptableUsePolicyPage").then((m) => ({ default: m.AcceptableUsePolicyPage })));
 const ReportAbusePage = lazy(() => import("./pages/public/ReportAbusePage").then((m) => ({ default: m.ReportAbusePage })));
 const CreatorOSPage = lazy(lazyWithRetry(() => import("./pages/public/CreatorOSPage"), "jvzoo"));
+const WarriorPlusPage = lazy(lazyWithRetry(() => import("./pages/public/WarriorPlusPage"), "warriorplus"));
 const LaunchPartnersPage = lazy(lazyWithRetry(() => import("./pages/public/LaunchPartnersPage"), "launch-partners"));
 const BlogPage = lazy(lazyWithRetry(() => import("./pages/blog/BlogPage"), "blog-index"));
 const BlogPostPage = lazy(lazyWithRetry(() => import("./pages/blog/BlogPostPage"), "blog-post"));
@@ -256,6 +257,7 @@ const App = () => (
               <Route path="/acceptable-use-policy" element={<AcceptableUsePolicyPage />} />
               <Route path="/report-abuse" element={<ReportAbusePage />} />
               <Route path="/jvzoo" element={<CreatorOSPage />} />
+              <Route path="/warriorplus" element={<WarriorPlusPage />} />
               <Route path="/jvzooaffiliate" element={<LaunchPartnersPage />} />
               <Route path="/launch-partners" element={<LaunchPartnersPage />} />
               <Route path="/blog" element={<BlogPage />} />

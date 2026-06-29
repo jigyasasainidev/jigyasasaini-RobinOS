@@ -1371,6 +1371,8 @@ const AdminDashboard = () => {
         jvzoo_affiliate_button_text:    savedPayload.jvzoo_affiliate_button_text ?? "Join Affiliate Program",
         jvzoo_affiliate_login_url:      savedPayload.jvzoo_affiliate_login_url ?? "https://www.tryrobin.xyz/login",
         resource_vault_enabled:         savedPayload.resource_vault_enabled,
+        warriorplus_page_enabled:       savedPayload.warriorplus_page_enabled,
+        warriorplus_demo_video_url:     savedPayload.warriorplus_demo_video_url ?? "",
       }));
 
       // Invalidate downstream consumers (public pages, affiliate page, etc.)
@@ -1979,6 +1981,33 @@ const AdminDashboard = () => {
                   className="h-9 text-sm"
                 />
                 <p className="text-[9px] font-mono text-muted-foreground/25 text-right">{settingsDraft.announcement_banner.length}/280</p>
+              </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard title="WarriorPlus Sales Page" subtitle="Independent /warriorplus marketplace page (separate from /jvzoo)">
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">WarriorPlus Page</p>
+                <select
+                  value={settingsDraft.warriorplus_page_enabled ? "true" : "false"}
+                  onChange={(e) => setSettingsDraft((s) => ({ ...s, warriorplus_page_enabled: e.target.value === "true" }))}
+                  className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground"
+                >
+                  <option value="false">⬤ HIDDEN — /warriorplus redirects to homepage</option>
+                  <option value="true">● VISIBLE — /warriorplus publicly accessible</option>
+                </select>
+                <p className="text-[9px] font-mono text-muted-foreground/25">Current: {settingsDraft.warriorplus_page_enabled ? "● VISIBLE" : "⬤ HIDDEN"} · Save to apply. Defaults to HIDDEN until WarriorPlus checkout URL is configured.</p>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/35">Demo Video URL</p>
+                <Input
+                  value={settingsDraft.warriorplus_demo_video_url}
+                  onChange={(e) => setSettingsDraft((s) => ({ ...s, warriorplus_demo_video_url: e.target.value }))}
+                  placeholder="https://youtube.com/watch?v=... or Vimeo / Loom / MP4"
+                  className="h-9 text-sm font-mono"
+                />
+                <p className="text-[9px] font-mono text-muted-foreground/25">YouTube, Vimeo, Loom, or direct MP4 URL. Leave empty to show placeholder. Independent from /jvzoo demo video.</p>
               </div>
             </div>
           </SectionCard>

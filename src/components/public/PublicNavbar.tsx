@@ -7,6 +7,7 @@ import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 const BASE_LINKS = [
   { label: "JVZoo", to: "/jvzoo", requiresSetting: "creator_os_page_enabled" as const },
+  { label: "WarriorPlus", to: "/warriorplus", requiresSetting: "warriorplus_page_enabled" as const },
   { label: "Blog",       to: "/blog" },
   { label: "Resources",  to: "/resources", requiresSetting: "resource_vault_enabled" as const },
   { label: "Pricing",    to: "/pricing" },
@@ -28,6 +29,10 @@ export function PublicNavbar() {
     if (link.requiresSetting === "creator_os_page_enabled") {
       // Default true — show unless explicitly disabled
       return settings ? settings.creator_os_page_enabled !== false : true;
+    }
+    if (link.requiresSetting === "warriorplus_page_enabled") {
+      // Default false — hide unless explicitly enabled
+      return settings ? settings.warriorplus_page_enabled === true : false;
     }
     if (link.requiresSetting === "resource_vault_enabled") {
       // Default true — show unless explicitly disabled
