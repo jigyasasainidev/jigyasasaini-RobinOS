@@ -289,17 +289,16 @@ export default function WarriorPlusPage() {
     }
   }, [settings, isLoading, navigate]);
 
-  if (isLoading) return null;
-  if (settings && settings.warriorplus_page_enabled === false) return null;
-
-  const videoUrl = settings?.warriorplus_demo_video_url ?? null;
-
   // Smoothly scroll to the Hero demo player and, where the provider allows,
   // kick off playback. For embedded players (YouTube / Vimeo / Loom) we
   // append &autoplay=1&mute=1 to the iframe src and reset it — browsers
   // only permit iframe autoplay when the player is muted. For MP4 we call
   // .play() directly. If autoplay is blocked, we fall back to focusing the
   // player so keyboard users land inside it.
+  //
+  // Declared BEFORE the early returns below to satisfy the Rules of Hooks:
+  // hook order must stay stable across renders, including the loading →
+  // loaded transition (where the early returns stop firing).
   const handleWatchDemo = useCallback(() => {
     const target = document.getElementById("demo-video");
     if (!target) return;
@@ -336,6 +335,11 @@ export default function WarriorPlusPage() {
 
     window.setTimeout(tryStartPlayback, 500);
   }, []);
+
+  if (isLoading) return null;
+  if (settings && settings.warriorplus_page_enabled === false) return null;
+
+  const videoUrl = settings?.warriorplus_demo_video_url ?? null;
 
   const faqs = [
     {
