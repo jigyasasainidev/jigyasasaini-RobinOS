@@ -321,6 +321,15 @@ export default function WarriorPlusPage() {
     }
   }, [settings, isLoading, navigate]);
 
+  // Strip any incoming #pricing hash so the page always opens at /warriorplus
+  // (do not auto-scroll to the pricing section on initial mount).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash === "#pricing") {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+  }, []);
+
   // Smoothly scroll to the Hero demo player and, where the provider allows,
   // kick off playback. For embedded players (YouTube / Vimeo / Loom) we
   // append &autoplay=1&mute=1 to the iframe src and reset it — browsers
@@ -481,7 +490,7 @@ export default function WarriorPlusPage() {
 
           {/* Right — Hero video player (live demo when configured, placeholder otherwise) */}
           <motion.div initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7, delay: 0.15 }}
-            className="relative hidden lg:block">
+            className="relative">
             {console.log("videoUrl =", videoUrl)}
             <DemoVideo videoUrl={videoUrl} />
           </motion.div>
@@ -551,8 +560,8 @@ export default function WarriorPlusPage() {
       <section className="relative z-10 px-4 py-20 sm:px-6 lg:px-8 max-w-[1240px] mx-auto">
         <Reveal className="text-center mb-12">
           <SectionLabel>Features</SectionLabel>
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mt-3 text-chrome">Everything you need. Nothing you don't.</h2>
-          <p className="text-muted-foreground max-w-xl mx-auto text-sm mt-3">
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mt-3 mb-3 text-chrome">Everything you need. Nothing you don't.</h2>
+          <p className="text-muted-foreground max-w-xl mx-auto text-sm">
             Eight production-grade tools, one operating system, zero feature gates.
           </p>
         </Reveal>
