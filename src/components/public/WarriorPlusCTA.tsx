@@ -1,20 +1,12 @@
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 // ─────────────────────────────────────────────────────────────────────────
-// PLACEHOLDER — REPLACE AFTER WARRIORPLUS MARKETPLACE APPROVAL
+// WarriorPlus checkout — official hoplink.
+// Single source of truth used by every WarriorPlusCTA on /warriorplus.
+// Update here only.
 // ─────────────────────────────────────────────────────────────────────────
-// Once the RobinOS product is approved on the WarriorPlus marketplace, the
-// official WarriorPlus checkout URL (or hoplink) must be inserted in place
-// of the value below. The same string is used everywhere WarriorPlusCTA
-// is rendered on /warriorplus, so changing it here is sufficient.
-//
-// Today the button points to https://tryrobin.xyz/warriorplus (the
-// sales-page URL itself) so visitors can still preview the page without
-// being bounced by a broken external link.
-// ─────────────────────────────────────────────────────────────────────────
-const WARRIORPLUS_CTA_DESTINATION = "https://tryrobin.xyz/warriorplus";
+const WARRIORPLUS_CHECKOUT_URL = "https://warriorplus.com/o2/buy/k03rn0/qg7sz4/d144t7";
 
 export interface WarriorPlusCTAProps {
   children: React.ReactNode;
@@ -33,14 +25,19 @@ export function WarriorPlusCTA({
 }: WarriorPlusCTAProps) {
   const isPrimary = variant === "primary";
 
+  const handleCheckout = () => {
+    window.location.href = WARRIORPLUS_CHECKOUT_URL;
+  };
+
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       className={cn("inline-block", fullWidth && "w-full")}
     >
-      <Link
-        to={WARRIORPLUS_CTA_DESTINATION}
+      <button
+        type="button"
+        onClick={handleCheckout}
         className={cn(
           "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white transition-all duration-300 relative overflow-hidden group",
           size === "default" && "h-12 px-8",
@@ -62,7 +59,7 @@ export function WarriorPlusCTA({
           />
         )}
         <span className="relative flex items-center gap-2">{children}</span>
-      </Link>
+      </button>
     </motion.div>
   );
 }

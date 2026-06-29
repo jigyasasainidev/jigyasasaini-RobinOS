@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 // submitted to the marketplace. Until then this placeholder is shown.
 // ─────────────────────────────────────────────────────────────────────────
 const WARRIORPLUS_DISCLAIMER_TEXT =
-  "WarriorPlus compliance disclaimer will be inserted before product submission.";
+  "Disclaimer: Results shown are not typical and are provided for demonstration purposes only. Your results will vary depending on your experience, effort, and market conditions. RobinOS is a software product and does not guarantee income or business success.";
 
 export interface WarriorPlusDisclaimerProps {
   className?: string;

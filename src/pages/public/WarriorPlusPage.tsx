@@ -214,7 +214,6 @@ function PricingCard({ delay }: { delay: number }) {
     "AI voice narration (ElevenLabs-grade)",
     "Multi-platform workflow builder",
     "Real-time signal & analytics dashboard",
-    "Commercial license — sell what you ship",
     "Priority email support",
     "14-day money-back guarantee",
   ];
@@ -444,11 +443,6 @@ export default function WarriorPlusPage() {
                   </span>
                 ))}
               </div>
-            </motion.div>
-            <motion.div className="absolute -top-4 -right-4 rounded-xl px-3 py-2 text-[10px] font-mono"
-              style={{ background: "hsl(28 32% 10%)", border: "1px solid hsl(28 28% 14%)", color: "hsl(172 70% 55%)" }}
-              animate={{ y: [0, -5, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}>
-              ↑ 12.4K creators shipping
             </motion.div>
             <motion.div className="absolute -bottom-4 -left-4 rounded-xl px-3 py-2 text-[10px] font-mono"
               style={{ background: "hsl(28 32% 10%)", border: "1px solid hsl(28 28% 14%)", color: "hsl(48 92% 55%)" }}
