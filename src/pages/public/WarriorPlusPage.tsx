@@ -47,13 +47,45 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 // ── Video embed resolver ───────────────────────────────────
 function resolveVideoEmbed(url: string): { type: "youtube" | "vimeo" | "loom" | "mp4" | null; embedUrl: string } {
   if (!url) return { type: null, embedUrl: "" };
-  const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  if (yt) return { type: "youtube", embedUrl: `https://www.youtube.com/embed/${yt[1]}?autoplay=0&rel=0&modestbranding=1` };
+
+  // ── YouTube — all common formats ─────────────────────────────
+  //   https://youtu.be/VIDEO_ID
+  //   https://www.youtube.com/watch?v=VIDEO_ID[&t=…][&list=…]
+  //   https://youtube.com/watch?v=VIDEO_ID
+  //   https://www.youtube.com/embed/VIDEO_ID
+  // VIDEO_ID is exactly 11 chars: [A-Za-z0-9_-]. All forms are normalized
+  // to the canonical embed URL `https://www.youtube.com/embed/VIDEO_ID?rel=0`.
+  let ytId: string | null = null;
+
+  // 1) youtu.be/<id>
+  let m = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})(?:[?&#]|$)/);
+  if (m) ytId = m[1];
+
+  // 2) youtube.com/watch?v=<id>  (v= must be a query/fragment param, not part of a path)
+  if (!ytId) {
+    m = url.match(/(?:[?&]v=|^v=)([a-zA-Z0-9_-]{11})(?:[&#]|$)/);
+    if (m) ytId = m[1];
+  }
+
+  // 3) youtube.com/embed/<id>
+  if (!ytId) {
+    m = url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})(?:[?&#]|$)/);
+    if (m) ytId = m[1];
+  }
+
+  if (ytId) return { type: "youtube", embedUrl: `https://www.youtube.com/embed/${ytId}?rel=0` };
+
+  // ── Vimeo — unchanged ──────────────────────────────────────
   const vm = url.match(/vimeo\.com\/(\d+)/);
   if (vm) return { type: "vimeo", embedUrl: `https://player.vimeo.com/video/${vm[1]}?title=0&byline=0` };
+
+  // ── Loom — unchanged ───────────────────────────────────────
   const lm = url.match(/loom\.com\/share\/([a-zA-Z0-9]+)/);
   if (lm) return { type: "loom", embedUrl: `https://www.loom.com/embed/${lm[1]}` };
+
+  // ── MP4 — unchanged ────────────────────────────────────────
   if (url.includes(".mp4")) return { type: "mp4", embedUrl: url };
+
   return { type: null, embedUrl: "" };
 }
 
