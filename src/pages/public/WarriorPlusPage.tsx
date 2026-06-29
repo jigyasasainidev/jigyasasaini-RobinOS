@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import {
@@ -62,6 +62,7 @@ function DemoVideo({ videoUrl }: { videoUrl: string | null }) {
   const resolved = resolveVideoEmbed(videoUrl ?? "");
   return (
     <motion.div
+      id="demo-video"
       className="relative w-full rounded-2xl overflow-hidden"
       style={{ aspectRatio: "16/9", background: `linear-gradient(135deg, hsl(28 32% 8%), hsl(22 28% 6%))`, border: `1px solid hsl(28 28% 14%)`, boxShadow: `0 0 80px ${ACCENT} / 0.08, 0 24px 80px hsl(0 0% 0% / 0.5)` }}
       initial={{ opacity: 0, scale: 0.98 }}
@@ -293,6 +294,49 @@ export default function WarriorPlusPage() {
 
   const videoUrl = settings?.warriorplus_demo_video_url ?? null;
 
+  // Smoothly scroll to the Hero demo player and, where the provider allows,
+  // kick off playback. For embedded players (YouTube / Vimeo / Loom) we
+  // append &autoplay=1&mute=1 to the iframe src and reset it — browsers
+  // only permit iframe autoplay when the player is muted. For MP4 we call
+  // .play() directly. If autoplay is blocked, we fall back to focusing the
+  // player so keyboard users land inside it.
+  const handleWatchDemo = useCallback(() => {
+    const target = document.getElementById("demo-video");
+    if (!target) return;
+
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    const tryStartPlayback = () => {
+      const player = target.querySelector("iframe, video");
+      if (!player) return;
+
+      if (player.tagName === "VIDEO") {
+        const v = player as HTMLVideoElement;
+        const result = v.play();
+        if (result && typeof result.catch === "function") {
+          result.catch(() => {
+            try { v.focus(); } catch {}
+          });
+        }
+        return;
+      }
+
+      if (player.tagName === "IFRAME") {
+        const iframe = player as HTMLIFrameElement;
+        try {
+          const url = new URL(iframe.src);
+          if (!url.searchParams.has("autoplay")) url.searchParams.set("autoplay", "1");
+          if (!url.searchParams.has("mute")) url.searchParams.set("mute", "1");
+          iframe.src = url.toString();
+        } catch {
+          try { iframe.focus(); } catch {}
+        }
+      }
+    };
+
+    window.setTimeout(tryStartPlayback, 500);
+  }, []);
+
   const faqs = [
     {
       question: "What exactly do I get with RobinOS Pro?",
@@ -370,11 +414,11 @@ export default function WarriorPlusPage() {
               <WarriorPlusCTA>
                 Get Instant Access <ArrowRight className="w-4 h-4" />
               </WarriorPlusCTA>
-              <motion.a href="#demo-video" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              <motion.button type="button" onClick={handleWatchDemo} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                 className="inline-flex items-center gap-2 h-12 px-6 rounded-xl text-sm font-medium transition-all duration-200"
                 style={{ background: `${ACCENT} / 0.06`, border: `1px solid ${ACCENT} / 0.2`, color: ACCENT }}>
                 <Play className="w-3.5 h-3.5" /> Watch Demo
-              </motion.a>
+              </motion.button>
             </motion.div>
 
             <WarriorPlusDisclaimer className="mt-2" />
@@ -399,57 +443,10 @@ export default function WarriorPlusPage() {
             </motion.div>
           </div>
 
-          {/* Right — dashboard preview */}
+          {/* Right — Hero video player (live demo when configured, placeholder otherwise) */}
           <motion.div initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7, delay: 0.15 }}
             className="relative hidden lg:block">
-            <motion.div className="relative rounded-2xl p-4 overflow-hidden"
-              style={{ background: "linear-gradient(135deg, hsl(28 32% 9%), hsl(22 28% 7%))", border: "1px solid hsl(28 28% 14%)", boxShadow: "0 24px 80px hsl(0 0% 0% / 0.5), 0 0 60px hsl(28 91% 60% / 0.06)" }}
-              animate={{ boxShadow: ["0 24px 80px hsl(0 0% 0% / 0.5), 0 0 40px hsl(28 91% 60% / 0.04)", "0 24px 80px hsl(0 0% 0% / 0.5), 0 0 80px hsl(28 91% 60% / 0.09)", "0 24px 80px hsl(0 0% 0% / 0.5), 0 0 40px hsl(28 91% 60% / 0.04)"] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <motion.div className="absolute left-0 right-0 h-px pointer-events-none z-10"
-                style={{ background: `linear-gradient(90deg, transparent, ${ACCENT} / 0.3, transparent)` }}
-                animate={{ top: ["10%", "90%", "10%"] }}
-                transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-              />
-              <div className="mb-3 flex items-center gap-2 border-b pb-3" style={{ borderColor: "hsl(28 28% 12%)" }}>
-                <BrandMark size={16} withWordmark />
-                <span className="ml-auto text-[9px] font-mono text-muted-foreground/40 uppercase tracking-wider">Workflow Engine</span>
-                <motion.span className="w-1.5 h-1.5 rounded-full bg-emerald-400/70"
-                  animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 2, repeat: Infinity }} />
-              </div>
-              {[
-                { label: "Trend Signal", value: "Rising · 74/100", color: "text-emerald-400" },
-                { label: "Topic",        value: "AI Faceless Reels", color: "text-foreground/80" },
-                { label: "Tone",         value: "Bold", color: "" },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="flex items-center justify-between py-1.5 border-b" style={{ borderColor: "hsl(28 28% 10%)" }}>
-                  <span className="text-[10px] font-mono text-muted-foreground/40">{label}</span>
-                  <span className={`text-[11px] font-mono ${color}`} style={!color ? { color: ACCENT } : undefined}>{value}</span>
-                </div>
-              ))}
-              <motion.div
-                className="mt-3 rounded-xl p-3 text-[11px] font-mono text-muted-foreground/70 leading-relaxed"
-                style={{ background: "hsl(28 32% 5%)", border: "1px solid hsl(28 28% 10%)" }}
-                animate={{ opacity: [0.7, 1, 0.7] }} transition={{ duration: 3, repeat: Infinity }}>
-                <span style={{ color: ACCENT }}>▸</span> Hook #1: "Nobody is telling you this about AI reels..."<br />
-                <span style={{ color: ACCENT }}>▸</span> Hook #2: "I tested 50 faceless channels. Here's the data..."<br />
-                <span style={{ color: ACCENT }}>▸</span> Hook #3: "This one workflow made me $4K last month..."
-              </motion.div>
-              <div className="mt-3 flex gap-2">
-                {["Captions ✓", "Hashtags ✓", "Voice Ready"].map((tag) => (
-                  <span key={tag} className="text-[9px] font-mono px-2 py-0.5 rounded-md"
-                    style={{ background: `${ACCENT} / 0.1`, border: `1px solid ${ACCENT} / 0.2`, color: ACCENT }}>
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </motion.div>
-            <motion.div className="absolute -bottom-4 -left-4 rounded-xl px-3 py-2 text-[10px] font-mono"
-              style={{ background: "hsl(28 32% 10%)", border: "1px solid hsl(28 28% 14%)", color: "hsl(48 92% 55%)" }}
-              animate={{ y: [0, 5, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}>
-              ⚡ Sub-3s script generation
-            </motion.div>
+            <DemoVideo videoUrl={videoUrl} />
           </motion.div>
         </div>
       </section>
