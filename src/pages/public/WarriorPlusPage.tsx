@@ -98,8 +98,7 @@ function DemoVideo({ videoUrl }: { videoUrl: string | null }) {
       className="relative w-full rounded-2xl overflow-hidden"
       style={{ aspectRatio: "16/9", background: `linear-gradient(135deg, hsl(28 32% 8%), hsl(22 28% 6%))`, border: `1px solid hsl(28 28% 14%)`, boxShadow: `0 0 80px ${ACCENT} / 0.08, 0 24px 80px hsl(0 0% 0% / 0.5)` }}
       initial={{ opacity: 0, scale: 0.98 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      viewport={{ once: true }}
+      animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.6 }}
     >
       {resolved.type && resolved.embedUrl ? (
