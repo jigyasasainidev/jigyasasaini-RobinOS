@@ -2,10 +2,10 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-// Temporary destination while the official JVZoo Buy Button is being prepared.
-// When the real JVZoo button is ready, change only this constant and every
-// JVZooCTA across the site will use the new destination automatically.
-const JVZOO_CTA_DESTINATION = "/login";
+// Official JVZoo checkout destination. Centralized so future updates require
+// changing only this constant — every JVZooCTA across the site will use the
+// new destination automatically.
+const JVZOO_CTA_DESTINATION = "https://www.jvzoo.com/b/0/442467/99";
 
 export interface JVZooCTAProps {
   children: React.ReactNode;

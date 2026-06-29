@@ -9,6 +9,7 @@ import {
 import { PublicLayout } from "@/components/public/PublicLayout";
 import { JVZooCTA } from "@/components/public/JVZooCTA";
 import { JVZooDisclaimer } from "@/components/public/JVZooDisclaimer";
+import { JVZooTrackingPixel } from "@/components/public/JVZooTrackingPixel";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { BrandMark } from "@/components/BrandMark";
 
@@ -641,6 +642,8 @@ export default function CreatorOSPage() {
           </motion.div>
         </Reveal>
       </section>
+
+      <JVZooTrackingPixel />
     </PublicLayout>
   );
 }
