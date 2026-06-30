@@ -308,6 +308,14 @@ function PricingCard({ delay }: { delay: number }) {
             }}
           />
         </div>
+
+        {/* Official WarriorPlus Disclaimer placeholder.
+            This div is populated at runtime by the WarriorPlus Sales Page
+            Script (the same script that injects the Buy Button tracking).
+            It must exist verbatim in the initial rendered HTML so the
+            marketplace compliance scanner can detect it. Do not wrap,
+            rename, hide, lazy-render, or replace with a React component. */}
+        <div className="wplus_spdisclaimer"></div>
       </motion.div>
     </Reveal>
   );
