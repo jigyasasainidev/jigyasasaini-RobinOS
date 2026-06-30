@@ -10,7 +10,6 @@ import {
 import { PublicLayout } from "@/components/public/PublicLayout";
 import { WarriorPlusCTA } from "@/components/public/WarriorPlusCTA";
 import { WarriorPlusDisclaimer } from "@/components/public/WarriorPlusDisclaimer";
-import { WarriorPlusSalesScript } from "@/components/public/WarriorPlusSalesScript";
 import { WarriorPlusTrackingPixel } from "@/components/public/WarriorPlusTrackingPixel";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { BrandMark } from "@/components/BrandMark";
@@ -750,7 +749,6 @@ export default function WarriorPlusPage() {
       {/* Page-level footer is rendered by PublicLayout (PublicFooter). */}
       {/* No additional footer markup required here. */}
 
-      <WarriorPlusSalesScript />
       <WarriorPlusTrackingPixel />
     </PublicLayout>
   );
