@@ -2,9 +2,19 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 // ─────────────────────────────────────────────────────────────────────────
-// WarriorPlus checkout — official hoplink.
-// Single source of truth used by every WarriorPlusCTA on /warriorplus.
-// Update here only.
+// WarriorPlus CTA — shared styled button used on /warriorplus.
+//
+// Behavior:
+//   • default (no `scrollToId`) → opens the official WarriorPlus checkout
+//     hoplink in the same tab. Single source of truth — update here only.
+//   • `scrollToId` provided     → smoothly scrolls to the element with that
+//     id on the page instead of opening checkout. Used for CTAs that must
+//     NOT open checkout directly (e.g. Hero CTA, Final CTA) per WarriorPlus
+//     compliance — the only checkout option on the page is the official
+//     Buy Button image inserted into the pricing card.
+//
+// Visual styling, animations and hover effects are intentionally identical
+// across both modes so the page chrome is preserved.
 // ─────────────────────────────────────────────────────────────────────────
 const WARRIORPLUS_CHECKOUT_URL = "https://warriorplus.com/o2/buy/k03rn0/qg7sz4/d144t7";
 
@@ -14,6 +24,13 @@ export interface WarriorPlusCTAProps {
   variant?: "primary";
   size?: "default" | "sm";
   fullWidth?: boolean;
+  /**
+   * When provided, the button smoothly scrolls to the element with this id
+   * instead of opening the WarriorPlus checkout. Used for compliance — the
+   * only direct checkout on /warriorplus is the official Buy Button image
+   * in the pricing card.
+   */
+  scrollToId?: string;
 }
 
 export function WarriorPlusCTA({
@@ -22,10 +39,18 @@ export function WarriorPlusCTA({
   variant = "primary",
   size = "default",
   fullWidth = false,
+  scrollToId,
 }: WarriorPlusCTAProps) {
   const isPrimary = variant === "primary";
 
-  const handleCheckout = () => {
+  const handleClick = () => {
+    if (scrollToId) {
+      const target = document.getElementById(scrollToId);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+    }
     window.location.href = WARRIORPLUS_CHECKOUT_URL;
   };
 
@@ -37,7 +62,7 @@ export function WarriorPlusCTA({
     >
       <button
         type="button"
-        onClick={handleCheckout}
+        onClick={handleClick}
         className={cn(
           "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white transition-all duration-300 relative overflow-hidden group",
           size === "default" && "h-12 px-8",

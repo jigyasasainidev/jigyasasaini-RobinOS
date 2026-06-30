@@ -298,12 +298,16 @@ function PricingCard({ delay }: { delay: number }) {
           </ul>
         </div>
 
-        {/* CTA */}
-        <div className="px-8 pb-8 pt-2">
-          <WarriorPlusCTA fullWidth>
-            Get Instant Access <ArrowRight className="w-4 h-4" />
-          </WarriorPlusCTA>
-          <WarriorPlusDisclaimer align="center" className="mt-3 mx-auto" />
+        {/* CTA — Official WarriorPlus Buy Button */}
+        {/* The HTML below is inserted verbatim (no React wrapping, no
+            lazy-load, no image optimization) so the WarriorPlus compliance
+            scanner detects the exact Buy Button markup. Do not modify. */}
+        <div className="px-8 pb-8 pt-2 flex justify-center">
+          <div
+            dangerouslySetInnerHTML={{
+              __html: '<a href="https://warriorplus.com/o2/buy/k03rn0/qg7sz4/d144t7"><img src="https://warriorplus.com/o2/btn/fn100011001/k03rn0/qg7sz4/468109"></a>',
+            }}
+          />
         </div>
       </motion.div>
     </Reveal>
@@ -456,7 +460,7 @@ export default function WarriorPlusPage() {
 
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.28 }}
               className="flex flex-wrap gap-3 mb-8">
-              <WarriorPlusCTA>
+              <WarriorPlusCTA scrollToId="pricing">
                 Get Instant Access <ArrowRight className="w-4 h-4" />
               </WarriorPlusCTA>
               <motion.button type="button" onClick={handleWatchDemo} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
@@ -699,7 +703,7 @@ export default function WarriorPlusPage() {
               Pay once, own forever. Ship faster today than you did all of last week.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <WarriorPlusCTA>
+              <WarriorPlusCTA scrollToId="pricing">
                 <Wand2 className="w-4 h-4" /> Launch RobinOS
               </WarriorPlusCTA>
               <motion.a href="#pricing" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
