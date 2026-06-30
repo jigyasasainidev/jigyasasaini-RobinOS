@@ -72,6 +72,7 @@ const LaunchPartnersPage = lazy(lazyWithRetry(() => import("./pages/public/Launc
 const BlogPage = lazy(lazyWithRetry(() => import("./pages/blog/BlogPage"), "blog-index"));
 const BlogPostPage = lazy(lazyWithRetry(() => import("./pages/blog/BlogPostPage"), "blog-post"));
 const AdminAuthPage = lazy(() => import("./pages/AdminAuthPage"));
+const ReviewLoginPage = lazy(() => import("./pages/ReviewLoginPage"));
 const AdminAuthCallbackPage = lazy(() => import("./pages/AdminAuthCallbackPage"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AuthCallbackPage = lazy(() => import("./pages/AuthCallbackPage"));
@@ -219,6 +220,8 @@ const App = () => (
                 <Route path="settings" element={<Suspense fallback={<SettingsSkeleton />}><SettingsPage /></Suspense>} />
               </Route>
               <Route path="/adminsh/auth" element={<AdminAuthPage />} />
+              {/* TEMPORARY: WarriorPlus reviewer sign-in. Not linked anywhere. Remove after approval. */}
+              <Route path="/review-login" element={<ReviewLoginPage />} />
               <Route path="/adminsh/auth/callback" element={<AdminAuthCallbackPage />} />
               <Route path="/adminsh/callback" element={<Navigate to="/adminsh/auth/callback" replace />} />
               <Route path="/adminsh" element={<Navigate to="/adminsh/dashboard" replace />} />
