@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.create-whop-checkout]
 verify_jwt = false
+
+[functions.payment-webhook]
+verify_jwt = false
+
+[functions.process-webhook-worker]
+verify_jwt = false
