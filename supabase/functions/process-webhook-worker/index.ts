@@ -175,6 +175,7 @@ interface BatchSummary {
   timed_out: boolean;
   iterations: number;
   processed_count: number;
+  awaiting_claim_count: number;
   failed_terminal_count: number;
   failed_retryable_count: number;
   no_op_count: number;
@@ -214,6 +215,7 @@ async function handleProcess(
     timed_out: false,
     iterations: 0,
     processed_count: 0,
+    awaiting_claim_count: 0,
     failed_terminal_count: 0,
     failed_retryable_count: 0,
     no_op_count: 0,
@@ -280,12 +282,47 @@ async function handleProcess(
         lock_id: result.lock_id,
       };
 
-      if (result.action === "verified") {
+      if (result.action === "processed") {
+        // M6: terminal success — webhook validation + M5 resolution +
+        // M6 record_purchase + M6 grant_entitlement all succeeded.
+        // The row is now at status='processed' and the buyer has an
+        // active RobinOS entitlement for the provider-defined duration.
         summary.processed_count++;
         eventLogFields.provider_event_type = result.provider_event_type;
         eventLogFields.standardized_event_type = result.standardized_event_type;
         eventLogFields.event_mapping_confidence = result.event_mapping_confidence;
-        logEvent("info", "WORKER_ROW_VERIFIED", workerId, eventLogFields);
+        if (result.resolution_outcome) {
+          eventLogFields.resolution_outcome = result.resolution_outcome;
+        }
+        if (result.linked_user_id) {
+          eventLogFields.linked_user_id = result.linked_user_id;
+        }
+        if (result.linked_purchase_id) {
+          eventLogFields.linked_purchase_id = result.linked_purchase_id;
+        }
+        if (result.plan) {
+          eventLogFields.plan = result.plan;
+        }
+        if (result.expires_at) {
+          eventLogFields.expires_at = result.expires_at;
+        }
+        if (typeof result.duration_days === "number") {
+          eventLogFields.duration_days = result.duration_days;
+        }
+        logEvent("info", "WORKER_ROW_PROCESSED", workerId, eventLogFields);
+      } else if (result.action === "awaiting_claim") {
+        // M5: guest buyer — no RobinOS account matched. The row
+        // transitioned to status='awaiting_claim' for M9 to handle.
+        // This is a SUCCESS for M5 (identity resolution is complete
+        // and the row is in the correct downstream state).
+        summary.awaiting_claim_count++;
+        eventLogFields.provider_event_type = result.provider_event_type;
+        eventLogFields.standardized_event_type = result.standardized_event_type;
+        eventLogFields.event_mapping_confidence = result.event_mapping_confidence;
+        if (result.resolution_outcome) {
+          eventLogFields.resolution_outcome = result.resolution_outcome;
+        }
+        logEvent("info", "WORKER_ROW_AWAITING_CLAIM", workerId, eventLogFields);
       } else if (result.action === "failed_terminal") {
         summary.failed_terminal_count++;
         eventLogFields.error = result.error;
