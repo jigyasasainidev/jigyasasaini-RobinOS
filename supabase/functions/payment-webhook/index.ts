@@ -313,6 +313,29 @@ function snapshotHeaders(req: Request): Record<string, string> {
   return out;
 }
 
+// ── Body parsing helpers ───────────────────────────────────
+// Convert FormData entries into the same flat string map we use
+// for url-encoded bodies. File parts are ignored because no
+// current provider sends files on a webhook.
+
+function recordFromFormData(formData: FormData): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of formData.entries()) {
+    if (typeof value === "string") {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
+function encodeUrlEncoded(record: Record<string, string>): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(record)) {
+    params.append(key, value);
+  }
+  return params.toString();
+}
+
 // ── Main handler ───────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
@@ -357,26 +380,78 @@ Deno.serve(async (req: Request) => {
     }, traceId);
   }
 
-  // 5. Content-Type check (adapter-driven)
+  // 5. Content-Type check + body parse
+  //    Supports: application/x-www-form-urlencoded, multipart/form-data,
+  //    and application/json. All three are normalised into the same flat
+  //    Record<string, string> shape before adapter processing.
   const contentType = req.headers.get("content-type") ?? "";
   const ctLower = contentType.trim().toLowerCase();
-  if (!ctLower.startsWith(adapter.expectedContentType)) {
-    log("warn", "UNSUPPORTED_MEDIA_TYPE", providerId, traceId, {
-      content_type: contentType,
-      expected_prefix: adapter.expectedContentType,
-    });
-    return jsonResponse(415, {
-      received: false,
-      code: "UNSUPPORTED_MEDIA_TYPE",
-      expected: adapter.expectedContentType,
-    }, traceId);
-  }
 
-  // 6. Read raw body — preserve exact bytes
   let rawBody: string;
+  let parsedBody: Record<string, string>;
+
   try {
-    rawBody = await req.text();
+    if (ctLower.startsWith("application/x-www-form-urlencoded")) {
+      rawBody = await req.text();
+      parsedBody = adapter.parseBody(rawBody, contentType);
+    } else if (ctLower.startsWith("multipart/form-data")) {
+      const formData = await req.formData();
+      parsedBody = recordFromFormData(formData);
+      if (Object.keys(parsedBody).length === 0) {
+        throw payloadError("_body", "Multipart body parsed to zero fields");
+      }
+      // Normalise to url-encoded so downstream hash/signature paths stay
+      // unchanged. The provider signature is field-based, not raw-body HMAC.
+      rawBody = encodeUrlEncoded(parsedBody);
+    } else if (ctLower.startsWith("application/json")) {
+      rawBody = await req.text();
+      let jsonParsed: unknown;
+      try {
+        jsonParsed = JSON.parse(rawBody);
+      } catch {
+        throw payloadError("_body", "Invalid JSON body");
+      }
+      if (
+        typeof jsonParsed !== "object" ||
+        jsonParsed === null ||
+        Array.isArray(jsonParsed)
+      ) {
+        throw payloadError("_body", "JSON body must be a flat object");
+      }
+      parsedBody = {};
+      for (const [key, value] of Object.entries(jsonParsed)) {
+        parsedBody[key] = String(value ?? "");
+      }
+      if (Object.keys(parsedBody).length === 0) {
+        throw payloadError("_body", "JSON body parsed to zero fields");
+      }
+    } else {
+      log("warn", "UNSUPPORTED_MEDIA_TYPE", providerId, traceId, {
+        content_type: contentType,
+        expected_prefixes: [
+          "application/x-www-form-urlencoded",
+          "multipart/form-data",
+          "application/json",
+        ],
+      });
+      return jsonResponse(415, {
+        received: false,
+        code: "UNSUPPORTED_MEDIA_TYPE",
+        expected: "application/x-www-form-urlencoded, multipart/form-data, application/json",
+      }, traceId);
+    }
   } catch (err) {
+    if (isPayloadError(err)) {
+      log("warn", "INVALID_PAYLOAD", providerId, traceId, {
+        missing_field: err.field,
+      });
+      return jsonResponse(400, {
+        received: false,
+        code: "INVALID_PAYLOAD",
+        field: err.field,
+        message: err.message,
+      }, traceId);
+    }
     log("error", "BODY_READ_FAILED", providerId, traceId, {
       error_message: err instanceof Error ? err.message : String(err),
     });
@@ -387,7 +462,7 @@ Deno.serve(async (req: Request) => {
     }, traceId);
   }
 
-  // 7. Load provider config from DB
+  // 6. Load provider config from DB
   const supabase = createClient(SUPABASE_URL!, SERVICE_KEY!, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
@@ -479,26 +554,7 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // 10. Parse body via adapter
-  let parsedBody: Record<string, string>;
-  try {
-    parsedBody = adapter.parseBody(rawBody, contentType);
-  } catch (err) {
-    if (isPayloadError(err)) {
-      log("warn", "INVALID_PAYLOAD", providerId, traceId, {
-        missing_field: err.field,
-      });
-      return jsonResponse(400, {
-        received: false,
-        code: "INVALID_PAYLOAD",
-        field: err.field,
-        message: err.message,
-      }, traceId);
-    }
-    throw err;
-  }
-
-  // 11. Extract canonical fields (may throw INVALID_PAYLOAD)
+  // 10. Extract canonical fields (may throw INVALID_PAYLOAD)
   let fields;
   try {
     fields = adapter.extractEventFields(parsedBody);
