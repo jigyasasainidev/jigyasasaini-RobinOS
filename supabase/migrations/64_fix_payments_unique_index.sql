@@ -23,15 +23,20 @@ drop index if exists public.idx_payments_provider_id;
 
 -- 2a. Repoint webhook_events.linked_purchase_id from any duplicate
 --     payment row to its group's survivor (oldest by created_at, id).
+--
+-- NOTE: ORDER BY uses id::text (not id directly) so the migration stays
+-- compatible with this Supabase instance, which lacks built-in uuid
+-- aggregates (see migration 62). first_value() returns the uuid value
+-- as-is, so no uuid aggregate is required.
 with ranked as (
   select id,
          row_number() over (
            partition by provider, provider_payment_id
-           order by created_at, id
+           order by created_at, id::text
          ) as rn,
          first_value(id) over (
            partition by provider, provider_payment_id
-           order by created_at, id
+           order by created_at, id::text
            rows between unbounded preceding and unbounded following
          ) as survivor_id
   from public.payments
@@ -47,7 +52,7 @@ with ranked as (
   select id,
          row_number() over (
            partition by provider, provider_payment_id
-           order by created_at, id
+           order by created_at, id::text
          ) as rn
   from public.payments
 )
