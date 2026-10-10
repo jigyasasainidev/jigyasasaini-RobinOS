@@ -216,7 +216,7 @@ export function AdminPWAInstall() {
           {[
             { icon: Zap,     label: "Instant launch" },
             { icon: Monitor, label: "Fullscreen" },
-            { icon: Shield,  label: "Secure 2FA" },
+            { icon: Shield,  label: "Secure Access" },
             { icon: Wifi,    label: "Offline shell" },
           ].map(({ icon: Icon, label }) => (
             <div
