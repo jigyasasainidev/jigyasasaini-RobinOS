@@ -61,13 +61,13 @@ export type FeatureKey =
 
 export const PLAN_ENTITLEMENTS: Record<string, Record<FeatureKey, EntitlementConfig>> = {
   free: {
-    script_generation: { limit: 2, enabled: true, period: "24h" },
-    caption_generation: { limit: 2, enabled: true, period: "day" },
+    script_generation: { limit: 100, enabled: true, period: "day" },
+    caption_generation: { limit: 100, enabled: true, period: "day" },
     trend_scan: { limit: 1, enabled: true, period: "lifetime" },
     hashtag_scan: { limit: 3, enabled: true, period: "day" },
-    tts_generation: { limit: 0, enabled: false, period: "day" },
-    video_generation: { limit: 0, enabled: false, period: "day" },
-    byok_access: { limit: 0, enabled: false, period: "day" },
+    tts_generation: { limit: 100, enabled: true, period: "day" },
+    video_generation: { limit: 100, enabled: true, period: "day" },
+    byok_access: { limit: -1, enabled: true, period: "day" },
     analytics_access: { limit: 0, enabled: false, period: "day" },
     watermark_removal: { limit: 0, enabled: false, period: "day" },
     automation_tools: { limit: 0, enabled: false, period: "day" },
@@ -304,10 +304,12 @@ export const FREE_PLAN = {
   name: "Free",
   price: "0",
   features: [
-    "2 scripts in 24h trial",
-    "1 trend scan in trial",
-    "1 workspace",
-    "Watermarked exports",
+    "100 scripts/day",
+    "100 captions/day",
+    "Caption Engine included",
+    "AI voice over included",
+    "Video generation included",
+    "BYOK enabled",
   ],
 };
 

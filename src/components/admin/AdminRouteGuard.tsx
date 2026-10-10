@@ -12,6 +12,10 @@ import { Admin2FAVerify } from "@/components/admin/Admin2FAVerify";
 const SUPABASE_URL      = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
+// ── Admin 2FA enforcement switch ───────────────────────────
+// Set to false to remove the admin 2FA setup/verify gate entirely.
+const ENFORCE_ADMIN_2FA = false;
+
 // ── 2FA status values ──────────────────────────────────────
 // "loading"       — not yet checked
 // "not_configured"— no admin_2fa row exists
@@ -90,6 +94,7 @@ export function AdminRouteGuard({ children }: { children: ReactNode }) {
 
   // ── Step 2: 2FA status check (only once admin is confirmed) ──
   useEffect(() => {
+    if (!ENFORCE_ADMIN_2FA) return;
     if (!isAdminConfirmed) return;
     if (twoFAChecked) return;
 
@@ -174,7 +179,7 @@ export function AdminRouteGuard({ children }: { children: ReactNode }) {
   }, [renderKey]);
 
   // ── Loading ────────────────────────────────────────────────
-  const stillLoading = authLoading || adminLoading || (isAdminConfirmed && !twoFAChecked);
+  const stillLoading = authLoading || adminLoading || (ENFORCE_ADMIN_2FA && isAdminConfirmed && !twoFAChecked);
 
   if (stillLoading) {
     const msg = !twoFAChecked && isAdminConfirmed
@@ -193,6 +198,19 @@ export function AdminRouteGuard({ children }: { children: ReactNode }) {
 
   // Not admin — render nothing (redirect handled by useEffect above)
   if (isNotAdmin) return null;
+
+  // ── 2FA gate disabled — render dashboard directly ──────────
+  if (!ENFORCE_ADMIN_2FA) {
+    console.debug("[AdminRouteGuard] 2FA enforcement disabled → rendering dashboard");
+    return (
+      <>
+        <Helmet>
+          <link rel="manifest" href="/admin-manifest.json" />
+        </Helmet>
+        {children}
+      </>
+    );
+  }
 
   // ── 2FA gate ───────────────────────────────────────────────
   console.debug("[AdminRouteGuard] gate check — twoFAStatus:", twoFAStatus, "isVerified:", isVerified());
