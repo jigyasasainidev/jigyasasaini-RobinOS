@@ -19,7 +19,9 @@ import {
 } from "../_shared/entitlement.ts";
 
 const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL    = "llama-3.3-70b-versatile";
+// Groq decommissioned llama-3.3-70b-versatile on 2026-08-16.
+// openai/gpt-oss-120b is the recommended replacement (tool use + JSON).
+const GROQ_MODEL    = "openai/gpt-oss-120b";
 
 type Platform  = "TikTok" | "Instagram" | "Facebook" | "YouTube";
 type TrendType = "audio" | "hashtags";
@@ -94,6 +96,7 @@ function buildAudioTool() {
                 window_label:       { type: "string" },
               },
               required: ["title", "artist", "category", "uses", "trend", "tip", "velocity", "momentum_direction", "window_label"],
+              additionalProperties: false,
             },
           },
         },
@@ -128,6 +131,7 @@ function buildHashtagTool() {
                 window_label:       { type: "string" },
               },
               required: ["tag", "category", "posts", "trend", "tip", "velocity", "momentum_direction", "window_label"],
+              additionalProperties: false,
             },
           },
         },
@@ -165,9 +169,11 @@ async function callGroq(
         "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model:       GROQ_MODEL,
-        temperature: 0.75,
-        max_tokens:  8192,
+        model:                 GROQ_MODEL,
+        temperature:           0.75,
+        max_completion_tokens: 8192,
+        reasoning_effort:      "low",
+        reasoning_format:      "hidden",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user",   content: userPrompt   },

@@ -8,7 +8,7 @@
 // 4. Cache miss → per-user rate limit → Groq API → cache write → return
 //
 // AI approach: Groq OpenAI-compatible endpoint with tool calling.
-// llama-3.3-70b-versatile natively supports function calling,
+// openai/gpt-oss-120b natively supports function calling,
 // so we get structured JSON without any markdown-stripping hacks.
 // ============================================================
 
@@ -59,7 +59,9 @@ interface TrendTopic {
 
 // ── Constants ──────────────────────────────────────────────
 const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL    = "llama-3.3-70b-versatile";
+// Groq decommissioned llama-3.3-70b-versatile on 2026-08-16.
+// openai/gpt-oss-120b is the recommended replacement (tool use + JSON).
+const GROQ_MODEL    = "openai/gpt-oss-120b";
 
 const SYSTEM_PROMPT = `You are an expert viral content analyst with deep knowledge of internet trends and social media dynamics. When given a niche, you must identify 3-5 ACTUALLY trending topics that are currently gaining momentum or about to explode.
 
@@ -78,9 +80,11 @@ async function callGroq(niche: string, apiKey: string): Promise<TrendTopic[]> {
   const userPrompt = `Analyze the "${niche}" niche and find 3-5 ACTUALLY trending topics that are viral or about to go viral right now in May 2026.`;
 
   const body = {
-    model:       GROQ_MODEL,
-    temperature: 0.7,
-    max_tokens:  8192,
+    model:                 GROQ_MODEL,
+    temperature:           0.7,
+    max_completion_tokens: 8192,
+    reasoning_effort:      "low",
+    reasoning_format:      "hidden",
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user",   content: userPrompt    },

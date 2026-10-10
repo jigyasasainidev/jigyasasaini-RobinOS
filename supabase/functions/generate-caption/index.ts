@@ -12,7 +12,9 @@ import { trackFeatureUsage } from "../_shared/feature-usage.ts";
 // GROQ CONSTANTS
 // ============================================================
 const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL    = "llama-3.3-70b-versatile";
+// Groq decommissioned llama-3.3-70b-versatile on 2026-08-16.
+// openai/gpt-oss-120b is the recommended replacement (tool use + JSON).
+const GROQ_MODEL    = "openai/gpt-oss-120b";
 
 type Platform = "youtube" | "instagram" | "tiktok" | "facebook";
 type Style = "viral" | "seo_optimized" | "storytelling" | "educational" | "bold" | "conversational";
@@ -44,9 +46,11 @@ async function callGroq(
         "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model:       GROQ_MODEL,
-        temperature: 0.7,
-        max_tokens:  4096,
+        model:                 GROQ_MODEL,
+        temperature:           0.7,
+        max_completion_tokens: 4096,
+        reasoning_effort:      "low",
+        reasoning_format:      "hidden",
         messages,
         response_format: { type: "json_object" },
       }),
